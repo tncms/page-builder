@@ -1,0 +1,41 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "logo-strip",
+            "data": {
+                "heading": "Trusted by teams everywhere"
+            },
+            "blocks": [
+                {
+                    "type": "logo",
+                    "data": {
+                        "image_url": "",
+                        "alt": "Acme"
+                    }
+                },
+                {
+                    "type": "logo",
+                    "data": {
+                        "image_url": "",
+                        "alt": "Globex"
+                    }
+                },
+                {
+                    "type": "logo",
+                    "data": {
+                        "image_url": "",
+                        "alt": "Umbrella"
+                    }
+                },
+                {
+                    "type": "logo",
+                    "data": {
+                        "image_url": "",
+                        "alt": "Initech"
+                    }
+                }
+            ]
+        }
+    ]
+}

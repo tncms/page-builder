@@ -1,0 +1,201 @@
+/* Phase 16 — Frontend editor iframe overlay styles.
+ *
+ * Injected into the real public page only in editor mode. Scoped to .pb-fe-*
+ * classes so it can never affect a normal visitor (whose page never loads this).
+ */
+
+.pb-fe-overlay {
+  position: absolute;
+  z-index: 2147483000;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-radius: 2px;
+}
+
+.pb-fe-overlay--hover {
+  border: 1px dashed rgba(59, 130, 246, 0.7);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.pb-fe-overlay--selected {
+  border: 2px solid rgb(37, 99, 235);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+}
+
+/* Editor-mode affordance: a subtle outline + pointer on hoverable components. */
+#pb-frontend-canvas [data-pb-component-id] {
+  cursor: pointer;
+}
+
+/* LT-M1 closure — the editor canvas is preview-only. Ordinary frontend
+ * navigation controls (menu / logo / language / CTA links, buttons, forms) get a
+ * default cursor so they read as non-interactive, matching the navigation guard
+ * that cancels their default action. Added only in the editor iframe
+ * (html.pb-fe-noninteractive), so a public visitor is never affected. Page
+ * Builder overlays/handles live in the shell document; the column-resize handle
+ * and inline-edit affordances keep their own cursor. */
+html.pb-fe-noninteractive a[href],
+html.pb-fe-noninteractive button:not(.pb-fe-col-resize),
+html.pb-fe-noninteractive [role="button"],
+html.pb-fe-noninteractive input[type="submit"],
+html.pb-fe-noninteractive input[type="button"] {
+  cursor: default;
+}
+
+html.pb-fe-noninteractive #pb-frontend-canvas .pb-fe-inline-hover,
+html.pb-fe-noninteractive #pb-frontend-canvas .pb-fe-inline-active {
+  cursor: text;
+}
+
+/* Phase 18 — inline editing. While a field is being edited its real text is
+ * hidden (the shell overlay input renders it), but the element keeps its box so
+ * live typing still reflows the layout. */
+#pb-frontend-canvas .pb-fe-inline-active {
+  color: transparent !important;
+  caret-color: transparent !important;
+  cursor: text;
+}
+
+/* Editable-text hover affordance (double-click to edit). */
+#pb-frontend-canvas .pb-fe-inline-hover {
+  outline: 1px dashed rgba(37, 99, 235, 0.6);
+  outline-offset: 2px;
+  cursor: text;
+}
+
+/* Phase 22.1 — cross-iframe drag. While a drag is in flight the whole document
+ * shows the grabbing cursor and suppresses text selection; the resolved drop
+ * target is highlighted (the authoritative ghost + insertion line render in the
+ * shell — this is a secondary, content-aligned aid). */
+html.pb-fe-dragging,
+html.pb-fe-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+#pb-frontend-canvas .pb-fe-drop-target {
+  outline: 2px dashed rgba(37, 99, 235, 0.6);
+  outline-offset: -2px;
+}
+
+#pb-frontend-canvas .pb-fe-drop-target--inside {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+#pb-frontend-canvas .pb-fe-drop-target--invalid {
+  outline-color: rgba(220, 38, 38, 0.7);
+}
+
+/* Phase 25.3.1 §6/§11 — editor-only layout composition affordances.
+   The blade emits these classes only when rendering for the editor (pbEditor),
+   so they never reach the public frontend. */
+#pb-frontend-canvas .pb-layout-container--editor {
+  outline: 1px dashed rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+  min-height: 2.5rem;
+}
+
+#pb-frontend-canvas .pb-layout-column--editor {
+  outline: 1px dashed rgba(37, 99, 235, 0.25);
+  outline-offset: -1px;
+  min-height: 3rem;
+}
+
+#pb-frontend-canvas .pb-layout-column__dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: 4.5rem;
+  border: 2px dashed rgba(37, 99, 235, 0.45);
+  border-radius: 6px;
+  background: rgba(37, 99, 235, 0.04);
+  color: rgba(37, 99, 235, 0.9);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#pb-frontend-canvas .pb-layout-column__dropzone:hover {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.7);
+}
+
+#pb-frontend-canvas .pb-layout-column__dropzone-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+#pb-frontend-canvas .pb-layout-container__empty {
+  flex: 1 1 100%;
+  padding: 1rem;
+  text-align: center;
+  color: rgba(37, 99, 235, 0.75);
+  border: 2px dashed rgba(37, 99, 235, 0.35);
+  border-radius: 6px;
+}
+
+/* Phase 26.2 — visual column resize handles + tooltip.
+ * Handles are body-appended (like the selection overlay) and positioned from
+ * getBoundingClientRect + scroll, so they sit on the divider between two column
+ * markers. They ARE interactive (unlike the decorative overlay). */
+.pb-fe-col-resize {
+  position: absolute;
+  z-index: 2147483200;
+  width: 11px;
+  /* Centre the hit area on the divider (left is the divider's x). */
+  transform: translateX(-50%);
+  cursor: col-resize;
+  touch-action: none;
+  display: none;
+}
+
+.pb-fe-col-resize::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(37, 99, 235, 0.35);
+  border-radius: 2px;
+  transition: background 120ms ease, width 120ms ease;
+}
+
+.pb-fe-col-resize:hover::before,
+.pb-fe-col-resize:focus-visible::before,
+html.pb-fe-col-resizing .pb-fe-col-resize::before {
+  background: rgb(37, 99, 235);
+  width: 3px;
+}
+
+.pb-fe-col-resize:focus-visible {
+  outline: none;
+}
+
+.pb-fe-col-resize:focus-visible::before {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35);
+}
+
+/* During a drag the whole document shows the resize cursor + suppresses text
+ * selection, mirroring the drag interaction. */
+html.pb-fe-col-resizing,
+html.pb-fe-col-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.pb-fe-col-resize-tooltip {
+  position: absolute;
+  z-index: 2147483300;
+  transform: translate(-50%, -140%);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgb(37, 99, 235);
+  color: #fff;
+  font: 600 12px/1.4 system-ui, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}

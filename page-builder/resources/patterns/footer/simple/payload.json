@@ -1,0 +1,70 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "columns",
+            "data": {
+                "gap": "lg"
+            },
+            "blocks": [
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "heading",
+                            "data": {
+                                "text": "Product",
+                                "level": "h4"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "data": {
+                                "content": "Features. Pricing. Changelog."
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "heading",
+                            "data": {
+                                "text": "Company",
+                                "level": "h4"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "data": {
+                                "content": "About. Blog. Careers."
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "heading",
+                            "data": {
+                                "text": "Legal",
+                                "level": "h4"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "data": {
+                                "content": "Privacy. Terms."
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

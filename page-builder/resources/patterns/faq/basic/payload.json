@@ -1,0 +1,34 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "faq",
+            "data": {
+                "heading": "Frequently asked questions"
+            },
+            "blocks": [
+                {
+                    "type": "accordion-item",
+                    "data": {
+                        "question": "Is there a free trial?",
+                        "answer": "Yes, every plan includes a 14-day free trial."
+                    }
+                },
+                {
+                    "type": "accordion-item",
+                    "data": {
+                        "question": "Can I cancel anytime?",
+                        "answer": "Absolutely, cancel from your dashboard with one click."
+                    }
+                },
+                {
+                    "type": "accordion-item",
+                    "data": {
+                        "question": "Do you offer support?",
+                        "answer": "All plans include email support; paid plans add priority support."
+                    }
+                }
+            ]
+        }
+    ]
+}

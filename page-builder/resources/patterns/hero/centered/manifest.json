@@ -1,0 +1,13 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "hero.centered",
+    "name": "Centered Hero",
+    "category": "hero",
+    "description": "Minimal centered hero with a single focused message.",
+    "tags": [
+        "minimal",
+        "centered"
+    ]
+}

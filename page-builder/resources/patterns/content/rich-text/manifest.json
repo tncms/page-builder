@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "content.rich-text",
+    "name": "Rich Text",
+    "category": "content",
+    "description": "A simple, readable text content section.",
+    "tags": [
+        "content",
+        "text",
+        "article"
+    ]
+}

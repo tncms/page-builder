@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "hero.split",
+    "name": "Split Hero",
+    "category": "hero",
+    "description": "Hero headline paired with a supporting image section.",
+    "tags": [
+        "split",
+        "image"
+    ],
+    "featured": true
+}

@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "faq.basic",
+    "name": "Basic FAQ",
+    "category": "faq",
+    "description": "An accordion of frequently asked questions.",
+    "tags": [
+        "faq",
+        "accordion",
+        "support"
+    ]
+}

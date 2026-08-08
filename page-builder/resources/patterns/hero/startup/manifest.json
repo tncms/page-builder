@@ -1,0 +1,52 @@
+{
+    "schema": 2,
+    "builder": "1.0",
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "preview": {
+        "type": "image",
+        "src": "preview.svg"
+    },
+    "id": "hero.startup",
+    "name": "Startup Hero",
+    "category": "hero",
+    "description": "Bold landing hero for SaaS startups with a primary call to action.",
+    "tags": [
+        "startup",
+        "saas",
+        "landing"
+    ],
+    "keywords": [
+        "headline",
+        "cta"
+    ],
+    "featured": true,
+    "variables": [
+        {
+            "id": "title",
+            "type": "text",
+            "label": "Headline",
+            "default": "Ship your product faster",
+            "required": true
+        },
+        {
+            "id": "subtitle",
+            "type": "textarea",
+            "label": "Subheadline",
+            "default": "The all-in-one platform for modern teams to build, launch and scale."
+        },
+        {
+            "id": "button_label",
+            "type": "text",
+            "label": "Button label",
+            "default": "Start free trial"
+        },
+        {
+            "id": "button_url",
+            "type": "url",
+            "label": "Button URL",
+            "default": "#"
+        }
+    ]
+}

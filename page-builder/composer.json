@@ -1,0 +1,40 @@
+{
+    "name": "thenguyen/page-builder",
+    "description": "Foundation for a structured, block-based Page Builder. The admin editor is a heavy client; the frontend stays lightweight by rendering a structured (non-HTML) layout tree. Phase 1 ships the plugin skeleton only — registries, manager, facade, permissions and an admin status dashboard.",
+    "version": "0.1.0-alpha.1",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "laravel",
+        "filament",
+        "page-builder",
+        "cms",
+        "tncms"
+    ],
+    "authors": [
+        {
+            "name": "TN CMS"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0",
+        "filament/filament": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Plugins\\PageBuilder\\": "src/"
+        }
+    },
+    "extra": {
+        "tncms": {
+            "plugin": true,
+            "slug": "page-builder"
+        }
+    },
+    "support": {
+        "source": "https://github.com/tncms/page-builder"
+    },
+    "minimum-stability": "alpha",
+    "prefer-stable": true
+}

@@ -1,0 +1,73 @@
+/* Phase 22.1 — Live Builder cross-iframe drag visuals (shell layer). The ghost
+ * follows the pointer in shell-window coordinates; the insertion marker is placed
+ * from the iframe-reported rect plus the iframe screen offset. Both are
+ * pointer-transparent so they never eat the pointerup that ends the drag. */
+
+.pb-live-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483200;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font: 500 12px/1 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.pb-live-drag-ghost__icon {
+  display: inline-flex;
+  font-size: 13px;
+}
+
+.pb-live-drag-ghost__type {
+  opacity: 0.7;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pb-live-drag-marker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483150;
+  pointer-events: none;
+}
+
+/* Before/after: a thin insertion line. */
+.pb-live-drag-marker--line {
+  height: 3px;
+  margin-top: -1px;
+  border-radius: 2px;
+}
+
+.pb-live-drag-marker--line.pb-live-drag-marker--valid {
+  background: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.35);
+}
+
+.pb-live-drag-marker--line.pb-live-drag-marker--invalid {
+  background: #dc2626;
+}
+
+/* Inside a container: a filled outline over the drop region. */
+.pb-live-drag-marker--box {
+  border-radius: 4px;
+}
+
+.pb-live-drag-marker--box.pb-live-drag-marker--valid {
+  border: 2px solid #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.pb-live-drag-marker--box.pb-live-drag-marker--invalid {
+  border: 2px solid #dc2626;
+  background: rgba(220, 38, 38, 0.12);
+}

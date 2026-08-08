@@ -1,0 +1,153 @@
+/*
+ * PB-UI-1 — Page Builder editor design tokens (the ONE source).
+ *
+ * Page Builder-owned, framework-neutral. Every token is namespaced `--pb-ui-`
+ * and scoped to the editor shell roots — never `:root` — so nothing leaks into
+ * the public theme or the admin at large. Both editor bundles (Structure Editor
+ * `.pb-editor-root` and Frontend/Live Builder `.pb-frontend-editor-root`) import
+ * this file; it is never copied per-shell.
+ *
+ * Values intentionally mirror the palette already hardcoded across the editor
+ * CSS so migrating a hardcoded value to a token is byte-for-byte identical (no
+ * visual regression). Legacy ad-hoc tokens (--pb-accent, --pb-surface, …) remain
+ * for now and are documented migration debt.
+ *
+ * Dark mode is token-ready (see the [data-pb-theme="dark"] layer) but this phase
+ * ships light mode only; it is not a full dark-mode subsystem.
+ */
+
+.pb-editor-root,
+.pb-frontend-editor-root {
+  /* Color — surfaces */
+  --pb-ui-color-background: #f8fafc;
+  --pb-ui-color-surface: #ffffff;
+  --pb-ui-color-surface-muted: #f1f5f9;
+  --pb-ui-color-surface-elevated: #ffffff;
+
+  /* Color — borders */
+  --pb-ui-color-border: rgba(0, 0, 0, 0.1);
+  --pb-ui-color-border-strong: #e2e8f0;
+
+  /* Color — text */
+  --pb-ui-color-text: #111827;
+  --pb-ui-color-text-muted: #64748b;
+  --pb-ui-color-text-disabled: #94a3b8;
+
+  /* Color — primary action */
+  --pb-ui-color-primary: #2563eb;
+  --pb-ui-color-primary-hover: #1d4ed8;
+  --pb-ui-color-primary-active: #1e40af;
+  --pb-ui-color-on-primary: #ffffff;
+
+  /* Color — status */
+  --pb-ui-color-success: #16a34a;
+  --pb-ui-color-success-soft: rgba(16, 185, 129, 0.14);
+  --pb-ui-color-warning: #f59e0b;
+  --pb-ui-color-warning-soft: rgba(245, 158, 11, 0.16);
+  --pb-ui-color-danger: #dc2626;
+  --pb-ui-color-danger-hover: #b91c1c;
+  --pb-ui-color-danger-soft: rgba(220, 38, 38, 0.12);
+  --pb-ui-color-info: #0284c7;
+
+  /* Color — interaction */
+  --pb-ui-color-focus-ring: rgba(37, 99, 235, 0.55);
+  --pb-ui-color-selection: rgba(37, 99, 235, 0.14);
+  --pb-ui-color-overlay: rgba(15, 23, 42, 0.55);
+
+  /* Spacing (px scale expressed in rem) */
+  --pb-ui-space-2: 0.125rem;
+  --pb-ui-space-4: 0.25rem;
+  --pb-ui-space-6: 0.375rem;
+  --pb-ui-space-8: 0.5rem;
+  --pb-ui-space-12: 0.75rem;
+  --pb-ui-space-16: 1rem;
+  --pb-ui-space-20: 1.25rem;
+  --pb-ui-space-24: 1.5rem;
+  --pb-ui-space-32: 2rem;
+  --pb-ui-space-40: 2.5rem;
+
+  /* Radius */
+  --pb-ui-radius-sm: 0.25rem;
+  --pb-ui-radius-md: 0.375rem;
+  --pb-ui-radius-lg: 0.6rem;
+  --pb-ui-radius-pill: 999px;
+
+  /* Shadow */
+  --pb-ui-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --pb-ui-shadow-md: 0 2px 8px rgba(15, 23, 42, 0.12);
+  --pb-ui-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.16);
+  --pb-ui-shadow-overlay: 0 16px 48px rgba(15, 23, 42, 0.28);
+
+  /* Typography */
+  --pb-ui-font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --pb-ui-font-size-xs: 0.6875rem;
+  --pb-ui-font-size-sm: 0.8125rem;
+  --pb-ui-font-size-md: 0.875rem;
+  --pb-ui-font-size-lg: 1rem;
+  --pb-ui-font-size-xl: 1.25rem;
+  --pb-ui-font-weight-normal: 400;
+  --pb-ui-font-weight-medium: 500;
+  --pb-ui-font-weight-semibold: 600;
+  --pb-ui-line-height-tight: 1.2;
+  --pb-ui-line-height-normal: 1.5;
+
+  /* Motion */
+  --pb-ui-duration-fast: 120ms;
+  --pb-ui-duration-normal: 200ms;
+  --pb-ui-duration-slow: 320ms;
+  --pb-ui-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --pb-ui-easing-emphasized: cubic-bezier(0.2, 0, 0, 1.2);
+
+  /* Z-index */
+  --pb-ui-z-canvas: 1;
+  --pb-ui-z-overlay: 10;
+  --pb-ui-z-toolbar: 20;
+  --pb-ui-z-dropdown: 30;
+  --pb-ui-z-dialog: 40;
+  --pb-ui-z-toast: 50;
+  --pb-ui-z-drag-preview: 60;
+
+  /* Layout */
+  --pb-ui-topbar-height: 3rem;
+  --pb-ui-sidebar-width: 16rem;
+  --pb-ui-inspector-width: 20rem;
+  --pb-ui-panel-padding: var(--pb-ui-space-16);
+  --pb-ui-control-height: 2rem;
+  --pb-ui-icon-size: 1rem;
+
+  /* Breakpoints — reference tokens for PB-UI-2 responsive work (not applied here). */
+  --pb-ui-bp-desktop: 1200px;
+  --pb-ui-bp-tablet: 900px;
+  --pb-ui-bp-mobile: 600px;
+
+  /* Minimum comfortable touch target (WORK G foundation). */
+  --pb-ui-hit-area: 2.25rem;
+}
+
+/*
+ * Dark-mode-ready token overrides. Inert until an ancestor sets
+ * data-pb-theme="dark"; primitives read tokens only, so they invert cleanly.
+ */
+.pb-editor-root[data-pb-theme="dark"],
+.pb-frontend-editor-root[data-pb-theme="dark"] {
+  --pb-ui-color-background: #0f172a;
+  --pb-ui-color-surface: #1e293b;
+  --pb-ui-color-surface-muted: #172033;
+  --pb-ui-color-surface-elevated: #243349;
+  --pb-ui-color-border: rgba(255, 255, 255, 0.12);
+  --pb-ui-color-border-strong: #334155;
+  --pb-ui-color-text: #f8fafc;
+  --pb-ui-color-text-muted: #94a3b8;
+  --pb-ui-color-text-disabled: #64748b;
+  --pb-ui-color-selection: rgba(59, 130, 246, 0.24);
+  --pb-ui-color-overlay: rgba(2, 6, 23, 0.66);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-editor-root,
+  .pb-frontend-editor-root {
+    --pb-ui-duration-fast: 0ms;
+    --pb-ui-duration-normal: 0ms;
+    --pb-ui-duration-slow: 0ms;
+  }
+}

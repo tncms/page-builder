@@ -1,0 +1,431 @@
+/* Phase 16 — Frontend editor shell chrome.
+ *
+ * The shell is fixed to the viewport so it covers the Filament admin chrome —
+ * the editing experience is the real page in the iframe, not the admin layout.
+ * All classes are namespaced .pb-fe-* to avoid colliding with the admin panel
+ * or the reused .pb-editor-* inspector/navigator styles.
+ */
+
+.pb-frontend-editor-root {
+  min-height: 60vh;
+}
+
+.pb-frontend-editor-fallback {
+  padding: 2rem;
+  color: #475569;
+}
+
+.pb-frontend-editor-fallback__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.pb-fe-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: #eef2f6;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+/* ---- Top bar ---------------------------------------------------------- */
+.pb-fe-topbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0.9rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.pb-fe-topbar__owner {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pb-fe-topbar__title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-fe-topbar__meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pb-fe-topbar__status {
+  font-size: 12px;
+  color: #64748b;
+  margin-left: auto;
+}
+
+.pb-fe-topbar__status.is-dirty {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.pb-fe-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* PB-UI-1A — the .pb-fe-btn* button system was dead (no consumers; the old
+   frontend shell chrome was superseded by the Live Builder). Removed as an
+   obsolete duplicate of the shared .pb-ui-btn primitive. */
+
+/* ---- Device toolbar --------------------------------------------------- */
+.pb-fe-devices {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.pb-fe-device {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #475569;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pb-fe-device--active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.pb-fe-device__label {
+  font-weight: 500;
+}
+
+/* ---- Body / dock / stage --------------------------------------------- */
+.pb-fe-body {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.pb-fe-error {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.pb-fe-dock {
+  width: 260px;
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* PB-UI-1A — .pb-fe-dock__tab* (an underline tab bar) was dead (no consumers; old
+   frontend dock superseded by the Live Builder). Removed as an obsolete duplicate
+   of the shared .pb-ui-tab primitive. The remaining dead .pb-fe-* chrome (shell/
+   topbar/dock/palette) is broader dead code, out of scope for this UI phase. */
+
+.pb-fe-dock__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0.75rem;
+}
+
+.pb-fe-dock__heading {
+  margin: 0.5rem 0 0.4rem;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.pb-fe-dock__hint {
+  margin: 0 0 0.5rem;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.pb-fe-dock__error {
+  margin: 0.5rem 0.75rem 0;
+  padding: 0.4rem 0.6rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.pb-fe-palette {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.pb-fe-palette__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.6rem 0.4rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pb-fe-palette__item:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.pb-fe-palette__icon {
+  font-size: 18px;
+}
+
+.pb-fe-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+}
+
+.pb-fe-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding: 1rem;
+  overflow: auto;
+}
+
+/* HOTFIX — overlay viewport host. Positioned (inline top/left/width/height) over
+ * the iframe's visible rect and clipped, so the box-model / inline overlays inside
+ * it use host-local coordinates and can never bleed under the sidebar or past the
+ * preview. Non-interactive itself; interactive leaves (handles) opt back in. */
+.pb-fe-overlay-viewport {
+  position: fixed;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2147482000;
+}
+
+.pb-fe-canvas__loading {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 12px;
+  z-index: 2;
+}
+
+/* Hotfix — bounded-timeout fallback: a clear message + Retry instead of an
+ * infinite spinner when the editor bridge never initialises. */
+.pb-fe-canvas__loading--error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(153, 27, 27, 0.92);
+  border-radius: 8px;
+}
+
+.pb-fe-canvas__loading-text {
+  margin: 0;
+}
+
+.pb-fe-canvas__retry {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pb-fe-canvas__retry:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.pb-fe-canvas__frame {
+  width: 100%;
+  max-width: 100%;
+  transition: width 0.2s ease;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+}
+
+.pb-fe-canvas__iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: 0;
+  background: #ffffff;
+}
+
+/* ---- Floating inspector ---------------------------------------------- */
+.pb-fe-inspector {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 320px;
+  max-height: calc(100% - 2rem);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+  z-index: 3;
+}
+
+.pb-fe-inspector__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pb-fe-inspector__title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.pb-fe-inspector__toggle {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.pb-fe-inspector.is-collapsed {
+  width: 200px;
+}
+
+.pb-fe-inspector__body {
+  overflow-y: auto;
+  padding: 0.5rem;
+}
+
+/* ---- Phase 19: Box model overlay ------------------------------------- */
+.pb-box-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Regions are non-interactive tinted boxes (margin=amber, padding=green).
+ * Host-local (absolute inside .pb-fe-overlay-viewport). */
+.pb-box-overlay__margin,
+.pb-box-overlay__padding,
+.pb-box-overlay__content {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.pb-box-overlay__margin {
+  background: rgba(246, 173, 85, 0.22);
+  outline: 1px dashed rgba(217, 119, 6, 0.7);
+}
+
+.pb-box-overlay__padding {
+  background: rgba(52, 211, 153, 0.22);
+  outline: 1px dashed rgba(5, 150, 105, 0.7);
+}
+
+.pb-box-overlay__content {
+  background: rgba(59, 130, 246, 0.12);
+  outline: 1px solid rgba(37, 99, 235, 0.6);
+}
+
+.pb-box-overlay__handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  padding: 0;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background: #2563eb;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.4);
+  cursor: grab;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.pb-box-overlay__handle--margin {
+  background: #d97706;
+}
+
+.pb-box-overlay__handle--padding {
+  background: #059669;
+}
+
+.pb-box-overlay__handle.is-dragging {
+  cursor: grabbing;
+  transform: scale(1.25);
+}
+
+.pb-box-overlay__handle--top,
+.pb-box-overlay__handle--bottom {
+  cursor: ns-resize;
+}
+
+.pb-box-overlay__handle--left,
+.pb-box-overlay__handle--right {
+  cursor: ew-resize;
+}
+
+.pb-box-overlay__label {
+  position: absolute;
+  transform: translate(-50%, -140%);
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1.4;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.pb-box-overlay__label--margin {
+  color: #fde68a;
+}
+
+.pb-box-overlay__label--padding {
+  color: #a7f3d0;
+}

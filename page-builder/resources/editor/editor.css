@@ -1,0 +1,1335 @@
+/*
+ * Page Builder editor shell styles (Phase 9).
+ * Self-contained: prefixed with .pb-editor and independent of the public theme.
+ */
+
+.pb-editor-root {
+  --pb-border: rgba(0, 0, 0, 0.1);
+  --pb-surface: #fff;
+  --pb-muted: rgba(0, 0, 0, 0.55);
+  --pb-accent: #2563eb;
+  --pb-radius: 0.6rem;
+}
+
+.pb-editor-fallback {
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  color: var(--pb-muted);
+}
+.pb-editor-fallback__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: inherit;
+}
+.pb-editor-fallback__text {
+  margin-top: 0.5rem;
+}
+
+.pb-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius);
+  overflow: hidden;
+  background: var(--pb-surface);
+  color: #111827;
+}
+
+/* Top bar ---------------------------------------------------------------- */
+.pb-editor-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--pb-border);
+  background: var(--pb-surface);
+}
+.pb-editor-topbar__owner {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pb-editor-topbar__title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.pb-editor-topbar__meta {
+  font-size: 0.78rem;
+  color: var(--pb-muted);
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.pb-editor-topbar__status {
+  margin-left: auto;
+}
+.pb-editor-topbar__actions {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+/* Buttons ---------------------------------------------------------------- */
+/* Structure shell button theme (PB-UI-1A). The shared .pb-ui-btn takes the
+   Structure look inside this shell; resting values are byte-identical to the
+   former .pb-editor-btn. Hover/active are suppressed to match legacy (which had
+   none); focus-visible ring + tone hovers come from the primitive. */
+.pb-editor {
+  --pb-ui-btn-min-height: 0;
+  --pb-ui-btn-padding: 0.4rem 0.85rem;
+  --pb-ui-btn-radius: 0.5rem;
+  --pb-ui-btn-font-size: 0.85rem;
+  --pb-ui-btn-font-weight: var(--pb-ui-font-weight-semibold);
+  --pb-ui-btn-gap: var(--pb-ui-space-4);
+  --pb-ui-btn-border-color: var(--pb-ui-color-border);
+  --pb-ui-btn-bg: var(--pb-ui-color-surface);
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-surface);
+  --pb-ui-btn-bg-active: var(--pb-ui-color-surface);
+}
+
+/* LEGACY_COMPATIBILITY_THEME — token-only skin layered on .pb-ui-btn for the
+   pre-existing inspector/field consumers that still carry .pb-editor-btn. It
+   holds NO structural behavior (the box is .pb-ui-btn) and mirrors the Structure
+   resting values so it renders identically inside either shell. Do NOT add to new
+   consumers — use <PbButton> instead. */
+.pb-editor-btn {
+  --pb-ui-btn-min-height: 0;
+  --pb-ui-btn-padding: 0.4rem 0.85rem;
+  --pb-ui-btn-radius: 0.5rem;
+  --pb-ui-btn-font-size: 0.85rem;
+  --pb-ui-btn-font-weight: var(--pb-ui-font-weight-semibold);
+  --pb-ui-btn-border-color: var(--pb-ui-color-border);
+  --pb-ui-btn-bg: var(--pb-ui-color-surface);
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-surface);
+  --pb-ui-btn-bg-active: var(--pb-ui-color-surface);
+}
+.pb-editor-btn--primary,
+.pb-editor-btn--insert {
+  --pb-ui-btn-bg: var(--pb-ui-color-primary);
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-primary-hover);
+  --pb-ui-btn-bg-active: var(--pb-ui-color-primary-active);
+  --pb-ui-btn-border-color: var(--pb-ui-color-primary);
+  --pb-ui-btn-border-color-hover: var(--pb-ui-color-primary-hover);
+  --pb-ui-btn-color: var(--pb-ui-color-on-primary);
+}
+
+/* Badges — Structure status pill themed onto the shared .pb-ui-badge primitive
+   (PB-UI-1A). The box (radius / inline-flex / nowrap) comes from .pb-ui-badge;
+   these overrides mirror the former .pb-editor-badge metrics and tints exactly. */
+.pb-editor-status-badge {
+  --pb-ui-badge-bg: transparent;
+  --pb-ui-badge-color: inherit;
+  --pb-ui-badge-padding-y: 0.1rem;
+  --pb-ui-badge-padding-x: 0.55rem;
+  --pb-ui-badge-font-size: 0.72rem;
+  --pb-ui-badge-font-weight: 600;
+  border: 1px solid var(--pb-ui-color-border);
+}
+.pb-editor-status-badge--on-ok { --pb-ui-badge-bg: var(--pb-ui-color-success-soft); }
+.pb-editor-status-badge--on-warn { --pb-ui-badge-bg: var(--pb-ui-color-warning-soft); }
+
+/* Body / 3-column layout ------------------------------------------------- */
+.pb-editor-body {
+  display: grid;
+  grid-template-columns: 240px 1fr 280px;
+  min-height: 0;
+  flex: 1;
+}
+.pb-editor-panel {
+  padding: 0.75rem;
+  overflow: auto;
+}
+.pb-editor-panel--left { border-right: 1px solid var(--pb-border); }
+.pb-editor-panel--right { border-left: 1px solid var(--pb-border); }
+
+.pb-editor-panel__tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+.pb-editor-panel__tabs button {
+  flex: 1;
+  border: 1px solid var(--pb-border);
+  background: transparent;
+  border-radius: 0.45rem;
+  padding: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pb-editor-panel__tabs button.is-active {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: var(--pb-accent);
+}
+.pb-editor-count {
+  opacity: 0.55;
+  font-weight: 500;
+}
+.pb-editor-panel__heading {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pb-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* Left-panel view switch (Insert / Navigator) -------------------------- */
+.pb-editor-panel__views {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--pb-border);
+}
+.pb-editor-panel__views button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  border-radius: 0.45rem;
+  padding: 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pb-muted);
+  cursor: pointer;
+}
+.pb-editor-panel__views button.is-active {
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--pb-accent);
+}
+
+/* Navigator panel (Phase 15) ------------------------------------------ */
+.pb-editor-navigator { display: flex; flex-direction: column; gap: 0.5rem; }
+.pb-editor-navigator__input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+}
+.pb-editor-navigator__empty {
+  color: var(--pb-muted);
+  font-size: 0.78rem;
+  padding: 0.5rem 0.25rem;
+}
+.pb-editor-navigator__tree,
+.pb-editor-navigator-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pb-editor-navigator-children { padding-left: 0.75rem; border-left: 1px solid var(--pb-border); margin-left: 0.35rem; }
+
+.pb-editor-navigator-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.3rem;
+  border-radius: 0.35rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  user-select: none;
+}
+.pb-editor-navigator-row:hover,
+.pb-editor-navigator-row.is-hovered { background: rgba(37, 99, 235, 0.07); }
+.pb-editor-navigator-row.is-selected {
+  background: rgba(37, 99, 235, 0.14);
+  box-shadow: inset 2px 0 0 var(--pb-accent);
+}
+/* Navigator v2 keyboard focus ring (Phase 26.3, Part 17) — a visible, non-colour
+   focus cue distinct from selection, so keyboard users always see the active row. */
+.pb-editor-navigator-row.is-focused {
+  outline: 2px solid var(--pb-accent);
+  outline-offset: -2px;
+}
+.pb-editor-navigator-row.is-disabled .pb-editor-navigator-label { opacity: 0.5; text-decoration: line-through; }
+.pb-editor-navigator-flag--locked { text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+
+.pb-editor-navigator-toggle {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  line-height: 1rem;
+  border: 0;
+  background: transparent;
+  color: var(--pb-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0;
+}
+.pb-editor-navigator-toggle--leaf { cursor: default; }
+.pb-editor-navigator-glyph { flex: 0 0 auto; color: var(--pb-muted); font-size: 0.8rem; }
+.pb-editor-navigator-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.pb-editor-navigator-type { flex: 0 0 auto; color: var(--pb-muted); font-size: 0.66rem; }
+/* Phase 24.2 §14 — staged (unapplied) component marker in the navigator. */
+.pb-editor-navigator-staged { flex: 0 0 auto; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: #f59e0b; }
+.pb-editor-navigator-flag {
+  flex: 0 0 auto;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.16);
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+}
+.pb-editor-navigator-locate,
+.pb-editor-navigator-menu-btn {
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--pb-muted);
+  cursor: pointer;
+  opacity: 0;
+  font-size: 0.75rem;
+  padding: 0 0.1rem;
+}
+.pb-editor-navigator-row:hover .pb-editor-navigator-locate,
+.pb-editor-navigator-row:hover .pb-editor-navigator-menu-btn,
+.pb-editor-navigator-row.is-selected .pb-editor-navigator-locate,
+.pb-editor-navigator-row.is-selected .pb-editor-navigator-menu-btn { opacity: 1; }
+
+.pb-editor-navigator-menu {
+  position: absolute;
+  right: 0.25rem;
+  top: 100%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+  background: #fff;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.4rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  padding: 0.2rem;
+}
+.pb-editor-navigator-menu button {
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.pb-editor-navigator-menu button:hover { background: rgba(37, 99, 235, 0.1); }
+.pb-editor-navigator-menu__danger { color: #dc2626; }
+.pb-editor-navigator-menu__danger:hover { background: rgba(220, 38, 38, 0.12) !important; }
+
+/* Structural insertion picker (Increment 6) --------------------------- */
+.pb-editor-navigator-picker {
+  position: absolute;
+  right: 0.25rem;
+  top: 100%;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  min-width: 10rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.4rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  padding: 0.2rem;
+}
+.pb-editor-navigator-picker__title {
+  margin: 0.1rem 0.35rem 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pb-muted, #64748b);
+}
+.pb-editor-navigator-picker__empty {
+  margin: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--pb-muted, #64748b);
+}
+.pb-editor-navigator-picker__item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0.3rem 0.45rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.pb-editor-navigator-picker__item:hover,
+.pb-editor-navigator-picker__item:focus-visible { background: rgba(37, 99, 235, 0.1); }
+.pb-editor-navigator-picker__type { font-size: 0.65rem; color: var(--pb-muted, #94a3b8); }
+
+/* Breadcrumb (Phase 15) ----------------------------------------------- */
+.pb-editor-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.35rem 0.1rem;
+  font-size: 0.76rem;
+}
+.pb-editor-breadcrumb__sep { color: var(--pb-muted); }
+.pb-editor-breadcrumb__chip {
+  border: 1px solid var(--pb-border);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--pb-text, #0f172a);
+  cursor: pointer;
+}
+.pb-editor-breadcrumb__chip:hover { border-color: var(--pb-accent); color: var(--pb-accent); }
+.pb-editor-breadcrumb__chip.is-current {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: var(--pb-accent);
+  color: var(--pb-accent);
+}
+.pb-editor-panel__note {
+  font-size: 0.82rem;
+  color: var(--pb-muted);
+}
+
+.pb-editor-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+.pb-editor-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.82rem;
+}
+.pb-editor-list__type,
+.pb-editor-outline__id { font-size: 0.7rem; color: var(--pb-muted); }
+
+/* Palette insert (Phase 14.2) ----------------------------------------- */
+.pb-editor-list__item--draggable,
+.pb-editor-list__item--draggable * {
+  user-select: none;           /* never select the label text while dragging */
+  -webkit-user-select: none;
+}
+.pb-editor-list__item--draggable {
+  cursor: grab;
+  touch-action: none;          /* pointer events unify mouse/touch */
+}
+.pb-editor-list__item--draggable:active { cursor: grabbing; }
+.pb-editor-list__label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pb-editor-list__add {
+  flex: 0 0 auto;
+  border: 1px solid var(--pb-accent);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--pb-accent);
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pb-editor-list__add:hover { background: var(--pb-accent); color: #fff; }
+/* Palette command error — themed onto .pb-ui-notice--solid (PB-UI-1A); box + red
+   text come from the primitive, metrics/fill preserved via the notice tokens. */
+.pb-editor-palette-error {
+  --pb-ui-notice-bg: rgba(220, 38, 38, 0.1);
+  --pb-ui-notice-padding: 0.4rem 0.55rem;
+  --pb-ui-notice-radius: 0.4rem;
+  --pb-ui-notice-font-size: 0.75rem;
+  margin: 0 0 0.5rem;
+}
+.pb-editor-visual-dropzone {
+  position: absolute;
+  inset: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 2px dashed var(--pb-border);
+  border-radius: 0.6rem;
+  color: var(--pb-muted);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+.pb-editor-visual-dropzone.is-active {
+  border-color: var(--pb-accent);
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--pb-accent);
+}
+
+/* Canvas ----------------------------------------------------------------- */
+.pb-editor-canvas { padding: 1rem; overflow: auto; }
+.pb-editor-canvas__header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.pb-editor-canvas__hint { font-weight: 400; color: var(--pb-muted); }
+
+/* Canvas node tree (Phase 10, read-only + selectable) ------------------- */
+.pb-editor-canvas__tree { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.pb-editor-section-node,
+.pb-editor-block-node {
+  position: relative;
+  border: 1px solid var(--pb-border);
+  border-radius: var(--pb-radius);
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.pb-editor-section-node { background: rgba(37, 99, 235, 0.03); }
+.pb-editor-block-node { background: var(--pb-surface); }
+
+.pb-editor-section-node:hover,
+.pb-editor-block-node:hover { border-color: rgba(37, 99, 235, 0.45); }
+
+.pb-editor-node-selected {
+  border-color: var(--pb-accent) !important;
+  box-shadow: 0 0 0 1px var(--pb-accent) inset;
+}
+.pb-editor-node-hovered { border-color: rgba(37, 99, 235, 0.55); }
+.pb-editor-node-collapsed > .pb-editor-node-meta .pb-editor-node-collapsed-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--pb-muted);
+  border: 1px solid var(--pb-border);
+  border-radius: 999px;
+  padding: 0 0.4rem;
+}
+
+/* Node hover toolbar (Phase 11) --------------------------------------- */
+.pb-editor-node-toolbar {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.1rem;
+  background: var(--pb-surface);
+  border: 1px solid var(--pb-border);
+  border-radius: 0.4rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  z-index: 2;
+}
+.pb-editor-node-action {
+  border: 0;
+  background: transparent;
+  color: #374151;
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+.pb-editor-node-action:hover { background: rgba(37, 99, 235, 0.12); }
+.pb-editor-node-action--danger { color: #b91c1c; }
+.pb-editor-node-action--danger:hover { background: rgba(220, 38, 38, 0.12); }
+
+/* Context menu (Phase 11) --------------------------------------------- */
+.pb-editor-context-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 150px;
+  background: var(--pb-surface);
+  border: 1px solid var(--pb-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+}
+.pb-editor-context-menu__item {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  border-radius: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.pb-editor-context-menu__item:hover { background: rgba(37, 99, 235, 0.1); }
+.pb-editor-context-menu__item--danger { color: #b91c1c; }
+.pb-editor-context-menu__item--danger:hover { background: rgba(220, 38, 38, 0.1); }
+
+/* Canvas area + mode switch (Phase 12) -------------------------------- */
+.pb-editor-canvas-area {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.pb-editor-canvas-modes {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem 0;
+}
+.pb-editor-canvas-modes button {
+  border: 1px solid var(--pb-border);
+  background: transparent;
+  border-radius: 0.45rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pb-editor-canvas-modes button.is-active {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: var(--pb-accent);
+}
+
+/* Visual canvas (rendered HTML preview) ------------------------------- */
+.pb-editor-visual-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem;
+}
+.pb-editor-visual-html { background: #fff; }
+.pb-editor-preview-loading {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  z-index: 3;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--pb-accent);
+}
+/* Preview error — themed onto .pb-ui-notice--solid (PB-UI-1A). */
+.pb-editor-preview-error {
+  --pb-ui-notice-bg: rgba(220, 38, 38, 0.08);
+  --pb-ui-notice-padding: 0.5rem 0.75rem;
+  --pb-ui-notice-radius: 0.4rem;
+  --pb-ui-notice-font-size: 0.82rem;
+  margin: 0 0 0.75rem;
+}
+
+/* Marker boxes drawn over the rendered nodes (editor-only). */
+.pb-editor-visual-box { position: relative; cursor: pointer; }
+.pb-editor-visual-box--hovered { outline: 2px dashed rgba(37, 99, 235, 0.5); outline-offset: -2px; }
+.pb-editor-visual-box--selected { outline: 2px solid var(--pb-accent); outline-offset: -2px; }
+.pb-editor-visual-box--selected::before,
+.pb-editor-visual-box--hovered::before {
+  content: attr(data-pb-component-kind) " · " attr(data-pb-component-type);
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  transform: translateY(-100%);
+  background: var(--pb-accent);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.4;
+  padding: 0 0.4rem;
+  border-radius: 0.3rem 0.3rem 0 0;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.pb-editor-visual-box--hovered:not(.pb-editor-visual-box--selected)::before {
+  background: rgba(37, 99, 235, 0.75);
+}
+.pb-editor-visual-label { pointer-events: none; }
+
+/* Geometry overlay layer (Phase 13) ----------------------------------- */
+/* Pinned to the canvas viewport; positions come from GeometryManager rects.
+   Pointer-transparent so canvas clicks reach the rendered markers — only the
+   toolbar opts back into pointer events. */
+.pb-overlay-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+.pb-overlay-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.pb-overlay-box--selected { outline: 2px solid var(--pb-accent); outline-offset: -1px; }
+.pb-overlay-box--hover {
+  outline: 2px dashed rgba(37, 99, 235, 0.5);
+  outline-offset: -1px;
+}
+.pb-overlay-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 6;
+  transform-origin: top left;
+  margin-top: -1.15rem;
+  padding: 0 0.4rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #fff;
+  white-space: nowrap;
+  border-radius: 0.3rem 0.3rem 0 0;
+  pointer-events: none;
+}
+.pb-overlay-label--selected { background: var(--pb-accent); }
+.pb-overlay-label--hover { background: rgba(37, 99, 235, 0.75); }
+.pb-overlay-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 7;
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.15rem;
+  margin-top: -1.9rem;
+  transform-origin: top right;
+  translate: -100% 0;
+  background: #fff;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.4rem;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.14);
+  pointer-events: auto;
+}
+.pb-overlay-toolbar button {
+  border: 0;
+  background: transparent;
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+  color: #334155;
+}
+.pb-overlay-toolbar button:hover { background: rgba(37, 99, 235, 0.12); }
+.pb-overlay-toolbar__danger { color: #b91c1c; }
+.pb-overlay-toolbar__danger:hover { background: rgba(220, 38, 38, 0.12) !important; }
+.pb-overlay-toolbar__handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  cursor: grab;
+  touch-action: none; /* pointer events unify mouse/touch; suppress touch scroll */
+  color: #fff !important;
+  background: var(--pb-accent) !important;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem !important;
+}
+.pb-overlay-toolbar__handle:hover { background: #1d4ed8 !important; }
+.pb-overlay-toolbar__handle:active { cursor: grabbing; }
+.pb-overlay-toolbar__handle-grip { font-size: 0.9rem; line-height: 1; }
+.pb-overlay-toolbar__handle-text { font-size: 0.68rem; letter-spacing: 0.02em; }
+
+/* Drag layer (Phase 14) ----------------------------------------------- */
+/* Sits over the canvas viewport for the insertion marker (viewport-local
+   coordinates, like the overlay layer). Inert until a drag is active. The ghost
+   is fixed to the window and lives outside this clipped layer. */
+.pb-drag-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 8;
+}
+.pb-drag-layer--active {
+  /* Suppress text selection anywhere on the canvas while dragging. */
+  user-select: none;
+}
+.pb-drag-marker {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.pb-drag-marker--line {
+  height: 0;
+  border-top: 3px solid var(--pb-accent);
+  border-radius: 2px;
+  margin-top: -1.5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+}
+.pb-drag-marker--line::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pb-accent);
+}
+.pb-drag-marker--box {
+  border: 2px solid var(--pb-accent);
+  border-radius: 0.3rem;
+  background: rgba(37, 99, 235, 0.1);
+}
+.pb-drag-marker--invalid { border-color: #dc2626; }
+.pb-drag-marker--invalid.pb-drag-marker--line { border-top-color: #dc2626; }
+.pb-drag-marker--invalid.pb-drag-marker--line::before { background: #dc2626; }
+.pb-drag-marker--invalid.pb-drag-marker--box { background: rgba(220, 38, 38, 0.1); }
+
+.pb-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 18rem;
+  padding: 0.3rem 0.55rem;
+  background: #fff;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.4rem;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22);
+  opacity: 0.9;
+  pointer-events: none;
+  font-size: 0.76rem;
+  will-change: transform;
+}
+.pb-drag-ghost__icon { display: inline-flex; width: 1rem; height: 1rem; color: var(--pb-accent); }
+.pb-drag-ghost__icon :deep(svg) { width: 100%; height: 100%; }
+.pb-drag-ghost__label { font-weight: 700; color: #0f172a; }
+.pb-drag-ghost__type { color: var(--pb-muted); font-size: 0.68rem; }
+
+/* Canvas header extras + panel actions -------------------------------- */
+.pb-editor-command-loading { font-weight: 600; color: var(--pb-accent); }
+.pb-editor-shortcut-hint { margin-left: auto; font-weight: 400; color: var(--pb-muted); font-size: 0.72rem; }
+.pb-editor-panel__actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0 0 0.75rem; }
+/* LEGACY_COMPATIBILITY_THEME — outline-danger skin (transparent-over-surface fill,
+   danger border + text) for legacy .pb-editor-btn consumers. The semantic form is
+   <PbButton tone="danger" emphasis="outline">. */
+.pb-editor-btn--danger {
+  --pb-ui-btn-border-color: rgba(220, 38, 38, 0.4);
+  --pb-ui-btn-color: var(--pb-ui-color-danger-hover);
+}
+
+/* Disabled nodes are dimmed (display-only; no behavior change in Phase 10). */
+.pb-editor-node-disabled { opacity: 0.55; }
+
+.pb-editor-node-header { display: flex; align-items: center; gap: 0.5rem; }
+.pb-editor-node-kind {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--pb-muted);
+  border: 1px solid var(--pb-border);
+  border-radius: 0.35rem;
+  padding: 0.05rem 0.35rem;
+}
+.pb-editor-node-type { font-weight: 600; }
+.pb-editor-node-flag {
+  margin-left: auto;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.16);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.pb-editor-node-meta {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.3rem;
+  font-size: 0.7rem;
+  color: var(--pb-muted);
+}
+.pb-editor-node-meta code { font-size: 0.7rem; }
+
+/* Nested children are indented and rail-lined by their depth. */
+.pb-editor-node-children {
+  margin-top: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--pb-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Misc ------------------------------------------------------------------- */
+.pb-editor-empty {
+  border: 1px dashed var(--pb-border);
+  border-radius: var(--pb-radius);
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--pb-muted);
+}
+.pb-editor-empty__title { font-weight: 600; color: #111827; }
+.pb-editor-empty__text { margin-top: 0.4rem; font-size: 0.85rem; }
+.pb-editor-props { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 0.75rem; font-size: 0.85rem; margin: 0 0 0.75rem; }
+.pb-editor-props dt { color: var(--pb-muted); }
+.pb-editor-props dd { margin: 0; }
+
+/* Property Inspector (Phase 15) --------------------------------------- */
+.pb-inspector__head { margin-bottom: 0.6rem; }
+.pb-inspector__title { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.pb-inspector__label { font-size: 0.9rem; font-weight: 700; }
+.pb-inspector__status { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.66rem; color: var(--pb-muted); white-space: nowrap; }
+.pb-inspector__status[data-state^='Unsaved Changes'] { color: #b45309; }
+.pb-inspector__status[data-state='Applying…'] { color: var(--pb-accent); }
+.pb-inspector__status[data-state='Applied'] { color: #16a34a; }
+.pb-inspector__status[data-state='Apply Failed'] { color: #dc2626; }
+.pb-inspector__status[data-state='Validation Error'] { color: #dc2626; }
+.pb-inspector__status-dot { width: 0.4rem; height: 0.4rem; border-radius: 50%; background: currentColor; }
+.pb-inspector__meta { display: flex; gap: 0.4rem; margin-top: 0.15rem; }
+.pb-inspector__meta code { font-size: 0.66rem; color: var(--pb-muted); }
+.pb-inspector__id { overflow: hidden; text-overflow: ellipsis; max-width: 10rem; white-space: nowrap; }
+
+/* LEGACY_COMPATIBILITY_THEME — inspector tab bar themed onto .pb-ui-tabs/.pb-ui-tab
+   (underline archetype). No structural behavior: the box, focus ring, and active
+   state (driven by aria-selected) come from the primitive; these only re-tint the
+   component tokens to the inspector's values. Do NOT use on new consumers. */
+.pb-inspector-tabs__bar {
+  --pb-ui-tabs-gap: 0.2rem;
+  margin-bottom: 0.6rem;
+}
+.pb-inspector-tabs__bar button {
+  --pb-ui-tab-padding: 0.3rem 0.5rem;
+  --pb-ui-tab-font-size: 0.75rem;
+  --pb-ui-tab-font-weight: var(--pb-ui-font-weight-semibold);
+  --pb-ui-tab-color: var(--pb-muted);
+  --pb-ui-tab-color-hover: var(--pb-muted);
+  --pb-ui-tab-color-active: var(--pb-accent);
+}
+
+.pb-inspector-field { margin-bottom: 0.75rem; }
+.pb-inspector-field__head { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; margin-bottom: 0.2rem; }
+.pb-inspector-field__label { font-size: 0.76rem; font-weight: 600; }
+.pb-inspector-field__req { color: #dc2626; }
+.pb-inspector-field__badge {
+  font-size: 0.6rem;
+  color: var(--pb-accent);
+  background: rgba(37, 99, 235, 0.1);
+  border-radius: 0.25rem;
+  padding: 0 0.3rem;
+  white-space: nowrap;
+}
+.pb-inspector-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+}
+.pb-inspector-input:focus { outline: none; border-color: var(--pb-accent); }
+.pb-inspector-textarea { resize: vertical; }
+.pb-inspector-hint { margin: 0.2rem 0 0; font-size: 0.68rem; color: var(--pb-muted); }
+.pb-inspector-warn { margin: 0.2rem 0 0; font-size: 0.68rem; color: #b45309; }
+
+/* Component presets (Phase 23) */
+.pb-inspector-presets { margin: 0.5rem 0 0.75rem; }
+.pb-inspector-presets__label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+.pb-inspector-presets__row { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.pb-inspector-presets__item {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #1e293b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color .12s ease, border-color .12s ease;
+}
+.pb-inspector-presets__item:hover { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+
+/* Phase 24.2 — inspector is a flex column: scrollable body + sticky action bar. */
+.pb-inspector {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+.pb-inspector__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Sticky action footer (Cancel / Reset / Apply) — always visible (§5). */
+.pb-inspector__apply-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.6rem 0.9rem;
+  background: var(--pb-panel, #fff);
+  border-top: 1px solid var(--pb-border, #e2e8f0);
+  box-shadow: 0 -2px 8px rgba(15, 23, 42, 0.06);
+}
+.pb-inspector__apply-btn { flex: 1; justify-content: center; }
+.pb-inspector__apply-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Header dirty dot + status. */
+.pb-inspector__title { display: inline-flex; align-items: center; gap: 0.35rem; }
+.pb-inspector__title-dot { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #f59e0b; }
+
+/* Field search (§11). */
+.pb-inspector-search { padding: 0 0 0.5rem; }
+.pb-inspector-search__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.pb-inspector-search__control { display: flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.5rem; border: 1px solid var(--pb-border); border-radius: 0.4rem; background: var(--pb-panel, #fff); }
+.pb-inspector-search__icon { color: var(--pb-muted); font-size: 0.85rem; }
+.pb-inspector-search__input { flex: 1; border: 0; outline: 0; background: none; font-size: 0.78rem; color: inherit; }
+.pb-inspector-search__clear { border: 0; background: none; color: var(--pb-muted); cursor: pointer; font-size: 1rem; line-height: 1; }
+
+/* Field-level dirty UX (§3/§8). */
+.pb-inspector-field__dirty-dot { display: inline-block; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--pb-accent, #2563eb); margin-right: 0.15rem; vertical-align: middle; }
+.pb-inspector-field__modified-label { margin-left: 0.35rem; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: var(--pb-accent, #2563eb); }
+.pb-inspector-field--dirty > .pb-inspector-field__head .pb-inspector-field__label { font-weight: 600; }
+.pb-inspector-field__revert { margin-left: auto; border: 0; background: none; color: var(--pb-muted); cursor: pointer; font-size: 0.85rem; line-height: 1; padding: 0 0.2rem; }
+.pb-inspector-field__revert:hover, .pb-inspector-field__revert:focus-visible { color: var(--pb-accent, #2563eb); }
+.pb-inspector-field__head { display: flex; align-items: center; gap: 0.3rem; }
+
+/* Tab / group dirty dots (§9/§10). */
+.pb-inspector-tabs__dirty-dot, .pb-inspector-group__dirty-dot { display: inline-block; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--pb-accent, #2563eb); margin-left: 0.3rem; vertical-align: middle; }
+
+/* Collapsible groups (§12). */
+.pb-inspector-group__legend { padding: 0; width: 100%; }
+.pb-inspector-group__toggle { display: flex; align-items: center; gap: 0.35rem; width: 100%; border: 0; background: none; cursor: pointer; padding: 0; color: inherit; }
+.pb-inspector-group__caret { transition: transform 0.12s ease; font-size: 0.7rem; color: var(--pb-muted); }
+.pb-inspector-group__caret.is-open { transform: rotate(90deg); }
+.pb-inspector-group__body { padding-top: 0.5rem; }
+
+/* Active preset + switch/reset dialog error line. */
+.pb-inspector-presets__item.is-active { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; font-weight: 600; }
+.pb-inspector-dialog__error { margin: 0 0 0.6rem; font-size: 0.72rem; color: #dc2626; }
+
+/* Unsaved-changes dialog when switching components. */
+.pb-inspector-dialog {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.35);
+}
+.pb-inspector-dialog__box {
+  width: 100%;
+  max-width: 20rem;
+  padding: 1rem;
+  border-radius: 0.6rem;
+  background: var(--pb-panel, #fff);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+}
+.pb-inspector-dialog__title { margin: 0 0 0.75rem; font-size: 0.85rem; font-weight: 600; }
+.pb-inspector-dialog__actions { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-dialog__actions .pb-editor-btn { justify-content: center; }
+
+.pb-inspector-toggle { display: inline-flex; cursor: pointer; }
+.pb-inspector-toggle input { position: absolute; opacity: 0; }
+.pb-inspector-toggle__track {
+  width: 2.2rem;
+  height: 1.2rem;
+  border-radius: 999px;
+  background: var(--pb-border);
+  position: relative;
+  transition: background 0.15s;
+}
+.pb-inspector-toggle__track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.2rem - 4px);
+  height: calc(1.2rem - 4px);
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.pb-inspector-toggle input:checked + .pb-inspector-toggle__track { background: var(--pb-accent); }
+.pb-inspector-toggle input:checked + .pb-inspector-toggle__track::after { transform: translateX(1rem); }
+
+.pb-inspector-color { display: flex; gap: 0.4rem; align-items: center; }
+.pb-inspector-color__swatch { width: 2rem; height: 2rem; padding: 0; border: 1px solid var(--pb-border); border-radius: 0.4rem; background: none; cursor: pointer; }
+
+.pb-inspector-spacing { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.pb-inspector-spacing__side, .pb-inspector-typography__row { display: flex; flex-direction: column; gap: 0.15rem; }
+.pb-inspector-spacing__side span, .pb-inspector-typography__row span { font-size: 0.66rem; color: var(--pb-muted); text-transform: capitalize; }
+.pb-inspector-typography { display: flex; flex-direction: column; gap: 0.4rem; }
+
+/* Phase 26.5 — advanced editors --------------------------------------- */
+/* Shared small icon button (reset / clear / link toggle). */
+.pb-inspector-iconbtn {
+  flex: none;
+  border: 1px solid var(--pb-border);
+  background: none;
+  color: var(--pb-muted);
+  border-radius: 0.35rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+.pb-inspector-iconbtn:hover { color: var(--pb-accent); border-color: var(--pb-accent); }
+
+/* Color editor */
+.pb-inspector-color-editor { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-color__opacity { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.4rem; }
+.pb-inspector-color__opacity > span { font-size: 0.66rem; color: var(--pb-muted); }
+.pb-inspector-color__opacity output { font-size: 0.66rem; color: var(--pb-muted); min-width: 2.4rem; text-align: right; }
+.pb-inspector-color__recent { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.pb-inspector-color__recent-swatch {
+  width: 1.1rem; height: 1.1rem; padding: 0; border-radius: 0.25rem;
+  border: 1px solid var(--pb-border); cursor: pointer;
+}
+
+/* Spacing editor — link toggle + grid */
+.pb-inspector-spacing-editor { display: grid; grid-template-columns: auto 1fr; gap: 0.4rem; align-items: start; }
+.pb-inspector-spacing__link.is-linked { color: var(--pb-accent); border-color: var(--pb-accent); }
+
+/* Border editor */
+.pb-inspector-border { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-border__row { display: flex; flex-direction: column; gap: 0.15rem; }
+.pb-inspector-border__row > span { font-size: 0.66rem; color: var(--pb-muted); text-transform: capitalize; }
+
+/* Background editor */
+.pb-inspector-background { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-background__row { display: flex; flex-direction: column; gap: 0.15rem; }
+.pb-inspector-background__label { font-size: 0.66rem; color: var(--pb-muted); }
+
+/* Link editor */
+.pb-inspector-link { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-link__toggle { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--pb-muted); }
+
+/* Media editor */
+.pb-inspector-media { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-media__preview {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--pb-border); border-radius: 0.4rem;
+  min-height: 4rem; overflow: hidden; background: var(--pb-border);
+}
+.pb-inspector-media__preview img { max-width: 100%; max-height: 8rem; display: block; }
+.pb-inspector-media__noimg { font-size: 0.7rem; color: var(--pb-muted); padding: 1rem; }
+.pb-inspector-media__actions { display: flex; gap: 0.4rem; }
+.pb-inspector-media__alt { display: flex; flex-direction: column; gap: 0.15rem; }
+.pb-inspector-media__alt > span { font-size: 0.66rem; color: var(--pb-muted); }
+
+/* Phase 26.6 — responsive property wrapper */
+.pb-inspector-responsive-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.pb-inspector-responsive-field__bar { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.pb-inspector-responsive-field__tabs { display: inline-flex; gap: 0.15rem; padding: 0.1rem; border: 1px solid var(--pb-border); border-radius: 0.4rem; }
+.pb-inspector-responsive-field__tab { position: relative; border: 0; background: none; color: var(--pb-muted); border-radius: 0.3rem; padding: 0.1rem 0.4rem; cursor: pointer; font-size: 0.8rem; line-height: 1.3; }
+.pb-inspector-responsive-field__tab:hover { color: var(--pb-accent); }
+.pb-inspector-responsive-field__tab.is-active { background: var(--pb-accent); color: #fff; }
+.pb-inspector-responsive-field__dot { position: absolute; top: 1px; right: 1px; width: 0.35rem; height: 0.35rem; border-radius: 50%; background: var(--pb-accent); }
+.pb-inspector-responsive-field__tab.is-active .pb-inspector-responsive-field__dot { background: #fff; }
+
+/* Phase 26.7 — design token picker */
+.pb-token-picker { display: flex; flex-direction: column; gap: 0.5rem; }
+.pb-token-picker__group { display: flex; flex-direction: column; gap: 0.25rem; }
+.pb-token-picker__group-label { font-size: 0.66rem; font-weight: 700; color: var(--pb-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.pb-token-picker__list { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+.pb-token-picker__item { display: inline-flex; align-items: center; gap: 0.3rem; border: 1px solid var(--pb-border); background: none; color: var(--pb-text, inherit); border-radius: 0.35rem; padding: 0.15rem 0.4rem; cursor: pointer; font-size: 0.72rem; }
+.pb-token-picker__item:hover { border-color: var(--pb-accent); color: var(--pb-accent); }
+.pb-token-picker__item.is-active { border-color: var(--pb-accent); background: var(--pb-accent); color: #fff; }
+.pb-token-picker__swatch { width: 0.85rem; height: 0.85rem; border-radius: 0.2rem; border: 1px solid rgba(0,0,0,.15); flex: none; }
+.pb-token-picker__clear { align-self: flex-start; border: 0; background: none; color: var(--pb-muted); font-size: 0.7rem; cursor: pointer; text-decoration: underline; padding: 0; }
+.pb-token-picker__clear:hover { color: var(--pb-accent); }
+
+/* Phase 26.9 — style-bound field (token binding + source indicator) */
+.pb-style-bound { display: flex; flex-direction: column; gap: 0.35rem; }
+.pb-style-bound__bar { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.pb-style-bound__source { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--pb-muted); border: 1px solid var(--pb-border); border-radius: 0.25rem; padding: 0 0.3rem; }
+.pb-style-bound__source[data-source="token"] { color: var(--pb-accent); border-color: var(--pb-accent); }
+.pb-style-bound__source[data-source="global"] { color: #7c3aed; border-color: #7c3aed; }
+.pb-style-bound__token-btn { border: 1px solid var(--pb-border); background: none; color: var(--pb-muted); border-radius: 0.3rem; padding: 0.05rem 0.4rem; cursor: pointer; font-size: 0.68rem; }
+.pb-style-bound__token-btn:hover, .pb-style-bound__token-btn.is-open { color: var(--pb-accent); border-color: var(--pb-accent); }
+.pb-style-bound__chip { display: flex; align-items: center; gap: 0.4rem; border: 1px solid var(--pb-accent); border-radius: 0.35rem; padding: 0.2rem 0.4rem; }
+.pb-style-bound__chip-name { font-size: 0.72rem; font-weight: 600; }
+.pb-style-bound__chip-preview { font-size: 0.66rem; color: var(--pb-muted); margin-left: auto; }
+
+.pb-inspector-group { border: 1px solid var(--pb-border); border-radius: 0.5rem; padding: 0.6rem; margin-bottom: 0.75rem; }
+.pb-inspector-group__label { font-size: 0.7rem; font-weight: 700; color: var(--pb-muted); text-transform: uppercase; letter-spacing: 0.03em; padding: 0 0.3rem; }
+
+.pb-inspector-unsupported { display: flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--pb-muted); }
+.pb-inspector-unsupported code { background: var(--pb-border); border-radius: 0.25rem; padding: 0 0.3rem; }
+/* Top-level editor error banner — themed onto .pb-ui-notice--solid (PB-UI-1A);
+   a full-width banner keeps its bottom rule and square corners via overrides. */
+.pb-editor-error {
+  --pb-ui-notice-bg: rgba(220, 38, 38, 0.08);
+  --pb-ui-notice-padding: 0.6rem 1rem;
+  --pb-ui-notice-radius: 0;
+  --pb-ui-notice-font-size: 0.85rem;
+  margin: 0;
+  border-bottom: 1px solid var(--pb-border);
+}
+
+@media (max-width: 900px) {
+  .pb-editor-body { grid-template-columns: 1fr; }
+  .pb-editor-panel--left, .pb-editor-panel--right { border: 0; border-top: 1px solid var(--pb-border); }
+}
+
+/* Outline drag & drop (Phase 14.4) ------------------------------------- */
+/* While any drag is active, suppress text selection and show a grabbing cursor
+   document-wide so a palette label or card never gets selected mid-drag. */
+body.pb-editor-dragging,
+body.pb-editor-dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: grabbing !important;
+}
+
+/* The drag handle on outline cards — the only thing that starts a card drag. */
+.pb-editor-node-handle {
+  border: 0;
+  background: transparent;
+  color: var(--pb-muted);
+  cursor: grab;
+  touch-action: none;      /* pointer events unify mouse/touch; suppress scroll */
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  border-radius: 0.25rem;
+}
+.pb-editor-node-handle:hover { color: var(--pb-accent); background: rgba(37, 99, 235, 0.1); }
+.pb-editor-node-handle:active { cursor: grabbing; }
+
+/* Being-dragged card is dimmed so the ghost reads as the moving element. */
+.pb-editor-node-dragging { opacity: 0.4; }
+
+/* Drop zones sit in the tree's layout flow. At rest they are a near-invisible
+   sliver; during a drag they expand to a hittable strip and the zone under the
+   pointer lights up blue (legal) or red (illegal). */
+.pb-outline-dropzone {
+  position: relative;
+  height: 0.35rem;
+  margin: -0.15rem 0;
+  border-radius: 999px;
+  transition: height 0.1s ease, background 0.1s ease;
+}
+.pb-outline-dropzone.is-dragging { height: 1rem; }
+.pb-outline-dropzone.is-dragging::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: transparent;
+}
+.pb-outline-dropzone.is-dragging:hover::after { background: rgba(37, 99, 235, 0.35); }
+.pb-outline-dropzone.is-active.is-valid::after { background: var(--pb-accent); height: 3px; }
+.pb-outline-dropzone.is-active.is-invalid::after { background: #dc2626; height: 3px; }
+
+/* Inside zone for empty containers: collapsed at rest, and a dashed placeholder
+   to aim at only while a drag is in flight (keeps the resting tree quiet). */
+.pb-outline-dropzone--inside {
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0 dashed var(--pb-border);
+  color: var(--pb-muted);
+  font-size: 0.72rem;
+}
+.pb-outline-dropzone--inside.is-dragging {
+  height: auto;
+  min-height: 2.25rem;
+  margin: 0.35rem 0 0;
+  border-width: 1.5px;
+}
+.pb-outline-dropzone--inside::after { content: none; }
+.pb-outline-dropzone--inside:not(.is-dragging) .pb-outline-dropzone__hint { display: none; }
+.pb-outline-dropzone--inside.is-active.is-valid {
+  border-color: var(--pb-accent);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--pb-accent);
+}
+.pb-outline-dropzone--inside.is-active.is-invalid {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+}
+.pb-outline-dropzone__hint { pointer-events: none; }
+
+/* The empty-canvas root zone is a large, always-visible target. */
+.pb-editor-canvas__empty { display: flex; flex-direction: column; gap: 0.75rem; }
+.pb-outline-dropzone--root-empty { min-height: 4rem; margin: 0; }
+
+/* Phase 22.2 — Structure editor mode switch (Structure / Live / View). */
+.pb-editor-modeswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  margin: 0 8px;
+  border-radius: 8px;
+  background: var(--pb-editor-surface-2, rgba(0, 0, 0, 0.05));
+}
+.pb-editor-modeswitch__item {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--pb-editor-text-muted, #52525b);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pb-editor-modeswitch__item:hover {
+  background: var(--pb-editor-surface, #fff);
+  color: var(--pb-editor-text, #18181b);
+}
+.pb-editor-modeswitch__item.is-active {
+  background: var(--pb-editor-surface, #fff);
+  color: var(--pb-editor-text, #18181b);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  cursor: default;
+}
+
+/* Phase 25.3.1 §6/§11 — editor-only layout composition affordances (classic
+   editor preview). Emitted only when rendering with pbEditor, so public output
+   is unaffected. */
+.pb-layout-container--editor { outline: 1px dashed rgba(37, 99, 235, 0.35); outline-offset: 2px; min-height: 2.5rem; }
+.pb-layout-column--editor { outline: 1px dashed rgba(37, 99, 235, 0.25); outline-offset: -1px; min-height: 3rem; }
+.pb-layout-column__dropzone {
+  display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  width: 100%; min-height: 4.5rem; border: 2px dashed rgba(37, 99, 235, 0.45);
+  border-radius: 6px; background: rgba(37, 99, 235, 0.04);
+  color: rgba(37, 99, 235, 0.9); font: inherit; font-weight: 600; cursor: pointer;
+}
+.pb-layout-column__dropzone:hover { background: rgba(37, 99, 235, 0.1); border-color: rgba(37, 99, 235, 0.7); }
+.pb-layout-column__dropzone-icon { font-size: 1.1rem; line-height: 1; }
+.pb-layout-container__empty {
+  flex: 1 1 100%; padding: 1rem; text-align: center; color: rgba(37, 99, 235, 0.75);
+  border: 2px dashed rgba(37, 99, 235, 0.35); border-radius: 6px;
+}
+
+/* §10 — navigator layout-node meta badges (column width, child count). */
+.pb-editor-navigator-meta { font-size: 0.7rem; padding: 0 0.3rem; border-radius: 4px; background: var(--pb-surface-2, rgba(0,0,0,0.05)); color: var(--pb-muted, #64748b); }
+.pb-editor-navigator-meta--width { font-variant-numeric: tabular-nums; }

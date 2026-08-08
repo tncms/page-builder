@@ -1,0 +1,6 @@
+/*
+ * PB-UI-1 — the single shared editor design-system stylesheet.
+ * Imported once by each editor bundle entry; never copied per-shell.
+ */
+@import "./tokens.css";
+@import "./primitives.css";

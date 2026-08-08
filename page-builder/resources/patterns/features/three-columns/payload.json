@@ -1,0 +1,70 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "columns",
+            "data": {
+                "gap": "lg"
+            },
+            "blocks": [
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "heading",
+                            "data": {
+                                "text": "Fast",
+                                "level": "h3"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "data": {
+                                "content": "Blazing performance out of the box, with zero configuration."
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "heading",
+                            "data": {
+                                "text": "Secure",
+                                "level": "h3"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "data": {
+                                "content": "Security best practices baked in at every layer."
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "heading",
+                            "data": {
+                                "text": "Scalable",
+                                "level": "h3"
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "data": {
+                                "content": "Grows with your team from day one to millions of users."
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

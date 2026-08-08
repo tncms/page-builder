@@ -1,0 +1,27 @@
+{
+    "name": "Page Builder",
+    "slug": "page-builder",
+    "version": "0.1.0-alpha.1",
+    "status": "alpha",
+    "brand": "TN CMS",
+    "author": "TN CMS",
+    "description": "Foundation for a structured, block-based Page Builder. The admin editor is a heavy client; the frontend stays lightweight by rendering a structured (non-HTML) layout tree. Phase 1 ships the plugin skeleton only — registries, manager, facade, permissions and an admin status dashboard.",
+    "requires": {
+        "tncms": "^1.0"
+    },
+    "providers": [
+        "Plugins\\PageBuilder\\PageBuilderServiceProvider"
+    ],
+    "filament": {
+        "resources": [],
+        "pages": [
+            "Plugins\\PageBuilder\\Filament\\Pages\\PageBuilderDashboardPage",
+            "Plugins\\PageBuilder\\Filament\\Pages\\PageBuilderSettingsPage",
+            "Plugins\\PageBuilder\\Filament\\Pages\\DesignLibraryPage",
+            "Plugins\\PageBuilder\\Filament\\Pages\\PageBuilderEditorPage",
+            "Plugins\\PageBuilder\\Filament\\Pages\\PageBuilderFrontendEditorPage",
+            "Plugins\\PageBuilder\\Filament\\Pages\\LayoutTranslationReviewPage",
+            "Plugins\\PageBuilder\\Filament\\Pages\\LayoutTranslationTimelinePage"
+        ]
+    }
+}

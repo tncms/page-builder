@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "cta.trial",
+    "name": "Free Trial CTA",
+    "category": "cta",
+    "description": "Conversion-focused call to action for a free trial.",
+    "tags": [
+        "trial",
+        "conversion"
+    ],
+    "featured": true
+}

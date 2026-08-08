@@ -1,0 +1,13 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "footer.simple",
+    "name": "Simple Footer",
+    "category": "footer",
+    "description": "A minimal multi-column footer.",
+    "tags": [
+        "footer",
+        "links"
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "logos.strip",
+    "name": "Logo Strip",
+    "category": "logos",
+    "description": "A row of customer or partner logos for social proof.",
+    "tags": [
+        "logos",
+        "brands",
+        "social-proof"
+    ]
+}

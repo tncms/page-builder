@@ -1,0 +1,1833 @@
+{
+    "sections": [
+        {
+            "type": "section",
+            "label": "Section",
+            "category": "layout",
+            "icon": "heroicon-o-square-2-stack",
+            "defaults": {
+                "width": "normal",
+                "padding": "md",
+                "background": ""
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "width",
+                                "type": "select",
+                                "label": "Width",
+                                "default": "normal",
+                                "required": false,
+                                "options": {
+                                    "normal": "Normal (boxed)",
+                                    "wide": "Wide",
+                                    "full": "Full width"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "padding",
+                                "type": "select",
+                                "label": "Padding",
+                                "default": "md",
+                                "required": false,
+                                "options": {
+                                    "none": "None",
+                                    "sm": "Small",
+                                    "md": "Medium",
+                                    "lg": "Large"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "background",
+                                "type": "color",
+                                "label": "Background",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "container",
+                    "heading",
+                    "text",
+                    "button",
+                    "image",
+                    "icon",
+                    "quote"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "hero",
+            "label": "Hero",
+            "category": "layout",
+            "icon": "heroicon-o-rectangle-group",
+            "defaults": {
+                "align": "center",
+                "style": "plain",
+                "width": "normal",
+                "title": "Your headline here",
+                "subtitle": "Add a short supporting subtitle to introduce your page.",
+                "button_label": "Get started",
+                "button_url": "#"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "title",
+                                "type": "text",
+                                "label": "Title",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "subtitle",
+                                "type": "textarea",
+                                "label": "Subtitle",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "button_label",
+                                "type": "text",
+                                "label": "Button label",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "button_url",
+                                "type": "url",
+                                "label": "Button URL",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "style",
+                                "type": "select",
+                                "label": "Appearance",
+                                "default": "plain",
+                                "required": false,
+                                "options": {
+                                    "plain": "Plain",
+                                    "surface": "Surface",
+                                    "dark": "Dark"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "align",
+                                "type": "select",
+                                "label": "Alignment",
+                                "default": "center",
+                                "required": false,
+                                "options": {
+                                    "left": "Left",
+                                    "center": "Center",
+                                    "right": "Right"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "width",
+                                "type": "select",
+                                "label": "Content width",
+                                "default": "normal",
+                                "required": false,
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "normal": "Normal",
+                                    "wide": "Wide",
+                                    "full": "Full"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "background",
+                                "type": "color",
+                                "label": "Background",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": {
+                                    "token": "color.background"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "name": "advanced",
+                        "label": "Advanced",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "type": "group",
+                                "name": "spacing",
+                                "label": "Spacing",
+                                "fields": [
+                                    {
+                                        "name": "padding",
+                                        "type": "responsive",
+                                        "label": "Padding",
+                                        "default": null,
+                                        "required": false,
+                                        "options": [],
+                                        "responsive": true,
+                                        "translatable": false,
+                                        "help": null,
+                                        "rules": [],
+                                        "editor": [],
+                                        "field": {
+                                            "name": "padding",
+                                            "type": "spacing",
+                                            "label": "Padding",
+                                            "default": {
+                                                "top": null,
+                                                "right": null,
+                                                "bottom": null,
+                                                "left": null,
+                                                "linked": false
+                                            },
+                                            "required": false,
+                                            "options": [],
+                                            "responsive": false,
+                                            "translatable": false,
+                                            "help": null,
+                                            "rules": [],
+                                            "editor": []
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name": "anchor_id",
+                                "type": "text",
+                                "label": "Anchor ID",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": "Adds an id for on-page links.",
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "custom_class",
+                                "type": "text",
+                                "label": "CSS class",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": "Extra class names for theming.",
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "heading",
+                    "text",
+                    "button",
+                    "image"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": {
+                "presets": [
+                    {
+                        "name": "centered",
+                        "label": "Centered",
+                        "data": {
+                            "align": "center",
+                            "style": "plain",
+                            "width": "normal"
+                        }
+                    },
+                    {
+                        "name": "minimal",
+                        "label": "Minimal",
+                        "data": {
+                            "align": "left",
+                            "style": "plain",
+                            "width": "narrow"
+                        }
+                    },
+                    {
+                        "name": "surface",
+                        "label": "Surface",
+                        "data": {
+                            "align": "center",
+                            "style": "surface",
+                            "width": "normal"
+                        }
+                    },
+                    {
+                        "name": "dark-cta",
+                        "label": "Dark CTA",
+                        "data": {
+                            "align": "center",
+                            "style": "dark",
+                            "width": "normal"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "text-section",
+            "label": "Text Section",
+            "category": "content",
+            "icon": "heroicon-o-bars-3-bottom-left",
+            "defaults": {
+                "width": "normal",
+                "align": "left",
+                "content": "Add your text here."
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "content",
+                                "type": "textarea",
+                                "label": "Content",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "width",
+                                "type": "select",
+                                "label": "Width",
+                                "default": "normal",
+                                "required": false,
+                                "options": {
+                                    "narrow": "Narrow",
+                                    "normal": "Normal",
+                                    "wide": "Wide"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "align",
+                                "type": "select",
+                                "label": "Alignment",
+                                "default": "left",
+                                "required": false,
+                                "options": {
+                                    "left": "Left",
+                                    "center": "Center",
+                                    "right": "Right"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "heading",
+                    "text",
+                    "button"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "image-section",
+            "label": "Image Section",
+            "category": "media",
+            "icon": "heroicon-o-photo",
+            "defaults": {
+                "align": "center",
+                "image_url": "",
+                "alt": "",
+                "caption": ""
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "image_url",
+                                "type": "url",
+                                "label": "Image URL",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "alt",
+                                "type": "text",
+                                "label": "Alt text",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "caption",
+                                "type": "text",
+                                "label": "Caption",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "align",
+                                "type": "select",
+                                "label": "Alignment",
+                                "default": "center",
+                                "required": false,
+                                "options": {
+                                    "left": "Left",
+                                    "center": "Center",
+                                    "right": "Right"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "image"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "columns",
+            "label": "Columns",
+            "category": "layout",
+            "icon": "heroicon-o-view-columns",
+            "defaults": {
+                "gap": "md"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "gap",
+                                "type": "select",
+                                "label": "Gap",
+                                "default": "md",
+                                "required": false,
+                                "options": {
+                                    "sm": "Small",
+                                    "md": "Medium",
+                                    "lg": "Large"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "column"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "cta",
+            "label": "Call to Action",
+            "category": "marketing",
+            "icon": "heroicon-o-megaphone",
+            "defaults": {
+                "align": "center",
+                "title": "Ready to get started?",
+                "text": "A short, persuasive line that prompts the next step.",
+                "button_label": "Get started",
+                "button_url": "#"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "title",
+                                "type": "text",
+                                "label": "Title",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "text",
+                                "type": "textarea",
+                                "label": "Text",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "button_label",
+                                "type": "text",
+                                "label": "Button label",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "button_url",
+                                "type": "url",
+                                "label": "Button URL",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "align",
+                                "type": "select",
+                                "label": "Alignment",
+                                "default": "center",
+                                "required": false,
+                                "options": {
+                                    "left": "Left",
+                                    "center": "Center",
+                                    "right": "Right"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "background",
+                                "type": "color",
+                                "label": "Background",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": {
+                                    "token": "color.primary"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "heading",
+                    "text",
+                    "button"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "faq",
+            "label": "FAQ",
+            "category": "content",
+            "icon": "heroicon-o-question-mark-circle",
+            "defaults": {
+                "heading": "Frequently asked questions"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "heading",
+                                "type": "text",
+                                "label": "Heading",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "accordion-item"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "testimonial",
+            "label": "Testimonial",
+            "category": "social-proof",
+            "icon": "heroicon-o-chat-bubble-left-right",
+            "defaults": {
+                "quote": "This product changed how our team works.",
+                "author": "Jane Doe",
+                "role": "Product Lead"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "quote",
+                                "type": "textarea",
+                                "label": "Quote",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "author",
+                                "type": "text",
+                                "label": "Author",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "role",
+                                "type": "text",
+                                "label": "Author role",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "quote"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "logo-strip",
+            "label": "Logo Strip",
+            "category": "social-proof",
+            "icon": "heroicon-o-squares-2x2",
+            "defaults": {
+                "heading": "Trusted by teams everywhere"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "heading",
+                                "type": "text",
+                                "label": "Heading",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "logo"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        }
+    ],
+    "blocks": [
+        {
+            "type": "text",
+            "label": "Text",
+            "category": "basic",
+            "icon": "heroicon-o-bars-3-bottom-left",
+            "defaults": {
+                "text": "Add your text here."
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "text",
+                                "type": "textarea",
+                                "label": "Text",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "heading",
+            "label": "Heading",
+            "category": "basic",
+            "icon": "heroicon-o-h1",
+            "defaults": {
+                "text": "Heading",
+                "level": "h2"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "text",
+                                "type": "text",
+                                "label": "Text",
+                                "default": null,
+                                "required": true,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "level",
+                                "type": "select",
+                                "label": "Level",
+                                "default": "h2",
+                                "required": false,
+                                "options": {
+                                    "h1": "H1",
+                                    "h2": "H2",
+                                    "h3": "H3",
+                                    "h4": "H4",
+                                    "h5": "H5",
+                                    "h6": "H6"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "typography",
+                                "type": "typography",
+                                "label": "Typography",
+                                "default": {
+                                    "family": null,
+                                    "size": null,
+                                    "weight": null,
+                                    "lineHeight": null,
+                                    "letterSpacing": null,
+                                    "transform": null
+                                },
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "uppercase",
+                                "type": "toggle",
+                                "label": "Uppercase",
+                                "default": false,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "button",
+            "label": "Button",
+            "category": "basic",
+            "icon": "heroicon-o-cursor-arrow-rays",
+            "defaults": {
+                "label": "Button",
+                "url": "#",
+                "style": "primary",
+                "size": "md"
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "label",
+                                "type": "text",
+                                "label": "Label",
+                                "default": null,
+                                "required": true,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "url",
+                                "type": "url",
+                                "label": "URL",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "style",
+                                "type": "select",
+                                "label": "Variant",
+                                "default": "primary",
+                                "required": false,
+                                "options": {
+                                    "primary": "Primary",
+                                    "secondary": "Secondary",
+                                    "outline": "Outline",
+                                    "ghost": "Ghost",
+                                    "link": "Link"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "size",
+                                "type": "select",
+                                "label": "Size",
+                                "default": "md",
+                                "required": false,
+                                "options": {
+                                    "sm": "Small",
+                                    "md": "Medium",
+                                    "lg": "Large"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "advanced",
+                        "label": "Advanced",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "custom_class",
+                                "type": "text",
+                                "label": "CSS class",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": "Extra class names for theming.",
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": {
+                "presets": [
+                    {
+                        "name": "primary",
+                        "label": "Primary",
+                        "data": {
+                            "style": "primary",
+                            "size": "md"
+                        }
+                    },
+                    {
+                        "name": "outline",
+                        "label": "Outline",
+                        "data": {
+                            "style": "outline",
+                            "size": "md"
+                        }
+                    },
+                    {
+                        "name": "ghost",
+                        "label": "Ghost",
+                        "data": {
+                            "style": "ghost",
+                            "size": "md"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "image",
+            "label": "Image",
+            "category": "media",
+            "icon": "heroicon-o-photo",
+            "defaults": {
+                "src": "",
+                "alt": "",
+                "caption": ""
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "src",
+                                "type": "media",
+                                "label": "Image",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": {
+                                    "accept": [
+                                        "image/*"
+                                    ]
+                                }
+                            },
+                            {
+                                "name": "alt",
+                                "type": "text",
+                                "label": "Alt text",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "caption",
+                                "type": "text",
+                                "label": "Caption",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "icon",
+            "label": "Icon",
+            "category": "media",
+            "icon": "heroicon-o-sparkles",
+            "defaults": {
+                "name": "",
+                "label": ""
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "name",
+                                "type": "text",
+                                "label": "Icon name",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "label",
+                                "type": "text",
+                                "label": "Accessible label",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "accordion-item",
+            "label": "Accordion Item",
+            "category": "content",
+            "icon": "heroicon-o-chevron-down",
+            "defaults": {
+                "question": "Question?",
+                "answer": "Answer goes here."
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "question",
+                                "type": "text",
+                                "label": "Question",
+                                "default": null,
+                                "required": true,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "answer",
+                                "type": "textarea",
+                                "label": "Answer",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "container",
+            "label": "Container",
+            "category": "layout",
+            "icon": "heroicon-o-square-3-stack-3d",
+            "defaults": {
+                "layout": "flex",
+                "direction": "row",
+                "width": "normal",
+                "gap": "md",
+                "padding": "none",
+                "align": "stretch",
+                "justify": "start",
+                "background": "",
+                "blocks": []
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "layout",
+                                "type": "select",
+                                "label": "Layout",
+                                "default": "flex",
+                                "required": false,
+                                "options": {
+                                    "flex": "Flex (row)",
+                                    "grid": "Grid",
+                                    "block": "Stacked"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "direction",
+                                "type": "select",
+                                "label": "Direction",
+                                "default": "row",
+                                "required": false,
+                                "options": {
+                                    "row": "Row (horizontal)",
+                                    "column": "Column (vertical)"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "width",
+                                "type": "select",
+                                "label": "Width",
+                                "default": "normal",
+                                "required": false,
+                                "options": {
+                                    "normal": "Normal (boxed)",
+                                    "wide": "Wide",
+                                    "full": "Full width"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "gap",
+                                "type": "select",
+                                "label": "Gap",
+                                "default": "md",
+                                "required": false,
+                                "options": {
+                                    "none": "None",
+                                    "sm": "Small",
+                                    "md": "Medium",
+                                    "lg": "Large"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "align",
+                                "type": "select",
+                                "label": "Align items",
+                                "default": "stretch",
+                                "required": false,
+                                "options": {
+                                    "start": "Start",
+                                    "center": "Center",
+                                    "end": "End",
+                                    "stretch": "Stretch"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "justify",
+                                "type": "select",
+                                "label": "Justify content",
+                                "default": "start",
+                                "required": false,
+                                "options": {
+                                    "start": "Start",
+                                    "center": "Center",
+                                    "end": "End",
+                                    "between": "Space between",
+                                    "around": "Space around"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "background",
+                                "type": "color",
+                                "label": "Background",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "padding",
+                                "type": "select",
+                                "label": "Padding",
+                                "default": "none",
+                                "required": false,
+                                "options": {
+                                    "none": "None",
+                                    "sm": "Small",
+                                    "md": "Medium",
+                                    "lg": "Large"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "column"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "column",
+            "label": "Column",
+            "category": "layout",
+            "icon": "heroicon-o-view-columns",
+            "defaults": {
+                "width": "auto",
+                "valign": "start",
+                "halign": "stretch",
+                "blocks": []
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "width",
+                                "type": "select",
+                                "label": "Width",
+                                "default": "auto",
+                                "required": false,
+                                "options": {
+                                    "auto": "Auto",
+                                    "100": "100%",
+                                    "75": "75%",
+                                    "66": "66%",
+                                    "50": "50%",
+                                    "33": "33%",
+                                    "25": "25%"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    },
+                    {
+                        "name": "style",
+                        "label": "Style",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "valign",
+                                "type": "select",
+                                "label": "Vertical align",
+                                "default": "start",
+                                "required": false,
+                                "options": {
+                                    "start": "Top",
+                                    "center": "Middle",
+                                    "end": "Bottom"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "halign",
+                                "type": "select",
+                                "label": "Horizontal align",
+                                "default": "stretch",
+                                "required": false,
+                                "options": {
+                                    "stretch": "Stretch",
+                                    "start": "Left",
+                                    "center": "Center",
+                                    "end": "Right"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "background",
+                                "type": "color",
+                                "label": "Background",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "padding",
+                                "type": "select",
+                                "label": "Padding",
+                                "default": "none",
+                                "required": false,
+                                "options": {
+                                    "none": "None",
+                                    "sm": "Small",
+                                    "md": "Medium",
+                                    "lg": "Large"
+                                },
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": {
+                "blocks": [
+                    "heading",
+                    "text",
+                    "button",
+                    "image",
+                    "icon",
+                    "quote"
+                ]
+            },
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "logo",
+            "label": "Logo",
+            "category": "media",
+            "icon": "heroicon-o-building-office",
+            "defaults": {
+                "src": "",
+                "alt": "",
+                "url": ""
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "src",
+                                "type": "media",
+                                "label": "Logo image",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": {
+                                    "accept": [
+                                        "image/*"
+                                    ]
+                                }
+                            },
+                            {
+                                "name": "alt",
+                                "type": "text",
+                                "label": "Alt text",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "url",
+                                "type": "url",
+                                "label": "Link URL",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": false,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        },
+        {
+            "type": "quote",
+            "label": "Quote",
+            "category": "content",
+            "icon": "heroicon-o-chat-bubble-bottom-center-text",
+            "defaults": {
+                "text": "Add a memorable quote here.",
+                "author": "Author",
+                "role": ""
+            },
+            "schema": {
+                "tabs": [
+                    {
+                        "name": "content",
+                        "label": "Content",
+                        "icon": null,
+                        "fields": [
+                            {
+                                "name": "text",
+                                "type": "textarea",
+                                "label": "Quote",
+                                "default": null,
+                                "required": true,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "author",
+                                "type": "text",
+                                "label": "Author",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            },
+                            {
+                                "name": "role",
+                                "type": "text",
+                                "label": "Author role",
+                                "default": null,
+                                "required": false,
+                                "options": [],
+                                "responsive": false,
+                                "translatable": true,
+                                "help": null,
+                                "rules": [],
+                                "editor": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            "supports": [],
+            "assets": {
+                "css": [],
+                "js": [],
+                "editor_css": [],
+                "editor_js": []
+            },
+            "editor": []
+        }
+    ]
+}

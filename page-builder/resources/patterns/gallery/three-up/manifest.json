@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "gallery.three-up",
+    "name": "Three-Up Gallery",
+    "category": "gallery",
+    "description": "A three-column image gallery.",
+    "tags": [
+        "gallery",
+        "images",
+        "grid"
+    ]
+}

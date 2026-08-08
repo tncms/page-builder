@@ -1,0 +1,26 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "hero",
+            "data": {
+                "align": "left",
+                "style": "normal",
+                "width": "wide",
+                "title": "Built for teams that move fast",
+                "subtitle": "Everything you need, nothing you do not.",
+                "button_label": "Book a demo",
+                "button_url": "#"
+            }
+        },
+        {
+            "type": "image-section",
+            "data": {
+                "align": "center",
+                "image_url": "",
+                "alt": "Product screenshot",
+                "caption": ""
+            }
+        }
+    ]
+}

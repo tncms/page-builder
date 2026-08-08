@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "testimonial",
+            "data": {
+                "quote": "This product completely changed how our team ships work.",
+                "author": "Jane Cooper",
+                "role": "VP Engineering, Acme"
+            }
+        }
+    ]
+}

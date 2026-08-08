@@ -1,0 +1,495 @@
+/* Phase 20 — Live Builder shell (full-screen 3-column UX Builder chrome).
+ *
+ * Namespaced .pb-live-builder-* so it never collides with the admin panel, the
+ * reused .pb-editor-* inspector/navigator styles, or the .pb-fe- and
+ * .pb-box-overlay canvas overlays it hosts. Neutral, product-grade theme.
+ */
+
+.pb-live-builder-shell {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  background: #eef1f5;
+  color: #0f172a;
+  font-size: 13px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---- Top bar ---------------------------------------------------------- */
+.pb-live-builder-topbar {
+  flex: 0 0 52px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.9rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pb-live-builder-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.pb-live-builder-topbar__logo {
+  color: #2563eb;
+  font-size: 16px;
+}
+
+.pb-live-builder-topbar__owner {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pb-live-builder-topbar__title {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-live-builder-topbar__meta {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.pb-live-builder-topbar__center {
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.pb-live-builder-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+/* LEGACY_COMPATIBILITY_THEME — token-only skin layered on .pb-ui-btn for the
+   pre-existing Live chrome. The box (layout, focus ring, disabled, transitions)
+   comes from .pb-ui-btn; this holds NO structural behavior and only re-tints the
+   component tokens to the Live palette. It intentionally covers anchor "buttons"
+   and the stateful mode switch, which are not <button> elements. Do NOT add to new
+   consumers — use <PbButton> instead. Raw hex values below are residual per-shell
+   palette not yet in the --pb-ui-* token set (documented debt). */
+.pb-live-builder-btn {
+  --pb-ui-btn-min-height: 0;
+  --pb-ui-btn-gap: var(--pb-ui-space-4);
+  --pb-ui-btn-padding: 0.4rem 0.75rem;
+  --pb-ui-btn-radius: 6px;
+  --pb-ui-btn-font-size: 12px;
+  --pb-ui-btn-font-weight: var(--pb-ui-font-weight-normal);
+  --pb-ui-btn-line-height: 1;
+  --pb-ui-btn-border-color: #cbd5e1;
+  --pb-ui-btn-bg: var(--pb-ui-color-background);
+  --pb-ui-btn-bg-hover: #eef2f7;
+  --pb-ui-btn-bg-active: #eef2f7;
+  --pb-ui-btn-color: #0f172a;
+}
+
+.pb-live-builder-btn--icon {
+  --pb-ui-btn-padding: 0.4rem 0.55rem;
+  --pb-ui-btn-font-size: 14px;
+}
+
+.pb-live-builder-btn--ghost {
+  --pb-ui-btn-bg: transparent;
+  --pb-ui-btn-border-color: transparent;
+  --pb-ui-btn-border-color-hover: transparent;
+  --pb-ui-btn-color: #475569;
+}
+
+.pb-live-builder-btn--primary {
+  --pb-ui-btn-bg: var(--pb-ui-color-primary);
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-primary-hover);
+  --pb-ui-btn-border-color: var(--pb-ui-color-primary);
+  --pb-ui-btn-border-color-hover: var(--pb-ui-color-primary-hover);
+  --pb-ui-btn-color: var(--pb-ui-color-on-primary);
+}
+
+/* ---- Device switcher -------------------------------------------------- */
+.pb-live-builder-device {
+  display: inline-flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.pb-live-builder-device__btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.6rem;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pb-live-builder-device__btn.is-active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+/* ---- Body / sidebar / main ------------------------------------------- */
+.pb-live-builder-body {
+  flex: 1 1 auto;
+  display: flex;
+  min-height: 0;
+}
+
+/* Shell error banner — themed onto .pb-ui-notice--solid (PB-UI-1A); red text is
+   the primitive default, metrics/fill preserved via the notice component tokens. */
+.pb-live-builder-error {
+  --pb-ui-notice-bg: #fef2f2;
+  --pb-ui-notice-padding: 0.5rem 0.9rem;
+  --pb-ui-notice-radius: 0;
+  --pb-ui-notice-font-size: 12px;
+  margin: 0;
+}
+
+.pb-live-builder-sidebar {
+  flex: 0 0 320px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.pb-live-builder-panel-tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.pb-live-builder-panel-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.55rem;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.pb-live-builder-panel-tab__icon {
+  font-size: 15px;
+}
+
+.pb-live-builder-panel-tab.is-active {
+  color: #2563eb;
+  box-shadow: inset 0 -2px 0 #2563eb;
+}
+
+.pb-live-builder-sidebar__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.pb-live-builder-panel {
+  padding: 0.75rem;
+}
+
+.pb-live-builder-panel--navigator,
+.pb-live-builder-panel--options {
+  padding: 0.5rem;
+}
+
+.pb-live-builder-panel__heading {
+  margin: 0.5rem 0 0.4rem;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.pb-live-builder-panel__hint {
+  margin: 0.4rem 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* Panel command error — themed onto .pb-ui-notice--solid (PB-UI-1A). The 6px
+   radius is the notice default (--pb-ui-radius-md), so it is not re-declared. */
+.pb-live-builder-panel__error {
+  --pb-ui-notice-bg: #fef2f2;
+  --pb-ui-notice-padding: 0.4rem 0.6rem;
+  --pb-ui-notice-font-size: 12px;
+  margin-bottom: 0.5rem;
+}
+
+.pb-live-builder-elements {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.pb-live-builder-element {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.7rem 0.4rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pb-live-builder-element:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.pb-live-builder-element__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  color: #2563eb;
+}
+
+.pb-live-builder-element:hover .pb-live-builder-element__icon {
+  border-color: #bfdbfe;
+}
+
+.pb-live-builder-element__label {
+  text-align: center;
+  line-height: 1.2;
+}
+
+.pb-live-builder-element__category {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+/* Kind + category meta row: makes SECTION vs ELEMENT explicit on every card so a
+ * "Image Section" (section) is never mistaken for an "Image" (element). */
+.pb-live-builder-element__meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.pb-live-builder-element__kind {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  padding: 1px 5px;
+  border-radius: 999px;
+}
+
+.pb-live-builder-element__kind--section {
+  color: #7c3aed;
+  background: #f3e8ff;
+}
+
+.pb-live-builder-element__kind--element {
+  color: #0369a1;
+  background: #e0f2fe;
+}
+
+/* Capability badge (ROOT ONLY / COLUMN READY / LAYOUT / CHILD LAYOUT) — informational. */
+.pb-live-builder-element__badge {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+
+/* Panel description under each heading (Sections / Elements / Patterns guidance). */
+.pb-live-builder-panel__desc {
+  margin: 0 0 0.6rem;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+/* Context-awareness helper: emphasized when no valid element host is selected. */
+.pb-live-builder-panel__hint--warn {
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+}
+
+/* Element cards guided off when the selection can't host an element. Drag still
+ * works (it targets a column directly); click-insert is suppressed. */
+.pb-live-builder-element.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Smart suggestion: insert the element twin of a Section into the selected layout. */
+.pb-live-builder-suggest {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.7rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pb-live-builder-suggest__title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+}
+
+.pb-live-builder-suggest__action {
+  text-align: left;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.pb-live-builder-suggest__action:hover {
+  background: #dbeafe;
+}
+
+.pb-live-builder-panel__category {
+  margin: 0.75rem 0 0.4rem;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+}
+
+/* Main + iframe frame */
+.pb-live-builder-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  /* Positioning context for the non-blocking builder toast overlay. */
+  position: relative;
+}
+
+.pb-live-builder-frame {
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.pb-live-builder-frame .pb-fe-canvas {
+  flex: 1 1 auto;
+  background: #e2e8f0;
+}
+
+.pb-live-builder-frame .pb-fe-canvas__frame {
+  height: 100%;
+}
+
+/* ---- Status bar ------------------------------------------------------- */
+.pb-live-builder-statusbar {
+  flex: 0 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 0.9rem;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.pb-live-builder-statusbar__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pb-live-builder-statusbar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.pb-live-builder-statusbar__status.is-ok .pb-live-builder-statusbar__dot {
+  background: #10b981;
+}
+
+.pb-live-builder-statusbar__status.is-warn .pb-live-builder-statusbar__dot {
+  background: #f59e0b;
+}
+
+.pb-live-builder-statusbar__status.is-busy .pb-live-builder-statusbar__dot {
+  background: #3b82f6;
+}
+
+.pb-live-builder-statusbar__crumb {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pb-live-builder-statusbar__device {
+  font-weight: 500;
+}
+
+/* Phase 22.2 — Live Builder mode switch (Structure / Live / View). */
+.pb-live-builder-modeswitch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+/* LEGACY_COMPATIBILITY_THEME — current mode-switch item (stateful). */
+.pb-live-builder-btn--active {
+  --pb-ui-btn-bg: rgba(255, 255, 255, 0.14);
+  --pb-ui-btn-color: #fff;
+  --pb-ui-btn-font-weight: var(--pb-ui-font-weight-semibold);
+  cursor: default;
+}

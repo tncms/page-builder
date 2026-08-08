@@ -1,0 +1,27 @@
+{
+  "name": "@tncms/page-builder-editor",
+  "private": true,
+  "type": "module",
+  "description": "Page Builder Vue editor shell (Phase 9). Builds to public/vendor/page-builder/editor/.",
+  "scripts": {
+    "build": "vite build && vite build -c vite.frontend-shell.config.ts && vite build -c vite.frontend-iframe.config.ts && vite build -c vite.workspace.config.ts",
+    "build:editor": "vite build",
+    "build:frontend": "vite build -c vite.frontend-shell.config.ts && vite build -c vite.frontend-iframe.config.ts",
+    "build:workspace": "vite build -c vite.workspace.config.ts",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "pinia": "^2.3.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^15.11.7",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9"
+  }
+}

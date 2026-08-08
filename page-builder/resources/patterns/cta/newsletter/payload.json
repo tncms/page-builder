@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "cta",
+            "data": {
+                "align": "center",
+                "title": "Stay in the loop",
+                "text": "Get product updates and tips straight to your inbox.",
+                "button_label": "Subscribe",
+                "button_url": "#"
+            }
+        }
+    ]
+}

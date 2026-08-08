@@ -1,0 +1,292 @@
+/*
+ * PB-UI-1 — Page Builder editor primitive styles.
+ *
+ * Namespaced `.pb-ui-*` classes consumed by the shared primitive components and
+ * by migrated editor UI. Every value is a `--pb-ui-` token — no hardcoded color,
+ * spacing, radius, or motion. No generic element selectors, no global reset, no
+ * !important. Both editor bundles load this via ../shared-ui/index.css.
+ */
+
+/* Button ----------------------------------------------------------------- */
+/* One structural implementation. Every metric/colour reads a --pb-ui-btn-*
+   component token (fallbacks mirror the base look), so a shell theme or a legacy
+   compatibility skin can restyle without re-implementing the box. `tone` and
+   `emphasis` modifiers set those tokens and compose (e.g. danger + outline). */
+.pb-ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pb-ui-btn-gap, var(--pb-ui-space-6));
+  min-height: var(--pb-ui-btn-min-height, var(--pb-ui-control-height));
+  padding: var(--pb-ui-btn-padding, 0 var(--pb-ui-space-12));
+  border: 1px solid var(--pb-ui-btn-border-color, var(--pb-ui-color-border-strong));
+  border-radius: var(--pb-ui-btn-radius, var(--pb-ui-radius-md));
+  background: var(--pb-ui-btn-bg, var(--pb-ui-color-surface));
+  color: var(--pb-ui-btn-color, var(--pb-ui-color-text));
+  font-family: var(--pb-ui-font-family);
+  font-size: var(--pb-ui-btn-font-size, var(--pb-ui-font-size-sm));
+  font-weight: var(--pb-ui-btn-font-weight, var(--pb-ui-font-weight-medium));
+  line-height: var(--pb-ui-btn-line-height, var(--pb-ui-line-height-tight));
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--pb-ui-duration-fast) var(--pb-ui-easing-standard),
+    border-color var(--pb-ui-duration-fast) var(--pb-ui-easing-standard);
+}
+.pb-ui-btn:hover {
+  background: var(--pb-ui-btn-bg-hover, var(--pb-ui-color-surface-muted));
+  border-color: var(--pb-ui-btn-border-color-hover, var(--pb-ui-btn-border-color, var(--pb-ui-color-border-strong)));
+}
+.pb-ui-btn:active {
+  background: var(--pb-ui-btn-bg-active, var(--pb-ui-color-border-strong));
+}
+.pb-ui-btn:focus-visible {
+  outline: 2px solid var(--pb-ui-color-focus-ring);
+  outline-offset: 1px;
+}
+.pb-ui-btn[disabled],
+.pb-ui-btn[aria-disabled="true"] {
+  color: var(--pb-ui-color-text-disabled);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+/* Tone — colour intent (filled). */
+.pb-ui-btn--primary {
+  --pb-ui-btn-bg: var(--pb-ui-color-primary);
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-primary-hover);
+  --pb-ui-btn-bg-active: var(--pb-ui-color-primary-active);
+  --pb-ui-btn-border-color: var(--pb-ui-color-primary);
+  --pb-ui-btn-border-color-hover: var(--pb-ui-color-primary-hover);
+  --pb-ui-btn-color: var(--pb-ui-color-on-primary);
+}
+.pb-ui-btn--danger {
+  --pb-ui-btn-bg: var(--pb-ui-color-danger);
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-danger-hover);
+  --pb-ui-btn-bg-active: var(--pb-ui-color-danger-hover);
+  --pb-ui-btn-border-color: var(--pb-ui-color-danger);
+  --pb-ui-btn-border-color-hover: var(--pb-ui-color-danger-hover);
+  --pb-ui-btn-color: var(--pb-ui-color-on-primary);
+}
+/* Emphasis — fill style. */
+.pb-ui-btn--ghost {
+  --pb-ui-btn-bg: transparent;
+  --pb-ui-btn-border-color: transparent;
+  --pb-ui-btn-border-color-hover: transparent;
+}
+.pb-ui-btn--outline {
+  --pb-ui-btn-bg: transparent;
+}
+/* Outline + danger = Structure's outline-danger archetype (transparent fill,
+   danger border + text). Exact legacy values come from the compat skin. */
+.pb-ui-btn--outline.pb-ui-btn--danger {
+  --pb-ui-btn-bg: transparent;
+  --pb-ui-btn-bg-hover: var(--pb-ui-color-danger-soft);
+  --pb-ui-btn-bg-active: var(--pb-ui-color-danger-soft);
+  --pb-ui-btn-border-color: var(--pb-ui-color-danger);
+  --pb-ui-btn-border-color-hover: var(--pb-ui-color-danger);
+  --pb-ui-btn-color: var(--pb-ui-color-danger);
+}
+.pb-ui-btn--icon {
+  min-width: var(--pb-ui-btn-min-height, var(--pb-ui-control-height));
+  padding: var(--pb-ui-btn-icon-padding, 0);
+}
+
+/* Field ------------------------------------------------------------------ */
+.pb-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-ui-space-4);
+}
+.pb-ui-field__label {
+  font-size: var(--pb-ui-font-size-sm);
+  font-weight: var(--pb-ui-font-weight-medium);
+  color: var(--pb-ui-color-text);
+}
+.pb-ui-field__help {
+  font-size: var(--pb-ui-font-size-xs);
+  color: var(--pb-ui-color-text-muted);
+}
+.pb-ui-field__error {
+  font-size: var(--pb-ui-font-size-xs);
+  color: var(--pb-ui-color-danger);
+}
+.pb-ui-input {
+  min-height: var(--pb-ui-control-height);
+  padding: 0 var(--pb-ui-space-8);
+  border: 1px solid var(--pb-ui-color-border-strong);
+  border-radius: var(--pb-ui-radius-md);
+  background: var(--pb-ui-color-surface);
+  color: var(--pb-ui-color-text);
+  font-family: var(--pb-ui-font-family);
+  font-size: var(--pb-ui-font-size-sm);
+}
+.pb-ui-input:focus-visible {
+  outline: 2px solid var(--pb-ui-color-focus-ring);
+  outline-offset: 0;
+  border-color: var(--pb-ui-color-primary);
+}
+.pb-ui-input[aria-invalid="true"] {
+  border-color: var(--pb-ui-color-danger);
+}
+
+/* Tabs (underline tablist) ----------------------------------------------- */
+/* Component tokens (--pb-ui-tab-*) let a consumer/shell preserve its own metrics
+   and colours without re-implementing the box. Fallbacks mirror the base look.
+   This is the underline archetype only; boxed and pill/segmented tab controls
+   are a distinct primitive, not this one. */
+.pb-ui-tabs {
+  display: flex;
+  gap: var(--pb-ui-tabs-gap, var(--pb-ui-space-2));
+  border-bottom: 1px solid var(--pb-ui-color-border);
+}
+.pb-ui-tab {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: var(--pb-ui-tab-padding, var(--pb-ui-space-8) var(--pb-ui-space-12));
+  color: var(--pb-ui-tab-color, var(--pb-ui-color-text-muted));
+  font-family: var(--pb-ui-font-family);
+  font-size: var(--pb-ui-tab-font-size, var(--pb-ui-font-size-sm));
+  font-weight: var(--pb-ui-tab-font-weight, var(--pb-ui-font-weight-medium));
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.pb-ui-tab:hover {
+  color: var(--pb-ui-tab-color-hover, var(--pb-ui-color-text));
+}
+.pb-ui-tab:focus-visible {
+  outline: 2px solid var(--pb-ui-color-focus-ring);
+  outline-offset: -2px;
+}
+.pb-ui-tab[aria-selected="true"] {
+  color: var(--pb-ui-tab-color-active, var(--pb-ui-color-primary));
+  border-bottom-color: var(--pb-ui-tab-color-active, var(--pb-ui-color-primary));
+}
+
+/* Dialog ----------------------------------------------------------------- */
+.pb-ui-dialog__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--pb-ui-z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pb-ui-space-16);
+  background: var(--pb-ui-color-overlay);
+}
+.pb-ui-dialog {
+  width: min(32rem, 100%);
+  max-height: calc(100vh - var(--pb-ui-space-40));
+  overflow: auto;
+  background: var(--pb-ui-color-surface-elevated);
+  border-radius: var(--pb-ui-radius-lg);
+  box-shadow: var(--pb-ui-shadow-overlay);
+  color: var(--pb-ui-color-text);
+}
+.pb-ui-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pb-ui-space-8);
+  padding: var(--pb-ui-space-16);
+  border-bottom: 1px solid var(--pb-ui-color-border);
+}
+.pb-ui-dialog__title {
+  font-size: var(--pb-ui-font-size-lg);
+  font-weight: var(--pb-ui-font-weight-semibold);
+}
+.pb-ui-dialog__body {
+  padding: var(--pb-ui-space-16);
+}
+.pb-ui-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--pb-ui-space-8);
+  padding: var(--pb-ui-space-16);
+  border-top: 1px solid var(--pb-ui-color-border);
+}
+
+/* Notice ----------------------------------------------------------------- */
+/* Component tokens (--pb-ui-notice-*) let a consumer preserve its own metrics
+   and fill without re-implementing the box. Fallbacks mirror the base look. */
+.pb-ui-notice {
+  display: flex;
+  gap: var(--pb-ui-space-8);
+  padding: var(--pb-ui-notice-padding, var(--pb-ui-space-12));
+  border: 1px solid var(--pb-ui-color-border);
+  border-left-width: 3px;
+  border-radius: var(--pb-ui-notice-radius, var(--pb-ui-radius-md));
+  background: var(--pb-ui-notice-bg, var(--pb-ui-color-surface-muted));
+  color: var(--pb-ui-notice-color, var(--pb-ui-color-text));
+  font-size: var(--pb-ui-notice-font-size, var(--pb-ui-font-size-sm));
+}
+.pb-ui-notice--info { border-left-color: var(--pb-ui-color-info); }
+.pb-ui-notice--success { border-left-color: var(--pb-ui-color-success); }
+.pb-ui-notice--warning { border-left-color: var(--pb-ui-color-warning); }
+.pb-ui-notice--danger { border-left-color: var(--pb-ui-color-danger); }
+/* Solid emphasis — a filled tinted banner (no left accent). Fill/text default to
+   the danger family; consumers may retint and set metrics via the tokens above. */
+.pb-ui-notice--solid {
+  border: 0;
+  background: var(--pb-ui-notice-bg, var(--pb-ui-color-danger-soft));
+  color: var(--pb-ui-notice-color, var(--pb-ui-color-danger-hover));
+}
+
+/* Badge ------------------------------------------------------------------ */
+/* Component tokens (--pb-ui-badge-*) let a consumer/shell theme the pill —
+   metrics and colours — without re-implementing the box or knowing shell names.
+   Every fallback mirrors the base look, so an un-themed badge is unchanged. */
+.pb-ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pb-ui-space-4);
+  padding: var(--pb-ui-badge-padding-y, var(--pb-ui-space-2)) var(--pb-ui-badge-padding-x, var(--pb-ui-space-8));
+  border-radius: var(--pb-ui-radius-pill);
+  background: var(--pb-ui-badge-bg, var(--pb-ui-color-surface-muted));
+  color: var(--pb-ui-badge-color, var(--pb-ui-color-text-muted));
+  font-size: var(--pb-ui-badge-font-size, var(--pb-ui-font-size-xs));
+  font-weight: var(--pb-ui-badge-font-weight, var(--pb-ui-font-weight-medium));
+  line-height: var(--pb-ui-line-height-tight);
+  white-space: nowrap;
+}
+.pb-ui-badge--primary { --pb-ui-badge-bg: var(--pb-ui-color-selection); --pb-ui-badge-color: var(--pb-ui-color-primary); }
+.pb-ui-badge--success { --pb-ui-badge-bg: var(--pb-ui-color-success-soft); --pb-ui-badge-color: var(--pb-ui-color-success); }
+.pb-ui-badge--warning { --pb-ui-badge-bg: var(--pb-ui-color-warning-soft); --pb-ui-badge-color: var(--pb-ui-color-warning); }
+.pb-ui-badge--danger { --pb-ui-badge-bg: var(--pb-ui-color-danger-soft); --pb-ui-badge-color: var(--pb-ui-color-danger); }
+
+/* Loading ---------------------------------------------------------------- */
+.pb-ui-spinner {
+  display: inline-block;
+  width: var(--pb-ui-icon-size);
+  height: var(--pb-ui-icon-size);
+  border: 2px solid var(--pb-ui-color-border-strong);
+  border-top-color: var(--pb-ui-color-primary);
+  border-radius: var(--pb-ui-radius-pill);
+  animation: pb-ui-spin var(--pb-ui-duration-slow) linear infinite;
+}
+@keyframes pb-ui-spin {
+  to { transform: rotate(360deg); }
+}
+.pb-ui-skeleton {
+  display: block;
+  border-radius: var(--pb-ui-radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--pb-ui-color-surface-muted) 25%,
+    var(--pb-ui-color-border-strong) 37%,
+    var(--pb-ui-color-surface-muted) 63%
+  );
+  background-size: 400% 100%;
+  animation: pb-ui-shimmer 1.4s ease infinite;
+}
+@keyframes pb-ui-shimmer {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+/* Divider ---------------------------------------------------------------- */
+.pb-ui-divider {
+  height: 1px;
+  border: none;
+  margin: var(--pb-ui-space-8) 0;
+  background: var(--pb-ui-color-border);
+}

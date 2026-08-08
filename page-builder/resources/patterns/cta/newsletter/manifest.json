@@ -1,0 +1,14 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "cta.newsletter",
+    "name": "Newsletter CTA",
+    "category": "cta",
+    "description": "Invite visitors to subscribe to your newsletter.",
+    "tags": [
+        "newsletter",
+        "subscribe",
+        "email"
+    ]
+}

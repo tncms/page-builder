@@ -1,0 +1,15 @@
+{
+    "version": "1.0.0",
+    "author": "TN CMS",
+    "thumbnail": "preview.svg",
+    "id": "features.three-columns",
+    "name": "Three Feature Columns",
+    "category": "features",
+    "description": "A three-column grid highlighting key product features.",
+    "tags": [
+        "features",
+        "grid",
+        "columns"
+    ],
+    "featured": true
+}

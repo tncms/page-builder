@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "hero",
+            "data": {
+                "align": "center",
+                "style": "normal",
+                "width": "normal",
+                "title": "Design without limits",
+                "subtitle": "A clean starting point for any landing page.",
+                "button_label": "Get started",
+                "button_url": "#"
+            }
+        }
+    ]
+}

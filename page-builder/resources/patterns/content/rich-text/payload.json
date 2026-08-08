@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "text-section",
+            "data": {
+                "width": "normal",
+                "align": "left",
+                "content": "Add your story here. This content section is a clean canvas for long-form copy."
+            }
+        }
+    ]
+}

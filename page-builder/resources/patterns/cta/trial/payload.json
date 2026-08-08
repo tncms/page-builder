@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "cta",
+            "data": {
+                "align": "center",
+                "title": "Ready to get started?",
+                "text": "Start your 14-day free trial. No credit card required.",
+                "button_label": "Start free trial",
+                "button_url": "#"
+            }
+        }
+    ]
+}

@@ -1,0 +1,52 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "columns",
+            "data": {
+                "gap": "md"
+            },
+            "blocks": [
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "image",
+                            "data": {
+                                "image_url": "",
+                                "alt": "Gallery image one"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "image",
+                            "data": {
+                                "image_url": "",
+                                "alt": "Gallery image two"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "column",
+                    "data": [],
+                    "blocks": [
+                        {
+                            "type": "image",
+                            "data": {
+                                "image_url": "",
+                                "alt": "Gallery image three"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

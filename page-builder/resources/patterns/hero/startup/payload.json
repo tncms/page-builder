@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "sections": [
+        {
+            "type": "hero",
+            "data": {
+                "align": "center",
+                "style": "emphasis",
+                "width": "wide",
+                "title": "{{title}}",
+                "subtitle": "{{subtitle}}",
+                "button_label": "{{button_label}}",
+                "button_url": "{{button_url}}"
+            }
+        }
+    ]
+}
