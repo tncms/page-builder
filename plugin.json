@@ -9,6 +9,9 @@
     "requires": {
         "tncms": "^1.0"
     },
+    "assets": {
+        "source": "public"
+    },
     "providers": [
         "Plugins\\PageBuilder\\PageBuilderServiceProvider"
     ],

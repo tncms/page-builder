@@ -4,9 +4,10 @@
   "type": "module",
   "description": "Page Builder Vue editor shell (Phase 9). Builds to public/vendor/page-builder/editor/.",
   "scripts": {
-    "build": "vite build && vite build -c vite.frontend-shell.config.ts && vite build -c vite.frontend-iframe.config.ts && vite build -c vite.workspace.config.ts",
+    "build": "vite build && vite build -c vite.frontend-shell.config.ts && vite build -c vite.frontend-iframe.config.ts && vite build -c vite.workspace.config.ts && npm run build:frontend-css",
     "build:editor": "vite build",
     "build:frontend": "vite build -c vite.frontend-shell.config.ts && vite build -c vite.frontend-iframe.config.ts",
+    "build:frontend-css": "node scripts/build-frontend-css.mjs",
     "build:workspace": "vite build -c vite.workspace.config.ts",
     "dev": "vite build --watch",
     "test": "vitest run",

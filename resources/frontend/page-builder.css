@@ -1,0 +1,421 @@
+/*
+ * Page Builder — frontend component design system (Phase 23).
+ *
+ * Token-driven, `pb-*` namespaced, zero Tailwind / Vue / admin dependency.
+ * Loaded on the public frontend only when a page renders Page Builder content
+ * (and therefore inside the editor iframe, which is the same real document).
+ * The design tokens (`--pb-*`) are emitted separately from TokenCss; every
+ * value below falls back gracefully if a token is missing so a theme can drop
+ * this file in without the token block.
+ *
+ * Themes may override any component view or restyle these classes; nothing here
+ * couples to the default theme.
+ */
+
+/* ------------------------------------------------------------------ *
+ * Foundation
+ * ------------------------------------------------------------------ */
+
+.pb-section {
+  box-sizing: border-box;
+  padding-block: var(--pb-space-xl, 4rem);
+  padding-inline: var(--pb-space-md, 1rem);
+}
+.pb-section *,
+.pb-section *::before,
+.pb-section *::after {
+  box-sizing: border-box;
+}
+
+/* Centered measure. Width driven by container tokens. */
+.pb-section__inner,
+.pb-container,
+.pb-hero__inner,
+.pb-cta__inner,
+.pb-testimonial__inner,
+.pb-text-section__inner,
+.pb-columns__inner,
+.pb-faq__items,
+.pb-logo-strip__items {
+  margin-inline: auto;
+  width: 100%;
+  max-width: var(--pb-container-normal, 64rem);
+}
+.pb-container--narrow { max-width: var(--pb-container-narrow, 42rem); }
+.pb-container--normal { max-width: var(--pb-container-normal, 64rem); }
+.pb-container--wide { max-width: var(--pb-container-wide, 80rem); }
+.pb-container--full { max-width: var(--pb-container-full, 100%); }
+
+.pb-stack { display: flex; flex-direction: column; gap: var(--pb-space-md, 1rem); }
+.pb-grid { display: grid; gap: var(--pb-space-lg, 2rem); }
+
+.pb-surface {
+  background: var(--pb-color-surface, #f8fafc);
+  border: 1px solid var(--pb-color-border, #e5e7eb);
+  border-radius: var(--pb-radius-lg, 1rem);
+}
+.pb-card {
+  background: var(--pb-color-background, #fff);
+  border: 1px solid var(--pb-color-border, #e5e7eb);
+  border-radius: var(--pb-radius-lg, 1rem);
+  padding: var(--pb-space-lg, 2rem);
+  box-shadow: var(--pb-shadow-sm, 0 1px 2px rgba(0, 0, 0, .06));
+}
+
+/* Alignment */
+.pb-align--left { text-align: left; }
+.pb-align--center { text-align: center; }
+.pb-align--right { text-align: right; }
+.pb-align--center .pb-hero__inner,
+.pb-align--center .pb-cta__inner { align-items: center; }
+
+/* ------------------------------------------------------------------ *
+ * Typography primitives
+ * ------------------------------------------------------------------ */
+
+.pb-heading,
+.pb-block--heading {
+  margin: 0 0 var(--pb-space-sm, 0.5rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--pb-color-text, #111827);
+  letter-spacing: -0.01em;
+}
+.pb-text,
+.pb-block--text {
+  margin: 0;
+  color: var(--pb-color-text, #111827);
+  line-height: 1.7;
+  font-size: var(--pb-font-body, 1rem);
+}
+
+/* ------------------------------------------------------------------ *
+ * Buttons
+ * ------------------------------------------------------------------ */
+
+.pb-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  padding: 0.75em 1.5em;
+  border: 1px solid transparent;
+  border-radius: var(--pb-radius-md, 0.5rem);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--pb-font-button, 1rem);
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, color .12s ease;
+}
+.pb-button:hover { transform: translateY(-1px); }
+.pb-button:focus-visible { outline: 2px solid var(--pb-color-primary, #2563eb); outline-offset: 2px; }
+
+.pb-button--primary {
+  background: var(--pb-color-primary, #2563eb);
+  color: #fff;
+  box-shadow: var(--pb-shadow-sm, 0 1px 2px rgba(0, 0, 0, .06));
+}
+.pb-button--primary:hover { box-shadow: var(--pb-shadow-md, 0 4px 12px rgba(0, 0, 0, .10)); }
+.pb-button--secondary {
+  background: var(--pb-color-secondary, #7c3aed);
+  color: #fff;
+}
+.pb-button--outline {
+  background: transparent;
+  color: var(--pb-color-primary, #2563eb);
+  border-color: currentColor;
+}
+.pb-button--outline:hover { background: var(--pb-color-primary, #2563eb); color: #fff; }
+.pb-button--ghost {
+  background: transparent;
+  color: var(--pb-color-text, #111827);
+}
+.pb-button--ghost:hover { background: var(--pb-color-surface, #f8fafc); }
+.pb-button--link {
+  background: transparent;
+  color: var(--pb-color-primary, #2563eb);
+  padding-inline: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.pb-button--link:hover { transform: none; }
+
+.pb-button--sm { padding: 0.5em 1em; font-size: var(--pb-font-small, 0.875rem); }
+.pb-button--lg { padding: 0.9em 2em; font-size: 1.125rem; }
+.pb-button--pill { border-radius: var(--pb-radius-pill, 999px); }
+
+/* ------------------------------------------------------------------ *
+ * Hero
+ * ------------------------------------------------------------------ */
+
+.pb-hero { position: relative; padding-block: var(--pb-space-2xl, 6rem); }
+.pb-hero__inner { display: flex; flex-direction: column; gap: var(--pb-space-md, 1rem); }
+.pb-hero__title {
+  margin: 0;
+  font-size: var(--pb-font-display, clamp(2.5rem, 1.5rem + 3vw, 4rem));
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--pb-color-text, #111827);
+}
+.pb-hero__subtitle {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 1.25rem;
+  line-height: 1.6;
+  color: var(--pb-color-muted, #6b7280);
+}
+.pb-align--center .pb-hero__subtitle { margin-inline: auto; }
+.pb-hero__button { margin-top: var(--pb-space-sm, 0.5rem); align-self: start; }
+.pb-align--center .pb-hero__button { align-self: center; }
+.pb-align--right .pb-hero__button { align-self: end; }
+.pb-hero--surface { background: var(--pb-color-surface, #f8fafc); }
+.pb-hero--dark {
+  background: var(--pb-color-text, #111827);
+}
+.pb-hero--dark .pb-hero__title { color: #fff; }
+.pb-hero--dark .pb-hero__subtitle { color: rgba(255, 255, 255, .72); }
+
+/* ------------------------------------------------------------------ *
+ * Text section
+ * ------------------------------------------------------------------ */
+
+.pb-text-section__content { font-size: 1.0625rem; line-height: 1.8; color: var(--pb-color-text, #111827); }
+.pb-text-section__content > * + * { margin-top: var(--pb-space-md, 1rem); }
+.pb-text-section--narrow .pb-text-section__inner { max-width: var(--pb-container-narrow, 42rem); }
+.pb-text-section--normal .pb-text-section__inner { max-width: var(--pb-container-normal, 64rem); }
+.pb-text-section--wide .pb-text-section__inner { max-width: var(--pb-container-wide, 80rem); }
+.pb-text-section--full .pb-text-section__inner { max-width: var(--pb-container-full, 100%); }
+
+/* ------------------------------------------------------------------ *
+ * Image section + image block
+ * ------------------------------------------------------------------ */
+
+.pb-image-section__figure,
+.pb-image { margin: 0; }
+.pb-align--center .pb-image-section__figure { margin-inline: auto; }
+.pb-image-section__img,
+.pb-image__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--pb-radius-md, 0.5rem);
+}
+.pb-image--rounded .pb-image__img,
+.pb-image-section--rounded .pb-image-section__img { border-radius: var(--pb-radius-lg, 1rem); }
+.pb-image--shadow .pb-image__img,
+.pb-image-section--shadow .pb-image-section__img { box-shadow: var(--pb-shadow-lg, 0 12px 32px rgba(0, 0, 0, .14)); }
+.pb-image__caption,
+.pb-image-section__caption {
+  margin-top: var(--pb-space-sm, 0.5rem);
+  font-size: var(--pb-font-small, 0.875rem);
+  color: var(--pb-color-muted, #6b7280);
+}
+.pb-image--cover .pb-image__img { object-fit: cover; width: 100%; }
+.pb-image--ratio-16x9 .pb-image__img { aspect-ratio: 16 / 9; object-fit: cover; }
+.pb-image--ratio-4x3 .pb-image__img { aspect-ratio: 4 / 3; object-fit: cover; }
+.pb-image--ratio-1x1 .pb-image__img { aspect-ratio: 1 / 1; object-fit: cover; }
+
+/* ------------------------------------------------------------------ *
+ * Columns
+ * ------------------------------------------------------------------ */
+
+.pb-columns__inner {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--pb-space-lg, 2rem);
+}
+.pb-columns--gap-sm .pb-columns__inner { gap: var(--pb-space-sm, 0.5rem); }
+.pb-columns--gap-md .pb-columns__inner { gap: var(--pb-space-md, 1rem); }
+.pb-columns--gap-lg .pb-columns__inner { gap: var(--pb-space-lg, 2rem); }
+.pb-columns--cols-2 .pb-columns__inner { grid-template-columns: repeat(2, 1fr); }
+.pb-columns--cols-3 .pb-columns__inner { grid-template-columns: repeat(3, 1fr); }
+.pb-columns--cols-4 .pb-columns__inner { grid-template-columns: repeat(4, 1fr); }
+.pb-column { display: flex; flex-direction: column; gap: var(--pb-space-md, 1rem); min-width: 0; }
+.pb-column--middle { justify-content: center; }
+.pb-column--bottom { justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  .pb-columns--cols-2 .pb-columns__inner,
+  .pb-columns--cols-3 .pb-columns__inner,
+  .pb-columns--cols-4 .pb-columns__inner { grid-template-columns: 1fr; }
+}
+
+/* ------------------------------------------------------------------ *
+ * CTA
+ * ------------------------------------------------------------------ */
+
+.pb-cta { }
+.pb-cta__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pb-space-md, 1rem);
+  padding: var(--pb-space-xl, 4rem) var(--pb-space-lg, 2rem);
+  background: var(--pb-color-surface, #f8fafc);
+  border-radius: var(--pb-radius-lg, 1rem);
+}
+.pb-align--center .pb-cta__inner { align-items: center; }
+.pb-cta__title { margin: 0; font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem); font-weight: 700; color: var(--pb-color-text, #111827); }
+.pb-cta__text { margin: 0; max-width: 52ch; color: var(--pb-color-muted, #6b7280); font-size: 1.125rem; line-height: 1.6; }
+.pb-cta__button { margin-top: var(--pb-space-sm, 0.5rem); }
+.pb-cta--banner .pb-cta__inner { flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; text-align: left; }
+.pb-cta--dark .pb-cta__inner { background: var(--pb-color-text, #111827); }
+.pb-cta--dark .pb-cta__title { color: #fff; }
+.pb-cta--dark .pb-cta__text { color: rgba(255, 255, 255, .72); }
+
+/* ------------------------------------------------------------------ *
+ * FAQ
+ * ------------------------------------------------------------------ */
+
+.pb-faq__heading { margin: 0 0 var(--pb-space-lg, 2rem); text-align: center; font-size: clamp(1.5rem, 1rem + 1.5vw, 2.25rem); font-weight: 700; color: var(--pb-color-text, #111827); }
+.pb-faq__items { display: flex; flex-direction: column; gap: var(--pb-space-sm, 0.5rem); }
+.pb-accordion-item {
+  border: 1px solid var(--pb-color-border, #e5e7eb);
+  border-radius: var(--pb-radius-md, 0.5rem);
+  background: var(--pb-color-background, #fff);
+  overflow: hidden;
+}
+.pb-accordion-item__question {
+  padding: var(--pb-space-md, 1rem);
+  font-weight: 600;
+  color: var(--pb-color-text, #111827);
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.pb-accordion-item__question::-webkit-details-marker { display: none; }
+.pb-accordion-item__question::after { content: "+"; margin-left: 1rem; color: var(--pb-color-muted, #6b7280); font-weight: 400; }
+.pb-accordion-item[open] .pb-accordion-item__question::after { content: "\2212"; }
+.pb-accordion-item__question:focus-visible { outline: 2px solid var(--pb-color-primary, #2563eb); outline-offset: -2px; }
+.pb-accordion-item__answer { padding: 0 var(--pb-space-md, 1rem) var(--pb-space-md, 1rem); color: var(--pb-color-muted, #6b7280); line-height: 1.7; }
+
+/* ------------------------------------------------------------------ *
+ * Testimonial + quote
+ * ------------------------------------------------------------------ */
+
+.pb-testimonial__quote,
+.pb-quote { margin: 0; border: 0; }
+.pb-testimonial__inner { display: flex; flex-direction: column; gap: var(--pb-space-md, 1rem); align-items: center; text-align: center; }
+.pb-testimonial__text,
+.pb-quote__text {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--pb-color-text, #111827);
+}
+.pb-testimonial__text::before { content: "\201C"; }
+.pb-testimonial__text::after { content: "\201D"; }
+.pb-testimonial__cite,
+.pb-quote__cite { display: flex; flex-direction: column; gap: 0.15rem; font-style: normal; }
+.pb-testimonial__author,
+.pb-quote__author { font-weight: 600; color: var(--pb-color-text, #111827); }
+.pb-testimonial__role,
+.pb-quote__role { font-size: var(--pb-font-small, 0.875rem); color: var(--pb-color-muted, #6b7280); }
+.pb-quote { padding: var(--pb-space-lg, 2rem); border-left: 3px solid var(--pb-color-primary, #2563eb); background: var(--pb-color-surface, #f8fafc); border-radius: var(--pb-radius-md, 0.5rem); }
+.pb-quote__cite { margin-top: var(--pb-space-sm, 0.5rem); }
+
+/* ------------------------------------------------------------------ *
+ * Logo strip
+ * ------------------------------------------------------------------ */
+
+.pb-logo-strip__heading { margin: 0 0 var(--pb-space-lg, 2rem); text-align: center; font-size: var(--pb-font-small, 0.875rem); text-transform: uppercase; letter-spacing: 0.08em; color: var(--pb-color-muted, #6b7280); }
+.pb-logo-strip__items { display: flex; flex-wrap: wrap; gap: var(--pb-space-xl, 4rem); align-items: center; justify-content: center; }
+.pb-logo__img { display: block; max-height: 2.5rem; width: auto; }
+.pb-logo-strip--grayscale .pb-logo__img { filter: grayscale(1); opacity: .65; transition: filter .2s ease, opacity .2s ease; }
+.pb-logo-strip--grayscale .pb-logo__img:hover { filter: grayscale(0); opacity: 1; }
+
+/* ------------------------------------------------------------------ *
+ * Icon
+ * ------------------------------------------------------------------ */
+
+.pb-icon { display: inline-block; width: 1.5em; height: 1.5em; color: var(--pb-color-primary, #2563eb); vertical-align: middle; }
+
+/* ------------------------------------------------------------------ *
+ * Editor-only placeholders (never emitted on the public frontend)
+ * ------------------------------------------------------------------ */
+
+.pb-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
+  padding: var(--pb-space-lg, 2rem);
+  border: 2px dashed var(--pb-color-border, #e5e7eb);
+  border-radius: var(--pb-radius-md, 0.5rem);
+  color: var(--pb-color-muted, #6b7280);
+  font-size: var(--pb-font-small, 0.875rem);
+  text-align: center;
+  background: var(--pb-color-surface, #f8fafc);
+}
+
+/* ------------------------------------------------------------------ *
+ * Column width parity hotfix (2026-07)                               *
+ *                                                                    *
+ * The public content body is passed through the theme's output       *
+ * sanitizer (`cms_html()` → HtmlSanitizer), whose global allow-list  *
+ * is `['class']` only — it strips EVERY inline `style` attribute. So  *
+ * the Page Builder's self-contained inline column geometry never      *
+ * reaches the anonymous frontend (exact-% columns collapse to 100%    *
+ * and wrap), while the never-sanitised Live Builder iframe stays      *
+ * correct. This block reconstructs the flex row, the gutter variable  *
+ * and the column geometry entirely from CLASSES (which survive), so   *
+ * the public frontend matches the editor. Arbitrary percentages get   *
+ * a per-value `.pb-cw-*` rule injected into <head> at render time     *
+ * (ColumnWidthRegistry); fixed aliases + the flex/gutter scaffolding  *
+ * are static here. Append-only: overrides the legacy rules by cascade.*
+ * ------------------------------------------------------------------ */
+
+/* Flex row scaffolding (inline `display:flex…` is sanitised away). */
+.pb-columns__inner,
+.pb-layout-container--row.pb-container--flex {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 0; /* gutter is column padding, never an external flex gap */
+}
+.pb-layout-container--column.pb-container--flex {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    gap: 0;
+}
+.pb-container--grid { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.pb-container--block { display: block; }
+
+/* Gutter as an inherited CSS variable, keyed by the gap class (inline
+ * `--pb-col-gap` is sanitised away). Columns pad by half of it (border-box). */
+.pb-layout-container--gap-none, .pb-columns--gap-none .pb-columns__inner { --pb-col-gap: 0px; }
+.pb-layout-container--gap-sm,   .pb-columns--gap-sm .pb-columns__inner   { --pb-col-gap: var(--pb-space-sm, 0.5rem); }
+.pb-layout-container--gap-md,   .pb-columns--gap-md .pb-columns__inner   { --pb-col-gap: var(--pb-space-md, 1rem); }
+.pb-layout-container--gap-lg,   .pb-columns--gap-lg .pb-columns__inner   { --pb-col-gap: var(--pb-space-lg, 2rem); }
+
+/* Column shell. The exact percentage basis comes from the `.pb-cw-*` <head>
+ * rule (arbitrary %) or the alias classes below (fixed) — NOT from the inline
+ * `--pb-column-basis` var, which the sanitizer strips. This carries only the
+ * sanitiser-proof shell: gutter padding + border-box + min-width:0. */
+.pb-layout-column {
+    min-width: 0;
+    box-sizing: border-box;
+    padding-inline: calc(var(--pb-col-gap, 0px) / 2);
+}
+
+/* Legacy semantic aliases stay class-only (Phase 25.3 byte-compat contract),
+ * so under the flex row they need a guaranteed basis class to size by. */
+.pb-column--full { flex: 0 0 100%; max-width: 100%; }
+.pb-column--half { flex: 0 0 50%; max-width: 50%; }
+.pb-column--third { flex: 0 0 33.3333%; max-width: 33.3333%; }
+.pb-column--quarter { flex: 0 0 25%; max-width: 25%; }
+.pb-column--full,
+.pb-column--half,
+.pb-column--third,
+.pb-column--quarter {
+    min-width: 0;
+    box-sizing: border-box;
+    padding-inline: calc(var(--pb-col-gap, 0px) / 2);
+}
