@@ -27,7 +27,7 @@ use Plugins\PageBuilder\State\LayoutMutator;
  */
 class PageBuilderManager
 {
-    public const VERSION = '0.1.0-alpha.1';
+    public const VERSION = '0.1.0-alpha.2';
 
     /** Lazily-created Phase 8 state helpers (stateless singletons). */
     private ?CommandBus $commandBus = null;
@@ -298,8 +298,12 @@ class PageBuilderManager
             // design-resource sections/blocks the palette inserts natively via the
             // existing insert-pattern / insert-component commands. Light metadata
             // only; payloads are fetched on insert (repository stays authoritative).
-            'builderResources' => $this->builderResources?->toEditorArray()
-                ?? ['section' => [], 'block' => []],
+            // Human labels resolved for the Admin UI locale (PB-TEMPLATE-REGISTRY-1-H3) — never the
+            // editing locale. Machine identity (rid/kind/version/category/tags) stays invariant.
+            'builderResources' => $this->builderResources?->toEditorArray(
+                \Plugins\PageBuilder\Support\CatalogLocale::admin(),
+                \Plugins\PageBuilder\Support\CatalogLocale::fallback(),
+            ) ?? ['section' => [], 'block' => []],
         ];
     }
 

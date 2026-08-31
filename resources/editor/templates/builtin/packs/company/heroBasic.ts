@@ -12,17 +12,24 @@ export const heroBasic: TemplateDefinition = {
   description: 'A headline, subtext, and a primary call to action.',
   category: 'hero',
   version: '1.0.0',
+  // Real catalog thumbnail (PB-FREE-LIBRARY-DESIGN-1-F): a plugin-owned WebP rendered
+  // from this template's canonical payload through the Runtime Preview engine.
+  preview: '/vendor/page-builder/img/thumbnails/template-hero-basic.webp',
   layout: {
     kind: 'tree',
     tree: {
       sections: [
         {
           type: 'section',
-          data: { align: 'center', padding: { top: 64, bottom: 64 } },
+          // Canonical generic-section spacing (PB-FREE-LIBRARY-DESIGN-1-F): the renderer
+          // reads the box-model `spacing.padding.{top,right,bottom,left}`; the legacy
+          // `padding:{top,bottom}` object + section-level `align` were non-canonical (they
+          // threw in section.blade). Vertical intent (64px) is preserved exactly.
+          data: { spacing: { padding: { top: 64, right: 0, bottom: 64, left: 0 } } },
           blocks: [
-            { type: 'heading', data: { level: 1, text: 'Build something people love' } },
+            { type: 'heading', data: { level: 'h1', text: 'Build something people love' } },
             { type: 'text', data: { text: 'A short, benefit-driven subheading that supports the headline.' } },
-            { type: 'button', data: { label: 'Get started', href: '#' } },
+            { type: 'button', data: { label: 'Get started', url: '#' } },
           ],
         },
       ],

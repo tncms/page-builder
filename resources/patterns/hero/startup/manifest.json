@@ -48,5 +48,15 @@
             "label": "Button URL",
             "default": "#"
         }
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Startup Hero",
+            "vi": "Hero khởi nghiệp"
+        },
+        "description": {
+            "en": "Bold landing hero for SaaS startups with a primary call to action.",
+            "vi": "Khu hero trang đích nổi bật cho startup SaaS với một lời kêu gọi hành động chính."
+        }
+    }
 }

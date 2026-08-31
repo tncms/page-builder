@@ -129,6 +129,13 @@ class TokenRegistry
             new DesignToken('color', 'success', '#16a34a', 'Success'),
             new DesignToken('color', 'warning', '#d97706', 'Warning'),
             new DesignToken('color', 'danger', '#dc2626', 'Danger'),
+            // Paired foreground + focus roles (PB-FREE-LIBRARY-DESIGN-1-C): accessible
+            // text on an accent/brand fill, inverse text on a dark surface, and the
+            // shared focus-ring colour. Defaults keep WCAG AA on the neutral palette
+            // and are theme-overridable like every other content token.
+            new DesignToken('color', 'on-accent', '#ffffff', 'On accent'),
+            new DesignToken('color', 'inverse', '#ffffff', 'Inverse text'),
+            new DesignToken('color', 'focus', '#2563eb', 'Focus ring'),
 
             // Spacing scale.
             new DesignToken('spacing', 'xs', '0.25rem', 'Extra small'),

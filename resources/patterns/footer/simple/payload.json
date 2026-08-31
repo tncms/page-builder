@@ -9,62 +9,160 @@
             "blocks": [
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "heading",
-                            "data": {
-                                "text": "Product",
-                                "level": "h4"
+                    "data": {
+                        "width": "25",
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Acme",
+                                    "level": "h4"
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "data": {
+                                    "text": "Build and ship on-brand pages faster — without the engineering backlog."
+                                }
                             }
-                        },
-                        {
-                            "type": "text",
-                            "data": {
-                                "content": "Features. Pricing. Changelog."
-                            }
-                        }
-                    ]
+                        ]
+                    }
                 },
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "heading",
-                            "data": {
-                                "text": "Company",
-                                "level": "h4"
+                    "data": {
+                        "width": "25",
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Product",
+                                    "level": "h4"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Features",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Pricing",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Changelog",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
                             }
-                        },
-                        {
-                            "type": "text",
-                            "data": {
-                                "content": "About. Blog. Careers."
-                            }
-                        }
-                    ]
+                        ]
+                    }
                 },
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "heading",
-                            "data": {
-                                "text": "Legal",
-                                "level": "h4"
+                    "data": {
+                        "width": "25",
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Company",
+                                    "level": "h4"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "About",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Blog",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Careers",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
                             }
-                        },
-                        {
-                            "type": "text",
-                            "data": {
-                                "content": "Privacy. Terms."
+                        ]
+                    }
+                },
+                {
+                    "type": "column",
+                    "data": {
+                        "width": "25",
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Resources",
+                                    "level": "h4"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Documentation",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Support",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
+                            },
+                            {
+                                "type": "button",
+                                "data": {
+                                    "label": "Status",
+                                    "url": "#",
+                                    "style": "link",
+                                    "size": "sm"
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
             ]
+        },
+        {
+            "type": "text-section",
+            "data": {
+                "width": "normal",
+                "align": "center",
+                "content": "© 2026 Acme. All rights reserved."
+            }
         }
     ]
 }

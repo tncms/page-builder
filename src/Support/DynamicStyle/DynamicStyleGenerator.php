@@ -22,7 +22,7 @@ namespace Plugins\PageBuilder\Support\DynamicStyle;
  */
 final class DynamicStyleGenerator
 {
-    public function rule(string $class, DynamicStyleDeclaration $declaration, bool $debug = false): string
+    public function rule(string $class, DynamicStyleDeclaration $declaration, bool $debug = false, ?string $media = null): string
     {
         $selector = '.'.$class.'.'.$class.'.'.$class;
 
@@ -33,20 +33,33 @@ final class DynamicStyleGenerator
             ? '/* '.$class.' → '.implode(', ', array_keys($declaration->declarations)).' */'
             : '';
 
-        return $comment.$selector.'{'.$declaration->toCss().'}';
+        $rule = $comment.$selector.'{'.$declaration->toCss().'}';
+
+        // PB-PROD-1: a responsive override is wrapped in its breakpoint's max-width
+        // media block. The condition comes from the breakpoint authority
+        // ({@see \Plugins\PageBuilder\Support\Breakpoints}), so nothing user-typed
+        // reaches it. Null media (every pre-existing rule) is emitted unchanged.
+        if ($media !== null) {
+            return '@media '.$media.'{'.$rule.'}';
+        }
+
+        return $rule;
     }
 
     /**
      * One rule per registered class, concatenated. Empty string for no rules.
+     * A class present in `$media` is wrapped in its `@media` block (PB-PROD-1);
+     * with no media map the output is byte-identical to before.
      *
      * @param  array<string, DynamicStyleDeclaration>  $rules  class => declaration
+     * @param  array<string, string>  $media  class => `@media` condition
      */
-    public function stylesheet(array $rules, bool $debug = false): string
+    public function stylesheet(array $rules, bool $debug = false, array $media = []): string
     {
         $css = '';
 
         foreach ($rules as $class => $declaration) {
-            $css .= $this->rule($class, $declaration, $debug);
+            $css .= $this->rule($class, $declaration, $debug, $media[$class] ?? null);
         }
 
         return $css;

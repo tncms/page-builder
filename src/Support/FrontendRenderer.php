@@ -37,7 +37,7 @@ final class FrontendRenderer
         private readonly EffectiveEditorOwnerResolver $owners,
     ) {}
 
-    public function bodyFor(string $ownerType, int|string $ownerId, string $classicBody): string
+    public function bodyFor(string $ownerType, int|string $ownerId, string $classicBody, bool $externalTitleRendered = false): string
     {
         if (! EditableOwners::isSupported($ownerType)) {
             return $classicBody;
@@ -71,12 +71,22 @@ final class FrontendRenderer
         $this->columnWidths->reset();
         $this->dynamicStyles->reset();
 
+        // Heading-context (PB-FREE-LIBRARY-DESIGN-1-E-H1): tell the runtime whether
+        // the host theme already renders the page title <h1> above this layout, so
+        // the builder's primary hero heading takes the correct semantic rank. Reset
+        // afterwards so this transient fact never leaks into another render, and the
+        // stored payload is never touched.
+        $runtime = $this->renderer->runtime();
+        $runtime->setExternalHeadingPresent($externalTitleRendered);
+
         try {
             $html = $this->renderer->render($layout->published_payload);
         } catch (Throwable $e) {
             report($e);
 
             return $classicBody;
+        } finally {
+            $runtime->setExternalHeadingPresent(false);
         }
 
         if (trim($html) === '') {

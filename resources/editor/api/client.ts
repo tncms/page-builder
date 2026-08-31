@@ -7,11 +7,34 @@ import type {
   ComponentPreviewResult,
   DesignCaptureResponse,
   EditorContextData,
+  FullPageImportPlanData,
+  FullPageImportResultData,
   LayoutContext,
   LayoutPayload,
   StateResult,
 } from '../types'
 import type { PatternDetailResult, PatternIndexResult, PatternPacksResult } from '../patterns/types'
+import type { ResourceCatalogBundle } from '../browser/types'
+
+/** The stable, namespaced conflict code the server returns on a stale save/publish. */
+export const LAYOUT_VERSION_CONFLICT = 'page_builder.layout.version_conflict'
+
+/**
+ * A typed optimistic-concurrency conflict (INV-PUB-06). Distinct from a generic
+ * request failure so the store can preserve local work and refuse a false success
+ * instead of treating it as a transport error. Carries the server's current-version
+ * metadata (token + state flags, never payloads) for explicit reload/reconciliation.
+ */
+export class LayoutConflictError extends Error {
+  constructor(
+    message: string,
+    public readonly code: string,
+    public readonly current: Record<string, unknown> | null,
+  ) {
+    super(message)
+    this.name = 'LayoutConflictError'
+  }
+}
 
 export class ApiClient {
   constructor(private readonly boot: BootData) {}
@@ -20,12 +43,12 @@ export class ApiClient {
     return this.request<EditorContextData>(this.boot.api.context, 'GET')
   }
 
-  async saveDraft(payload: LayoutPayload): Promise<LayoutContext> {
-    return this.request<LayoutContext>(this.boot.api.draft, 'POST', { payload })
+  async saveDraft(payload: LayoutPayload, token: string | null): Promise<LayoutContext> {
+    return this.request<LayoutContext>(this.boot.api.draft, 'POST', { payload, token })
   }
 
-  async publish(): Promise<LayoutContext> {
-    return this.request<LayoutContext>(this.boot.api.publish, 'POST', {})
+  async publish(token: string | null): Promise<LayoutContext> {
+    return this.request<LayoutContext>(this.boot.api.publish, 'POST', { token })
   }
 
   /**
@@ -115,6 +138,61 @@ export class ApiClient {
     return this.request<PatternPacksResult>(`${this.patternsUrl()}/packs`, 'GET')
   }
 
+  /**
+   * The unified Resource Browser catalog (PB-TEMPLATE-REGISTRY-2-B). Metadata only —
+   * no resource payload — resolved for the Admin UI locale server-side. Fetched lazily
+   * when the browser opens. URL derived from the command endpoint (no extra boot plumbing).
+   */
+  async getResourceCatalog(): Promise<ResourceCatalogBundle> {
+    const url = this.boot.api.command.replace(/\/state\/command$/, '/editor/resource-catalog')
+    return this.request<ResourceCatalogBundle>(url, 'GET')
+  }
+
+  /**
+   * PB-TEMPLATE-REGISTRY-2-C — Full Page Template import dry run (read-only). Resolves
+   * the RID + current draft revision server-side and returns the plan's optimistic-
+   * concurrency tokens. The plan endpoint always answers 200/{success:true}.
+   */
+  async planTemplateImport(body: {
+    rid: string
+    ownerType: string
+    ownerId: number | string
+  }): Promise<FullPageImportPlanData> {
+    const url = this.boot.api.templateImportPlan
+    if (!url) throw new Error('Template import is unavailable.')
+    return this.request<FullPageImportPlanData>(url, 'POST', body)
+  }
+
+  /**
+   * Atomic commit that replaces ONLY the draft. Returns the RAW envelope (does NOT throw
+   * on a 422) so the caller can branch on typed blocker codes (stale_revision /
+   * plan_mismatch → conflict) instead of treating them as a generic transport error.
+   */
+  async commitTemplateImport(body: {
+    rid: string
+    ownerType: string
+    ownerId: number | string
+    planHash: string
+    revision: string
+  }): Promise<{ status: number; data: FullPageImportResultData }> {
+    const url = this.boot.api.templateImport
+    if (!url) return { status: 0, data: { ok: false, issues: [] } }
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': this.boot.csrf,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(body),
+    })
+    const json = await response.json().catch(() => null)
+    const data = (json?.data ?? { ok: false, issues: [] }) as FullPageImportResultData
+    return { status: response.status, data }
+  }
+
   private patternsUrl(): string {
     return this.boot.api.command.replace(/\/state\/command$/, '/patterns')
   }
@@ -175,6 +253,16 @@ export class ApiClient {
     })
 
     const json = await response.json().catch(() => null)
+
+    // INV-PUB-06 — a stale save/publish is a typed conflict, not a generic failure, so
+    // the store can keep local work and refuse a false success.
+    if (response.status === 409) {
+      throw new LayoutConflictError(
+        json?.message ?? 'This layout changed in another session.',
+        json?.error ?? LAYOUT_VERSION_CONFLICT,
+        (json?.data as Record<string, unknown>) ?? null,
+      )
+    }
 
     if (!response.ok || !json?.success) {
       throw new Error(json?.message ?? `Request failed (${response.status}).`)

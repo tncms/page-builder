@@ -27,6 +27,16 @@ final class DesignResource implements DesignResourceContract
      * @param  array<string, mixed>|null  $compatibility    {schemaVersion, builder?, requiredComponents?, requiredFeatures?}
      * @param  array<string, mixed>       $distribution     {entitlement?, license?, ...} (C8, read-only, never affects runtime)
      * @param  array<string, mixed>|null  $package          {packageId?, source?} metadata only — NO paths
+     * @param  array<string, array<string, string>>|null  $localized  optional per-field locale maps for the
+     *          human presentation fields only ({name?: {locale: string}, description?: {locale: string}}). It is
+     *          resolved by Admin UI locale at the catalog presentation boundary; it NEVER affects identity, the
+     *          payload, or the invariant machine fields ($rid/$source/$kind/$resourceId/$version/$category/$tags),
+     *          and is intentionally NOT emitted by {@see toMetadata()} (raw maps are never shipped).
+     * @param  bool  $browsable  presentation-only: whether this resource is a curated, user-selectable design
+     *          resource eligible for the unified Resource Browser catalog. Raw component substrate (generated from
+     *          the section/block registries as an editor-palette fallback) sets this false so it never masquerades
+     *          as a curated resource. It NEVER affects identity, the payload, RID materialization, or the editor
+     *          component palette — only whether the resource is offered as a curated browse item.
      */
     public function __construct(
         public readonly string $rid,
@@ -45,6 +55,8 @@ final class DesignResource implements DesignResourceContract
         public readonly ?array $compatibility = null,
         public readonly array $distribution = [],
         public readonly ?array $package = null,
+        public readonly ?array $localized = null,
+        public readonly bool $browsable = true,
     ) {
     }
 

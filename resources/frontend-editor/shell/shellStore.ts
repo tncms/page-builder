@@ -55,6 +55,10 @@ export const useShellStore = defineStore('pbFrontendShell', {
     },
 
     publicUrl: (state): string => state.boot?.publicUrl ?? '/',
+    // Whether "View Page" has a real, accessible public target. Defaults to true so
+    // published owners (and older boot payloads) keep their working link; only an
+    // explicit false (unpublished owner) disables the action (PB-DRAFT-PREVIEW-R1).
+    publicUrlAvailable: (state): boolean => state.boot?.publicUrlAvailable ?? true,
     structureEditUrl: (state): string | null => state.boot?.structureEditUrl ?? null,
     iframeWidth: (state): string => deviceWidth(state.device),
   },

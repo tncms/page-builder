@@ -10,5 +10,15 @@
         "gallery",
         "images",
         "grid"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Three-Up Gallery",
+            "vi": "Thư viện ba ảnh"
+        },
+        "description": {
+            "en": "A three-column image gallery.",
+            "vi": "Thư viện ảnh ba cột."
+        }
+    }
 }

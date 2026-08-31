@@ -34,6 +34,26 @@ final class PreviewResourceResolver
      */
     public function resolve(string $source, ?string $reference = null): PreviewContext
     {
+        // Generation-only built-in Template-Picker preview (PB-FREE-LIBRARY-DESIGN-1-F).
+        // The three built-in templates are client-side TypeScript definitions, not
+        // repository resources, so they resolve to a canonical normalized payload rendered
+        // by the SAME preview engine — never a second/hand-authored renderer. sampleContent
+        // is off (the payload is the real, applied content), so the thumbnail depicts Apply.
+        if ($source === 'builtin-template') {
+            $id = (string) ($reference ?? '');
+            $payload = (new BuiltinTemplatePreviewCatalog)->payload($id);
+            if ($payload === null) {
+                throw PreviewResourceException::unknownType('template', $id);
+            }
+
+            return new PreviewContext(
+                kind: PreviewContext::KIND_PAGE,
+                payload: $payload,
+                sampleContent: false,
+                label: 'builtin-template:'.$id,
+            );
+        }
+
         $rid = $this->ridFor($source, $reference);
 
         try {
@@ -45,6 +65,14 @@ final class PreviewResourceResolver
         return new PreviewContext(
             kind: $resource->kind,
             payload: $resource->payload,
+            // Preview/apply fidelity (PB-FREE-LIBRARY-DESIGN-1-F). A curated,
+            // browsable resource already carries its canonical authored content, so
+            // its preview (and the generated catalog thumbnail) must render that
+            // payload verbatim — never renderer-injected sample content that Apply
+            // does not produce. Only the raw component substrate (browsable=false),
+            // previewed as an empty palette component, keeps sample-content chrome so
+            // an empty block still shows a representative placeholder.
+            sampleContent: ! $resource->browsable,
             label: $resource->rid,
         );
     }

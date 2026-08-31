@@ -7,6 +7,8 @@ namespace Plugins\PageBuilder\Runtime;
 use Illuminate\Support\Facades\View;
 use Plugins\PageBuilder\Contracts\ComponentInstance;
 use Plugins\PageBuilder\Support\ColumnWidth;
+use Plugins\PageBuilder\Support\ColumnWidthRegistry;
+use Plugins\PageBuilder\Support\ResponsiveSpacingStyle;
 use Plugins\PageBuilder\Support\SpacingStyle;
 
 /**
@@ -28,7 +30,22 @@ class ComponentRuntime
      */
     private bool $editor = false;
 
-    public function __construct(private readonly RuntimeHookManager $hooks) {}
+    /**
+     * Heading-context: whether the HOST document already renders a primary title
+     * heading (the theme's page `<h1>`) above this layout — the generic fact the
+     * core page-title visibility contract exposes (PB-FREE-LIBRARY-DESIGN-1-E-H1).
+     * When true the builder's primary hero heading renders at the next semantic
+     * level (`<h2>`) so the document keeps exactly one `<h1>`; when false the hero
+     * owns the single `<h1>`. It is a transient render fact — NEVER persisted into
+     * the payload — and defaults to false (the pre-contract behaviour, and the
+     * documented default for catalog previews not attached to a page).
+     */
+    private bool $externalHeadingPresent = false;
+
+    public function __construct(
+        private readonly RuntimeHookManager $hooks,
+        private readonly ResponsiveSpacingStyle $responsiveSpacing,
+    ) {}
 
     public function hooks(): RuntimeHookManager
     {
@@ -43,6 +60,16 @@ class ComponentRuntime
     public function editorMode(): bool
     {
         return $this->editor;
+    }
+
+    public function setExternalHeadingPresent(bool $present): void
+    {
+        $this->externalHeadingPresent = $present;
+    }
+
+    public function externalHeadingPresent(): bool
+    {
+        return $this->externalHeadingPresent;
     }
 
     /**
@@ -79,16 +106,43 @@ class ComponentRuntime
         $instance->afterRender();
         $this->hooks->dispatch('afterRender', $instance);
 
-        // Phase 19 — apply box-model spacing (data.spacing) as an inline style on
-        // the component root. Purely additive: components without spacing data are
+        // Phase 19 / PB-PROD-1 — apply box-model spacing (data.spacing) to the
+        // component root. Purely additive: components without spacing data are
         // unchanged. Runs in both public and editor mode, before editor wrapping,
         // so the spacing lands on the real element (not the marker div).
         if ($html !== '') {
-            $html = SpacingStyle::apply($html, $instance->data());
+            $html = $this->applySpacing($html, $instance->data());
         }
 
         if ($this->editor && $html !== '') {
             $html = $this->wrapForEditor($instance, $html);
+        }
+
+        return $html;
+    }
+
+    /**
+     * Apply box-model spacing to a component root (PB-PROD-1).
+     *
+     * The desktop/base value is injected inline (byte-identical to Phase 19 for a
+     * non-responsive flat box; the desktop entry for a responsive envelope) so the
+     * sanitiser-free editor/preview shows it. When the spacing is responsive, the
+     * per-breakpoint rules are registered through the runtime style pipeline and
+     * their sanitiser-proof `.pb-ds-*` classes are added to the root, so the
+     * anonymous frontend renders desktop/tablet/mobile faithfully.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function applySpacing(string $html, array $data): string
+    {
+        $spacing = $data['spacing'] ?? null;
+
+        $base = $this->responsiveSpacing->baseSpacing($spacing);
+        $html = SpacingStyle::inject($html, SpacingStyle::css($base));
+
+        $classes = $this->responsiveSpacing->register($spacing);
+        if ($classes !== []) {
+            $html = ResponsiveSpacingStyle::applyClasses($html, $classes);
         }
 
         return $html;
@@ -147,12 +201,25 @@ class ComponentRuntime
 
         if ($type === 'column') {
             $basis = ColumnWidth::basis($instance->data()['width'] ?? null);
-            $style = $basis === null
-                // Auto: flex freely to fill the remaining row space.
-                ? 'flex:1 1 0;min-width:0;box-sizing:border-box;'
-                : 'flex:0 0 '.$basis.';max-width:'.$basis.';min-width:0;box-sizing:border-box;--pb-column-basis:'.$basis.';';
 
-            return [' pb-editor-render-marker--column', ' style="'.$style.'"'];
+            if ($basis === null) {
+                // Auto: flex freely to fill the remaining row space (class-owned).
+                return [' pb-editor-render-marker--column pb-editor-render-marker--column-auto', ''];
+            }
+
+            // Geometry authority (PB-FREE-LIBRARY-DESIGN-1-C): the marker carries the
+            // basis through the SAME sanitizer-proof `.pb-cw-*` class the public
+            // column uses, so one CSS authority sizes it on every surface and the
+            // certified tablet stacking media query wins here too — no inline final
+            // flex/max-width that a media query cannot override. `.pb-cw-*` only
+            // emits for a safe percentage basis, so unsafe widths carry no geometry.
+            $cw = app(ColumnWidthRegistry::class)->classFor($basis);
+            $extra = ' pb-editor-render-marker--column';
+            if ($cw !== null) {
+                $extra .= ' '.$cw;
+            }
+
+            return [$extra, ''];
         }
 
         return ['', ''];
@@ -173,6 +240,11 @@ class ComponentRuntime
             // Phase 23: lets views render editor-only placeholders (drop zones,
             // "Choose an image", …). Never true on the public frontend.
             $data['pbEditor'] = $this->editor;
+            // Heading-context (PB-FREE-LIBRARY-DESIGN-1-E-H1): whether an external
+            // document title <h1> is already present, so a section owning the
+            // primary heading (hero) can pick the correct semantic rank. Transient
+            // render fact — not part of the stored payload.
+            $data['pbDocumentTitleRendered'] = $this->externalHeadingPresent;
 
             return View::make($view, $data)->render();
         }

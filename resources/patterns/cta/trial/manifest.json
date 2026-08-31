@@ -10,5 +10,15 @@
         "trial",
         "conversion"
     ],
-    "featured": true
+    "featured": true,
+    "localized": {
+        "name": {
+            "en": "Free Trial CTA",
+            "vi": "CTA dùng thử miễn phí"
+        },
+        "description": {
+            "en": "Conversion-focused call to action for a free trial.",
+            "vi": "Lời kêu gọi hành động tập trung chuyển đổi cho bản dùng thử miễn phí."
+        }
+    }
 }

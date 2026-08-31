@@ -38,7 +38,7 @@ function boot(): void {
   // Register first-party built-in template packs (resolvable + discoverable). Non-critical:
   // a bad pack must never block the editor from mounting, so failures degrade gracefully.
   try {
-    registerBuiltinPacks({ freeze: true })
+    registerBuiltinPacks({ freeze: true, labels: data.templateLabels })
     registerStarterPacks({ freeze: true })
   } catch {
     /* built-in templates / starter packs simply won't appear */

@@ -40,7 +40,11 @@ final class PreviewController
         }
 
         $device = $devices->normalize((string) $request->query('device', DevicePresets::DEFAULT));
-        $sample = $request->boolean('sample', true);
+        // Preview/apply fidelity (PB-FREE-LIBRARY-DESIGN-1-F): default to the sample
+        // policy the resolver derived for this source (curated resources render their
+        // canonical payload with no injected sample content; raw substrate keeps
+        // empty-state chrome). An explicit `?sample=` still overrides for tooling.
+        $sample = $request->has('sample') ? $request->boolean('sample') : $context->sampleContent;
         $locale = (string) $request->query('locale', app()->getLocale());
 
         $context = $context

@@ -24,7 +24,9 @@ const rootEl = ref<HTMLElement | null>(null)
 const locales = computed<TranslationLocaleOption[]>(() => store.availableLocales)
 const enabled = computed(() => locales.value.length > 1)
 const currentLocale = computed(() => store.currentLocale)
-const isDirty = computed(() => store.dirty || store.inspectorDirty)
+// PB-PROD-2 — any unsaved risk (dirty, armed/in-flight autosave, or a failed save)
+// gates a locale switch, not just committed dirtiness.
+const isDirty = computed(() => store.hasUnsavedRisk)
 
 const currentOption = computed<TranslationLocaleOption | null>(
   () => locales.value.find((l) => l.is_current) ?? locales.value.find((l) => l.locale === currentLocale.value) ?? null,
@@ -83,7 +85,7 @@ async function onSave(): Promise<void> {
 
   const navigated = await saveAndSwitch(target.editor_url, {
     save: () => store.saveDraft(),
-    stillDirty: () => store.dirty || store.inspectorDirty,
+    stillDirty: () => store.hasUnsavedRisk,
     navigate,
   })
 

@@ -6,7 +6,6 @@ namespace Plugins\PageBuilder\Definitions\Sections;
 
 use Plugins\PageBuilder\Definitions\AbstractSectionDefinition;
 use Plugins\PageBuilder\Schema\Fields\ColorField;
-use Plugins\PageBuilder\Schema\Fields\ResponsiveField;
 use Plugins\PageBuilder\Schema\Fields\SelectField;
 use Plugins\PageBuilder\Schema\Fields\SpacingField;
 use Plugins\PageBuilder\Schema\Fields\TextareaField;
@@ -74,9 +73,14 @@ class HeroSection extends AbstractSectionDefinition
                 ColorField::make('background')->label('Background')->token('color.background'),
             ]),
             Tab::make('advanced')->label('Advanced')->fields([
+                // Box-model spacing, authored per breakpoint (PB-PROD-1). The dotted
+                // field names land the values at `data.spacing.{padding,margin}` —
+                // the box-model path the runtime renders ({@see \Plugins\PageBuilder\Support\SpacingStyle}
+                // / {@see \Plugins\PageBuilder\Support\ResponsiveSpacingStyle}). `->responsive()`
+                // turns each into a desktop/tablet/mobile control via the shared engine.
                 Group::make('spacing')->label('Spacing')->fields([
-                    ResponsiveField::make('padding')->label('Padding')
-                        ->field(SpacingField::make('padding')),
+                    SpacingField::make('spacing.padding')->label('Padding')->responsive(),
+                    SpacingField::make('spacing.margin')->label('Margin')->responsive(),
                 ]),
                 TextField::make('anchor_id')->label('Anchor ID')
                     ->help('Adds an id for on-page links.'),

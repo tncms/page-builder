@@ -27,11 +27,14 @@
     $styles = match ($layout) {
         'grid' => 'display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:'.$gutter.';',
         'block' => 'display:block;',
-        // Flex row/column: NO flex gap — the gutter is column padding (see above).
-        // `gap:0` is set EXPLICITLY (not just omitted) so a stale/legacy public
-        // stylesheet that still sets a flex `gap` on `.pb-container` can never push
-        // exact percentages past 100% and wrap them (parity hotfix).
-        default => 'display:flex;flex-wrap:wrap;flex-direction:'.$direction.';gap:0;--pb-col-gap:'.$gutter.';',
+        // Flex row/column geometry authority (PB-FREE-LIBRARY-DESIGN-1-C): the flex
+        // row, its explicit `gap:0` gutter model (`--pb-col-gap` + column padding)
+        // and the tablet stacking are owned entirely by CSS classes
+        // (`.pb-layout-container--{direction}.pb-container--flex` +
+        // `.pb-layout-container--gap-*`), so ONE responsive authority governs every
+        // surface — no inline `display:flex`/`flex-direction` that a media query
+        // cannot override on the sanitizer-free editor/preview surfaces.
+        default => '',
     };
     if (($space[$padding] ?? '0px') !== '0px') {
         $styles .= 'padding:'.$space[$padding].';';

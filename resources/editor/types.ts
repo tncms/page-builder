@@ -36,6 +36,11 @@ export interface LayoutContext {
   // PB-STATE-2V — whether the published snapshot already reflects the current draft.
   // The editor status is derived from this server truth, not from the local save flag.
   is_published_current: boolean
+  // INV-PUB-06 — the server-issued optimistic-concurrency token. The client echoes the
+  // last token it received on the next save/publish; a stale token is rejected (409).
+  // Optional so pre-token response fixtures/factories stay valid; the store treats an
+  // absent token as "not adopted" and never advances it optimistically.
+  version_token?: string | null
   last_saved_at: string | null
   published_at: string | null
 }
@@ -247,6 +252,14 @@ export interface BootData {
   // Phase 22.2 — mode-switch links + an optional selection to restore on load.
   nav?: EditorNav
   selected?: string | null
+  // PB-TEMPLATE-REGISTRY-2-D — server-resolved (Admin UI locale) editor chrome strings by
+  // stable slug (unknown-component placeholder/reason copy). EN/VI at parity; the editor Vue
+  // has no client i18n, so localization is owned by the plugin JSON + server resolution.
+  strings?: Record<string, string>
+  // PB-FREE-LIBRARY-DESIGN-1-F — Admin-UI-locale labels for the client-registered built-in
+  // Template-Picker templates, keyed by template id. Applied to the library items at boot so
+  // the Template Picker follows the Admin UI locale (never the editing locale).
+  templateLabels?: Record<string, { name?: string; description?: string }>
   api: {
     context: string
     draft: string
@@ -256,7 +269,30 @@ export interface BootData {
     // Phase 26.47F — the Runtime Preview route base for the resource Inspector
     // (`?source=rid&ref=<rid>&device=<device>`). Reuses the existing preview engine.
     resourcePreview?: string
+    // PB-TEMPLATE-REGISTRY-2-C — Full Page Template import (draft-only, atomic) for the
+    // unified Resource Browser. `plan` is a read-only dry run; `commit` replaces the draft.
+    // Both resolve the RID server-side (the client never sends a builder payload).
+    templateImportPlan?: string
+    templateImport?: string
   }
+}
+
+// PB-TEMPLATE-REGISTRY-2-C — the read-only dry-run of a Full Page Template import. It
+// carries the optimistic-concurrency tokens (planHash of the template tree, revision of
+// the current draft) the commit must echo back. Metadata only — never a builder payload.
+export interface FullPageImportPlanData {
+  ok: boolean
+  planHash: string
+  revision: string
+  blockers: Array<{ code: string; message: string }>
+}
+
+// The atomic commit result (draft only). `issues` carries typed blocker codes such as
+// `stale_revision` / `plan_mismatch` on an optimistic-concurrency conflict.
+export interface FullPageImportResultData {
+  ok: boolean
+  revision?: string
+  issues?: Array<{ code: string; message: string }>
 }
 
 export type CanvasMode = 'tree' | 'visual'

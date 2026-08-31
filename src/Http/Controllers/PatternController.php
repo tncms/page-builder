@@ -12,6 +12,7 @@ use Plugins\PageBuilder\Patterns\Pattern;
 use Plugins\PageBuilder\Patterns\PatternManager;
 use Plugins\PageBuilder\Patterns\PatternVariableResolver;
 use Plugins\PageBuilder\Patterns\Packs\PatternPack;
+use Plugins\PageBuilder\Support\CatalogLocale;
 use Plugins\PageBuilder\Patterns\Preview\PatternPreviewResolver;
 
 /**
@@ -205,8 +206,17 @@ final class PatternController
             ? route('page-builder.api.patterns.thumbnail', ['id' => $pattern->id()])
             : null;
 
+        // Human labels resolve for the Admin UI locale (never the editing/frontend
+        // locale) at this presentation boundary (PB-FREE-LIBRARY-DESIGN-1-F); every
+        // other field stays locale-invariant.
+        $manifest = $pattern->manifest();
+        $locale = CatalogLocale::admin();
+        $fallback = CatalogLocale::fallback();
+
         return [
-            ...$pattern->manifest()->toArray(),
+            ...$manifest->toArray(),
+            'name' => $manifest->localizedName($locale, $fallback),
+            'description' => $manifest->localizedDescription($locale, $fallback),
             'thumbnail_url' => route('page-builder.api.patterns.thumbnail', ['id' => $pattern->id()]),
             'preview' => $preview,
             'availability' => $this->dependencyResolver()->check($pattern)->toArray(),

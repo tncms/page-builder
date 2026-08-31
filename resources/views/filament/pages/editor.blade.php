@@ -53,6 +53,15 @@
         'exitUrl' => $context['owner']['edit_url'] ?? null,
         'nav' => $nav,
         'selected' => is_string($selected) ? $selected : null,
+        // PB-TEMPLATE-REGISTRY-2-D — Admin-UI-locale chrome strings for the unknown-node UX.
+        'strings' => \Plugins\PageBuilder\Support\EditorChromeStrings::resolve(\Plugins\PageBuilder\Support\CatalogLocale::admin()),
+        // PB-FREE-LIBRARY-DESIGN-1-F — Admin-UI-locale labels for the client-registered
+        // built-in Template-Picker templates (the editor Vue has no client i18n, so the
+        // catalog language follows the Admin UI locale resolved here, never the editing locale).
+        'templateLabels' => \Plugins\PageBuilder\Support\BuiltinTemplateCatalog::labels(
+            \Plugins\PageBuilder\Support\CatalogLocale::admin(),
+            \Plugins\PageBuilder\Support\CatalogLocale::fallback(),
+        ),
         'api' => [
             'context' => url($ownerPath.$localeQuery),
             'draft' => url($ownerPath.'/draft'.$localeQuery),
@@ -62,6 +71,11 @@
             // Phase 26.47F — Runtime Preview route base for the resource Inspector
             // (reuses the existing 26.41 preview engine; no new endpoint).
             'resourcePreview' => url('page-builder/preview'),
+            // PB-TEMPLATE-REGISTRY-2-C — Full Page Template import (draft-only, atomic) for
+            // the unified Resource Browser. Reuses the existing FullPageImportService; the
+            // RID is resolved server-side (the client never sends a builder payload).
+            'templateImportPlan' => url('page-builder/library/import/plan'),
+            'templateImport' => url('page-builder/library/import'),
         ],
     ];
 @endphp

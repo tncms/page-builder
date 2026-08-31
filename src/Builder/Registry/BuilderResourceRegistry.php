@@ -9,6 +9,7 @@ use Plugins\PageBuilder\Builder\Palette\PaletteGroup;
 use Plugins\PageBuilder\Builder\Palette\PaletteItem;
 use Plugins\PageBuilder\Contracts\RegistryContract;
 use Plugins\PageBuilder\Library\Availability\ResourceAvailabilityResolver;
+use Plugins\PageBuilder\Support\ResourceMetadataLocalizer;
 use Plugins\PageBuilder\Repository\Rid;
 
 /**
@@ -36,14 +37,25 @@ final class BuilderResourceRegistry implements RegistryContract
     /** @var array<string, BuilderResourceProvider> keyed by provider key (idempotent). */
     private array $providers = [];
 
-    /** @var array<string, array<int, PaletteGroup>>|null */
-    private ?array $cache = null;
+    /**
+     * Presentation cache keyed by "adminLocale|fallback" (PB-TEMPLATE-REGISTRY-1-H3). The
+     * contributed resource SET is content-derived and locale-invariant (see {@see signature()});
+     * only the resolved human labels vary by Admin UI locale, so each locale rendition is cached
+     * separately and can never leak another locale's labels.
+     *
+     * @var array<string, array<string, array<int, PaletteGroup>>>
+     */
+    private array $cache = [];
 
     private int $cacheSignature = -1;
 
+    private readonly ResourceMetadataLocalizer $localizer;
+
     public function __construct(
         private readonly ResourceAvailabilityResolver $availability,
+        ?ResourceMetadataLocalizer $localizer = null,
     ) {
+        $this->localizer = $localizer ?? new ResourceMetadataLocalizer;
     }
 
     /**
@@ -53,13 +65,13 @@ final class BuilderResourceRegistry implements RegistryContract
     public function registerProvider(BuilderResourceProvider $provider): void
     {
         $this->providers[$provider->key()] = $provider;
-        $this->cache = null;
+        $this->cache = [];
     }
 
     /** Drop the computed cache (next read rebuilds). */
     public function refresh(): void
     {
-        $this->cache = null;
+        $this->cache = [];
     }
 
     /**
@@ -75,27 +87,29 @@ final class BuilderResourceRegistry implements RegistryContract
      *
      * @return array<string, array<int, PaletteGroup>> kind => groups
      */
-    public function palette(): array
+    public function palette(?string $locale = null, ?string $fallback = null): array
     {
         $signature = $this->signature();
-        if ($this->cache !== null && $this->cacheSignature === $signature) {
-            return $this->cache;
+        if ($this->cacheSignature !== $signature) {
+            // The resource set changed -> drop every cached locale rendition and re-key.
+            $this->cache = [];
+            $this->cacheSignature = $signature;
         }
 
-        $this->cache = $this->build();
-        $this->cacheSignature = $signature;
+        $key = ($locale ?? '').'|'.($fallback ?? '');
 
-        return $this->cache;
+        return $this->cache[$key] ??= $this->build($locale, $fallback);
     }
 
     /**
-     * The palette as plain arrays for the editor boot metadata (Rule 10 fields only).
+     * The palette as plain arrays for the editor boot metadata (Rule 10 fields only), with human
+     * labels resolved for the given Admin UI locale (PB-TEMPLATE-REGISTRY-1-H3).
      *
      * @return array{section: array<int, array<string, mixed>>, block: array<int, array<string, mixed>>}
      */
-    public function toEditorArray(): array
+    public function toEditorArray(?string $locale = null, ?string $fallback = null): array
     {
-        $palette = $this->palette();
+        $palette = $this->palette($locale, $fallback);
 
         return [
             Rid::KIND_SECTION => array_map(
@@ -115,7 +129,7 @@ final class BuilderResourceRegistry implements RegistryContract
      *
      * @return array<int, array<string, mixed>>
      */
-    public function search(string $term): array
+    public function search(string $term, ?string $locale = null, ?string $fallback = null): array
     {
         $term = strtolower(trim($term));
         if ($term === '') {
@@ -123,7 +137,7 @@ final class BuilderResourceRegistry implements RegistryContract
         }
 
         $matches = [];
-        foreach ($this->palette() as $groups) {
+        foreach ($this->palette($locale, $fallback) as $groups) {
             foreach ($groups as $group) {
                 foreach ($group->categories as $category) {
                     foreach ($category->items as $item) {
@@ -141,7 +155,7 @@ final class BuilderResourceRegistry implements RegistryContract
     /**
      * @return array<string, array<int, PaletteGroup>>
      */
-    private function build(): array
+    private function build(?string $locale = null, ?string $fallback = null): array
     {
         // acc[kind][groupKey] = ['label'=>, 'priority'=>, 'cats'=> [catKey => ['label'=>, 'items'=>PaletteItem[]]]]
         $acc = [Rid::KIND_SECTION => [], Rid::KIND_BLOCK => []];
@@ -179,7 +193,9 @@ final class BuilderResourceRegistry implements RegistryContract
                 $acc[$kind][$groupKey]['cats'][$categoryKey]['items'][] = new PaletteItem(
                     rid: $resource->rid,
                     kind: $kind,
-                    name: $resource->name,
+                    // Human label resolved for the Admin UI locale; identity/category/tags stay
+                    // invariant (PB-TEMPLATE-REGISTRY-1-H3).
+                    name: $this->localizer->name($resource, $locale, $fallback),
                     category: $categoryKey,
                     tags: $resource->tags,
                     source: $resource->source,

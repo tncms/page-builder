@@ -16,6 +16,7 @@ final class PaletteGroup
     // Reserved group keys (Rule 5) — declared for future providers, not populated.
     public const GROUP_BUILTIN = 'builtin';
     public const GROUP_IMPORTED = 'imported';
+    public const GROUP_THEME = 'theme';             // active-theme resources (PB-TEMPLATE-REGISTRY-1-H2)
     public const GROUP_MY_DESIGNS = 'my-designs';   // reserved (Phase 26.48)
     public const GROUP_MARKETPLACE = 'marketplace'; // reserved (Phase 26.51)
     public const GROUP_FAVORITES = 'favorites';     // reserved

@@ -16,7 +16,18 @@
 <section class="pb-section pb-section--hero pb-hero pb-hero--{{ $style }} pb-align--{{ $data['align'] ?? 'center' }}">
     <div class="pb-hero__inner pb-container--{{ $width }}">
         @if ($title !== '')
-            <h1 class="pb-hero__title">{{ $title }}</h1>
+            {{--
+                Heading rank (PB-FREE-LIBRARY-DESIGN-1-E-H1 / RC-B). The hero title
+                intends to be the builder document's primary heading; the shared
+                HeadingRankResolver decides its tag so the document keeps exactly one
+                <h1> (single <h1> when the theme title is hidden, <h2> when the host
+                already owns the <h1>). Only the native tag changes — the
+                `pb-hero__title` class, and therefore all styling, is identical.
+            --}}
+            @php
+                $titleTag = app(\Plugins\PageBuilder\Support\HeadingRankResolver::class)->resolve('h1');
+            @endphp
+            <{{ $titleTag }} class="pb-hero__title">{{ $title }}</{{ $titleTag }}>
         @endif
         @if ($subtitle !== '')
             <p class="pb-hero__subtitle">{!! nl2br(e($subtitle)) !!}</p>

@@ -16,11 +16,16 @@ const modeLabel = computed(() => (store.isBuilderMode ? 'Page Builder' : 'Classi
 // Phase 22.2 — cross-mode navigation (Live Builder is the active mode here).
 const structureUrl = computed(() => store.navLinks?.structure ?? shell.structureEditUrl)
 const viewUrl = computed(() => store.navLinks?.public ?? shell.publicUrl)
+// PB-DRAFT-PREVIEW-R1 §12 — "View Page" means the REAL public page. While the
+// content entity is unpublished it has no accessible public page, so the action is
+// shown disabled with an explanation instead of linking to a misleading 404. This
+// is separate from the private iframe document, which always shows the draft.
+const publicUrlAvailable = computed(() => shell.publicUrlAvailable)
 
 function goStructure(): void {
-  // Carry the current selection across, and guard unsaved changes.
+  // Carry the current selection across, and guard ANY unsaved risk (PB-PROD-2).
   guardedNavigate(appendSelection(structureUrl.value, store.selectedComponentId), {
-    dirty: store.dirty || store.inspectorDirty,
+    dirty: store.hasUnsavedRisk,
   })
 }
 </script>
@@ -79,7 +84,7 @@ function goStructure(): void {
           Live Builder
         </span>
         <a
-          v-if="viewUrl"
+          v-if="viewUrl && publicUrlAvailable"
           class="pb-ui-btn pb-live-builder-btn pb-live-builder-btn--ghost"
           :href="viewUrl"
           target="_blank"
@@ -89,6 +94,16 @@ function goStructure(): void {
         >
           View Page
         </a>
+        <span
+          v-else
+          class="pb-ui-btn pb-live-builder-btn pb-live-builder-btn--ghost pb-live-builder-btn--disabled"
+          role="link"
+          aria-disabled="true"
+          aria-label="View page (available after content publication)"
+          title="Available after content publication"
+        >
+          View Page
+        </span>
       </nav>
 
       <button

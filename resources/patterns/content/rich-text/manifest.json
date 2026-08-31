@@ -10,5 +10,15 @@
         "content",
         "text",
         "article"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Rich Text",
+            "vi": "Văn bản đa dạng thức"
+        },
+        "description": {
+            "en": "A simple, readable text content section.",
+            "vi": "Một khu vực nội dung văn bản đơn giản, dễ đọc."
+        }
+    }
 }

@@ -9,5 +9,15 @@
     "tags": [
         "minimal",
         "centered"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Centered Hero",
+            "vi": "Hero căn giữa"
+        },
+        "description": {
+            "en": "Minimal centered hero with a single focused message.",
+            "vi": "Khu hero tối giản căn giữa với một thông điệp tập trung."
+        }
+    }
 }

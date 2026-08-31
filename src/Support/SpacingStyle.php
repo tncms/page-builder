@@ -84,6 +84,43 @@ final class SpacingStyle
         return self::inject($html, self::css($spacing));
     }
 
+    /**
+     * The sanitised `property => value` map for a `{padding, margin}` spacing map —
+     * the same declarations {@see css()} emits inline, but shaped for the runtime
+     * style registry (PB-PROD-1). Empty when there is nothing safe to emit.
+     *
+     * @return array<string, string>
+     */
+    public static function declarations(mixed $spacing): array
+    {
+        if (! is_array($spacing)) {
+            return [];
+        }
+
+        return self::boxDeclarations('padding', $spacing['padding'] ?? null)
+            + self::boxDeclarations('margin', $spacing['margin'] ?? null);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function boxDeclarations(string $prop, mixed $sides): array
+    {
+        if (! is_array($sides)) {
+            return [];
+        }
+
+        $decls = [];
+        foreach (self::SIDES as $side) {
+            $length = self::length($sides[$side] ?? null);
+            if ($length !== null) {
+                $decls[$prop.'-'.$side] = $length;
+            }
+        }
+
+        return $decls;
+    }
+
     private static function box(string $prop, mixed $sides): string
     {
         if (! is_array($sides)) {

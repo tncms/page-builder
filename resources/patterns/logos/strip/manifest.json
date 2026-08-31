@@ -10,5 +10,15 @@
         "logos",
         "brands",
         "social-proof"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Logo Strip",
+            "vi": "Dải logo"
+        },
+        "description": {
+            "en": "A row of customer or partner logos for social proof.",
+            "vi": "Một hàng logo khách hàng hoặc đối tác tạo sự tin cậy."
+        }
+    }
 }

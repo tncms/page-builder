@@ -108,7 +108,8 @@ async function submit(forceCopy = false) {
 </template>
 
 <style scoped>
-.pb-cap { position: fixed; inset: 0; z-index: 2147483350; display: grid; place-items: center; padding: 2rem; background: rgba(6, 8, 12, 0.6); }
+/* PB-TEMPLATE-REGISTRY-2-H1 — Save as Design stays the top-priority dialog, above the modal band. */
+.pb-cap { position: fixed; inset: 0; z-index: var(--pb-ui-z-modal-top); display: grid; place-items: center; padding: 2rem; background: rgba(6, 8, 12, 0.6); }
 .pb-cap__box { width: min(760px, 100%); max-height: 90vh; display: flex; flex-direction: column; background: var(--pb-editor-surface, #171a21); border: 1px solid var(--pb-border, #262b36); border-radius: 12px; outline: none; }
 .pb-cap__head { display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; border-bottom: 1px solid var(--pb-border, #262b36); color: var(--pb-editor-text, #e7eaf0); }
 .pb-cap__icon { border: 1px solid var(--pb-border, #262b36); background: var(--pb-panel, #0f1115); color: var(--pb-editor-text, #e7eaf0); width: 1.8rem; height: 1.8rem; border-radius: 8px; font-size: 1.1rem; cursor: pointer; }

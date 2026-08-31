@@ -3,6 +3,17 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use Plugins\PageBuilder\PageBuilderServiceProvider;
+
+// Core-compatibility fail-closed (PB RC-B). Core loads this route file in a pass
+// that is INDEPENDENT of the service provider's registration, so a provider that
+// threw on an unsupported Core would otherwise still leave the plugin's routes
+// registered. Consult the single boot-compat decision and register nothing when
+// the running Core is below the minimum, so an incompatible Core leaves no
+// routable surface behind.
+if (PageBuilderServiceProvider::compatibilityBlocksBoot()) {
+    return;
+}
 
 /*
 |--------------------------------------------------------------------------

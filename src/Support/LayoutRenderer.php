@@ -26,6 +26,7 @@ class LayoutRenderer
         private readonly LayoutNormalizer $normalizer,
         private readonly ComponentFactory $factory,
         private readonly ComponentRuntime $runtime,
+        private readonly HeadingRankResolver $headingResolver,
     ) {}
 
     public function normalizer(): LayoutNormalizer
@@ -55,6 +56,11 @@ class LayoutRenderer
      */
     public function render(?array $payload): string
     {
+        // Begin a fresh primary-heading pass. The external-title fact was set on
+        // the runtime by the caller (FrontendRenderer / FrontendEditorRenderer)
+        // before this render; catalog previews leave it at the default (false).
+        $this->headingResolver->begin($this->runtime->externalHeadingPresent());
+
         $html = '';
         foreach ($this->tree($payload)->sections() as $section) {
             $html .= $this->runtime->render($section);
@@ -112,6 +118,10 @@ class LayoutRenderer
         if ($instance === null) {
             return null;
         }
+
+        // Fresh primary-heading pass for this single-node editor render, so a
+        // heading rendered in isolation is not demoted by a stale prior claim.
+        $this->headingResolver->begin($this->runtime->externalHeadingPresent());
 
         $this->runtime->setEditorMode(true);
 

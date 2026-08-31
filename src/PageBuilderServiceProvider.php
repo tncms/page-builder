@@ -55,6 +55,7 @@ use Plugins\PageBuilder\Runtime\ComponentFactory;
 use Plugins\PageBuilder\Runtime\ComponentRuntime;
 use Plugins\PageBuilder\Runtime\DesignTokenResolver;
 use Plugins\PageBuilder\Runtime\RuntimeHookManager;
+use Plugins\PageBuilder\Support\Breakpoints;
 use Plugins\PageBuilder\Support\ColumnWidthRegistry;
 use Plugins\PageBuilder\Support\DefaultLibrary;
 use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleGenerator;
@@ -65,10 +66,15 @@ use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\FrontendEditorRenderer;
 use Plugins\PageBuilder\Support\FrontendRenderer;
 use Plugins\PageBuilder\Support\LayoutNormalizer;
+use Plugins\PageBuilder\Support\ResponsiveSpacingStyle;
+use Plugins\PageBuilder\Support\HeadingRankResolver;
+use Plugins\PageBuilder\Support\CoreCompatibility;
 use Plugins\PageBuilder\Support\LayoutRenderer;
 use Plugins\PageBuilder\Support\LayoutStore;
 use Plugins\PageBuilder\Support\PageBuilderManager;
+use Plugins\PageBuilder\Exceptions\IncompatibleCoreException;
 use TheNguyen\CMS\Models\Content;
+use TheNguyen\CMS\Services\PluginInstallationGuard;
 
 /**
  * Page Builder plugin service provider (Phase 1 — Foundation).
@@ -85,6 +91,24 @@ use TheNguyen\CMS\Models\Content;
  */
 class PageBuilderServiceProvider extends ServiceProvider
 {
+    /**
+     * Test-only override of the compatibility-enforcement decision. `null`
+     * (default) means "enforce in a real runtime, relax under the PHPUnit
+     * harness" ({@see shouldEnforceCompatibility()}). A test sets `true` to
+     * exercise the real provider path (throw + Core-skip on an incompatible
+     * Core, or the accepted boot on a satisfied one) or `false` to force the
+     * relaxed path, without ever touching Core. Reset to null in tearDown.
+     *
+     * @internal
+     */
+    private static ?bool $enforceCompatibilityOverride = null;
+
+    /** @internal Test seam — see {@see $enforceCompatibilityOverride}. */
+    public static function overrideCompatibilityEnforcement(?bool $enabled): void
+    {
+        self::$enforceCompatibilityOverride = $enabled;
+    }
+
     /**
      * Plugin permissions (slug => human label). Registered in the permission
      * manager so they appear in the role editor and gate the admin dashboard.
@@ -107,6 +131,22 @@ class PageBuilderServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        // Core-compatibility fail-closed (PB RC-B). The heading contract depends
+        // on the Core page-title seam (`show_page_title`) added in
+        // 1.0.0-beta.7.1.23; on older Core it cannot be honoured. Core does NOT
+        // enforce plugin.json `requires.tncms` (it is descriptive metadata), so
+        // the plugin enforces it here. Throwing before the first binding means the
+        // Core ExtensionManager — which registers this plugin's views, migrations
+        // and routes only AFTER this register() and isolates each plugin — skips
+        // the whole plugin: no bindings, hooks, assets, migrations or routes. See
+        // shouldEnforceCompatibility() for why enforcement relaxes under the
+        // isolated PHPUnit harness and how the real provider path stays testable.
+        if (self::compatibilityBlocksBoot()) {
+            $this->recordIncompatibility();
+
+            throw new IncompatibleCoreException(CoreCompatibility::incompatibilityMessage());
+        }
+
         $this->mergeConfigFrom(__DIR__.'/../config/page-builder.php', 'page-builder');
 
         // Registries are singletons so anything registered on boot (now or by
@@ -153,7 +193,19 @@ class PageBuilderServiceProvider extends ServiceProvider
             return new DesignTokenResolver($app->make(TokenResolver::class));
         });
         $this->app->singleton(ComponentFactory::class);
+
+        // PB-PROD-1: the breakpoint authority (thresholds read from the breakpoint
+        // design tokens) and the responsive box-model spacing renderer, which emits
+        // per-breakpoint overrides through the runtime style pipeline.
+        $this->app->singleton(Breakpoints::class);
+        $this->app->singleton(ResponsiveSpacingStyle::class);
+
         $this->app->singleton(ComponentRuntime::class);
+
+        // Primary-heading authority (PB-FREE-LIBRARY-DESIGN-1-RC-B): one render-
+        // scoped resolver coordinates the single document `<h1>` with the host
+        // page-title visibility. Reset per render pass by the LayoutRenderer.
+        $this->app->singleton(HeadingRankResolver::class);
 
         // Pattern Library (Phase 25): a data-driven layer on top of components.
         // Discovery/validation/lookup are singletons so the (lazy) discovery pass
@@ -302,6 +354,43 @@ class PageBuilderServiceProvider extends ServiceProvider
             static fn ($app) => $app->make(\Plugins\PageBuilder\Repository\DesignResourceRepository::class),
         );
 
+        // PB-TEMPLATE-REGISTRY-1-H1 — active-theme design-resource contribution. A
+        // thin locator + reader + provider that pulls declarative patterns/templates
+        // from ONLY the active theme (`themes/{active}/page-builder/...`) and feeds
+        // them into the ONE repository through the frozen provider contract. The
+        // themes root + active-slug resolver are constructor dependencies so a
+        // Page Builder-owned test can inject an isolated fixture theme root without a
+        // production config knob and without weakening path containment. Active theme
+        // identity comes from the verified Core theme authority.
+        $this->app->singleton(\Plugins\PageBuilder\Repository\Theme\ActiveThemeResourceLocator::class, static function ($app): \Plugins\PageBuilder\Repository\Theme\ActiveThemeResourceLocator {
+            return new \Plugins\PageBuilder\Repository\Theme\ActiveThemeResourceLocator(
+                base_path('themes'),
+                static function () use ($app): ?string {
+                    try {
+                        if ($app->bound('cms.theme')) {
+                            $manager = $app->make('cms.theme');
+                            if (method_exists($manager, 'activeSlug')) {
+                                $slug = $manager->activeSlug();
+                                if (is_string($slug) && $slug !== '') {
+                                    return $slug;
+                                }
+                            }
+                        }
+                    } catch (\Throwable) {
+                        // Core theme authority unavailable (isolated contexts): fall through.
+                    }
+
+                    $slug = $app['config']->get('cms.theme')
+                        ?? $app['config']->get('theme.active')
+                        ?? $app['config']->get('cms.active_theme');
+
+                    return is_string($slug) && $slug !== '' ? $slug : null;
+                },
+            );
+        });
+        $this->app->singleton(\Plugins\PageBuilder\Repository\Theme\ThemeResourceReader::class);
+        $this->app->singleton(\Plugins\PageBuilder\Repository\Providers\ThemeResourceProvider::class);
+
         // Phase 26.44 — Full Page Template import (draft-only, atomic).
         $this->app->singleton(\Plugins\PageBuilder\Import\NodeIdGenerator::class);
         $this->app->singleton(\Plugins\PageBuilder\Import\FullPageImportService::class);
@@ -328,6 +417,8 @@ class PageBuilderServiceProvider extends ServiceProvider
         // registry is the extensibility seam — plugins register their own provider.
         $this->app->singleton(\Plugins\PageBuilder\Builder\Registry\BuiltInProvider::class);
         $this->app->singleton(\Plugins\PageBuilder\Builder\Registry\ImportedProvider::class);
+        // PB-TEMPLATE-REGISTRY-1-H2 — active-theme section/block resources in the palette.
+        $this->app->singleton(\Plugins\PageBuilder\Builder\Registry\ThemeResourceBuilderProvider::class);
         $this->app->singleton(\Plugins\PageBuilder\Builder\Registry\BuilderResourceRegistry::class);
 
         // Phase 26.48 — Save as Design: the single Design Capture Pipeline + its
@@ -782,6 +873,60 @@ class PageBuilderServiceProvider extends ServiceProvider
         });
     }
 
+    /**
+     * Whether an incompatible Core must keep the whole plugin inert this boot.
+     *
+     * True = enforcement is on AND the running Core is below the minimum, so no
+     * plugin surface (bindings, hooks, assets, migrations, and — via
+     * routes/web.php which Core loads in a pass INDEPENDENT of the provider — the
+     * plugin's routes) may register. Both the service provider ({@see register()})
+     * and the plugin's route file consult this single decision so an unsupported
+     * Core leaves no routable or bound surface behind.
+     *
+     * Enforcement defaults on in a real runtime but relaxes under the PHPUnit
+     * harness, which force-loads the plugin against the pinned dev Core (older
+     * than the minimum); relaxing there is safe because the packaged plugin never
+     * runs under `runningUnitTests()`. The real path stays fully testable: a test
+     * forces enforcement on via {@see overrideCompatibilityEnforcement()}, and the
+     * disposable older/`.23` Core lifecycle certifications exercise it with no
+     * override at all (where runningUnitTests() is already false).
+     */
+    public static function compatibilityBlocksBoot(): bool
+    {
+        $enforced = self::$enforceCompatibilityOverride ?? ! app()->runningUnitTests();
+
+        return $enforced && ! CoreCompatibility::satisfied();
+    }
+
+    /**
+     * Surface an incompatibility to administrators through the supported Core
+     * plugin-error record ({@see PluginInstallationGuard}), the same store the
+     * lifecycle manager uses for a failed install. Best-effort and idempotent:
+     * guarded for a Core that predates the store, wrapped so a recording failure
+     * never masks the compatibility error, and only written when the message
+     * changes. The thrown exception (logged by the Core ExtensionManager with the
+     * plugin slug) remains the authoritative signal.
+     */
+    private function recordIncompatibility(): void
+    {
+        try {
+            if (! $this->app->bound('cms.plugin_installation_guard')) {
+                return;
+            }
+
+            /** @var PluginInstallationGuard $guard */
+            $guard = $this->app->make('cms.plugin_installation_guard');
+
+            $message = CoreCompatibility::incompatibilityMessage();
+
+            if ($guard->error('page-builder') !== $message) {
+                $guard->recordError('page-builder', $message);
+            }
+        } catch (\Throwable) {
+            // Recording is best-effort; the throw + Core boot log are authoritative.
+        }
+    }
+
     public function boot(): void
     {
         // Migrations, web routes and the "page-builder::" view namespace are
@@ -955,6 +1100,11 @@ class PageBuilderServiceProvider extends ServiceProvider
                     (string) $content->type,
                     $content->getKey(),
                     $body,
+                    // Heading-context (PB-FREE-LIBRARY-DESIGN-1-E-H1): the generic
+                    // core page-title visibility flag decides whether the theme
+                    // renders the document <h1>, so the builder hero heading picks
+                    // the correct rank. Defaults to Show (true) for legacy rows.
+                    (bool) ($content->show_page_title ?? true),
                 );
             },
             20,
@@ -1059,6 +1209,13 @@ class PageBuilderServiceProvider extends ServiceProvider
             $this->app->make(\Plugins\PageBuilder\Repository\Providers\UserDesignProvider::class),
         );
 
+        // PB-TEMPLATE-REGISTRY-1-H1 — active-theme resources (source=theme). Disjoint
+        // RIDs, content-derived revision; unavailable (contributes nothing) when no
+        // theme is active or it ships no Page Builder resource files.
+        $repository->registerProvider(
+            $this->app->make(\Plugins\PageBuilder\Repository\Providers\ThemeResourceProvider::class),
+        );
+
         // Phase 26.50A — Community Repository provider. Registered through the SDK's
         // compliance gate (soft, non-throwing): a compliant provider joins the ONE
         // repository via the documented seam; an empty store contributes nothing, so
@@ -1077,6 +1234,11 @@ class PageBuilderServiceProvider extends ServiceProvider
         );
         $registry->registerProvider(
             $this->app->make(\Plugins\PageBuilder\Builder\Registry\ImportedProvider::class),
+        );
+        // PB-TEMPLATE-REGISTRY-1-H2 — active-theme resources join the palette through
+        // the same provider seam (repository-backed, source=theme). Idempotent by key.
+        $registry->registerProvider(
+            $this->app->make(\Plugins\PageBuilder\Builder\Registry\ThemeResourceBuilderProvider::class),
         );
     }
 

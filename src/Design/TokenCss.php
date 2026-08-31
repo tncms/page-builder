@@ -33,10 +33,26 @@ final class TokenCss
 
     /**
      * The full `<style>`-ready CSS string, including the `:root` selector.
+     *
+     * @deprecated Emits at the global `:root`; the content-token contract scopes
+     * to the Page Builder rendered root instead — see {@see renderScoped()}.
      */
     public function render(): string
     {
         return ':root{'.$this->declarations().'}';
+    }
+
+    /**
+     * The `<style>`-ready CSS string scoped to the Page Builder rendered root
+     * (PB-FREE-LIBRARY-DESIGN-1-C). The default selector `:where(.pb-section)`
+     * carries the content tokens on every rendered section (custom properties
+     * inherit into its content) WITHOUT polluting the global `:root`, and its
+     * zero specificity lets a theme override any documented `--pb-*` custom
+     * property by targeting `.pb-section` through the normal cascade.
+     */
+    public function renderScoped(string $selector = ':where(.pb-section)'): string
+    {
+        return $selector.'{'.$this->declarations().'}';
     }
 
     /**

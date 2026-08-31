@@ -107,6 +107,17 @@
   --pb-ui-z-toast: 50;
   --pb-ui-z-drag-preview: 60;
 
+  /* Application-overlay band (PB-TEMPLATE-REGISTRY-2-H1).
+     Full-screen editor overlays that must layer ABOVE in-canvas chrome. The ordering
+     is deliberate: in-canvas toolbar < modal surface < nested modal dialog < top dialog.
+     Values sit in the max-z band because the Live Builder's in-canvas component toolbar
+     already lives there; a low value could not outrank it. z-index can never outrank the
+     browser's own native/security UI. */
+  --pb-ui-z-live-toolbar: 2147483000; /* transient in-canvas component toolbar */
+  --pb-ui-z-modal: 2147483310;        /* full-screen modal surface + backdrop (Resource Browser) */
+  --pb-ui-z-modal-nested: 2147483320; /* dialog nested above a modal surface (Template confirm) */
+  --pb-ui-z-modal-top: 2147483350;    /* genuinely top-priority plugin dialog (Save as Design) */
+
   /* Layout */
   --pb-ui-topbar-height: 3rem;
   --pb-ui-sidebar-width: 16rem;

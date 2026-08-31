@@ -22,6 +22,14 @@
     $editor = (bool) ($pbEditor ?? false);
     $classes = 'pb-block pb-block--column pb-column pb-column--'.$width;
 
+    // Theme-neutral surface preset (PB-FREE-LIBRARY-DESIGN-1-D): a bounded enum
+    // maps to an allowlisted, token-based class. Any other value (default `none`,
+    // absent, or a hostile string) emits nothing — fail closed, no raw class.
+    $surfaceClass = ['surface' => 'pb-column--surface', 'card' => 'pb-column--card'][$data['surface'] ?? 'none'] ?? '';
+    if ($surfaceClass !== '') {
+        $classes .= ' '.$surfaceClass;
+    }
+
     $styles = '';
     $basis = ColumnWidth::explicitBasis($width);
     if ($basis !== null) {
@@ -35,11 +43,14 @@
             // basis is carried by a stable width CLASS whose `.pb-cw-*` rule is emitted
             // into <head> (see ColumnWidthRegistry). The inline styles are kept for the
             // sanitizer-free Live Builder / previews and as a progressive-enhancement.
+            // Geometry authority (PB-FREE-LIBRARY-DESIGN-1-C): the flex-basis and
+            // max-width come from the sanitizer-proof `.pb-cw-*` class (head rule),
+            // NOT an inline final declaration — so ONE CSS authority sizes the
+            // column on every surface and the tablet stacking media query can win.
             $cwClass = app(\Plugins\PageBuilder\Support\ColumnWidthRegistry::class)->classFor($basis);
             if ($cwClass !== null) {
                 $classes .= ' '.$cwClass;
             }
-            $styles .= 'flex:0 0 '.$basis.';max-width:'.$basis.';--pb-column-basis:'.$basis.';';
         }
         // Gutter (Strategy A): half of the container's --pb-col-gap, inside the
         // basis thanks to border-box, so it never adds to the column's width.

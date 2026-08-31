@@ -10,5 +10,15 @@
         "faq",
         "accordion",
         "support"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Basic FAQ",
+            "vi": "Câu hỏi thường gặp cơ bản"
+        },
+        "description": {
+            "en": "An accordion of frequently asked questions.",
+            "vi": "Một accordion các câu hỏi thường gặp."
+        }
+    }
 }

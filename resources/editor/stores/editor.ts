@@ -9,7 +9,7 @@
 
 import { toRaw } from 'vue'
 import { defineStore } from 'pinia'
-import { ApiClient } from '../api/client'
+import { ApiClient, LayoutConflictError } from '../api/client'
 import { overlayManager } from '../geometry'
 import { dragManager, dropManager, outlineDragController, resolveOutlineDrop } from '../drag'
 import type { DragProjection, DragSubject, DropResolution, GhostState, OutlineDropTarget, OutlineZone } from '../drag'
@@ -26,6 +26,7 @@ import {
   type PathItem,
 } from '../utils/layout'
 import { createComponentPayload } from '../utils/palette'
+import { DISCARD_MESSAGE } from '../utils/navigation'
 import { canContain } from '../utils/nestingPolicy'
 import { describeDropIntent, dropRejection, type DropIntent } from '../utils/dropIntent'
 import { validateLayout, type LayoutIssue } from '../utils/layoutValidation'
@@ -56,6 +57,13 @@ import {
 const HISTORY_LIMIT = 50
 const PREVIEW_DEBOUNCE_MS = 300
 
+/**
+ * PB-PROD-2 — the single autosave debounce authority (ms). One dirty edit arms the
+ * timer; further edits re-arm it, so a burst of rapid edits coalesces into ONE draft
+ * save after this quiet period. Never scattered as a magic number.
+ */
+export const AUTOSAVE_DEBOUNCE_MS = 1500
+
 // PB-STATE-2V — the truthful publication states the status bars render. Distinct
 // from the local save flags so a saved draft that is not yet published reads as
 // 'unpublished' (public content stale), and a failed publish as 'publish_failed'.
@@ -67,6 +75,9 @@ export type PublicationState =
   | 'published'
   | 'unpublished'
   | 'none'
+
+// PB-PROD-2 — the explicit save-safety state (distinct from publication state).
+export type SaveState = 'clean' | 'dirty' | 'pending' | 'saving' | 'saved' | 'failed'
 
 interface ContextMenuState {
   visible: boolean
@@ -84,6 +95,17 @@ interface State {
   // PB-STATE-2V — set when a publish request was attempted but did not complete, so
   // the status can read "Publish failed" instead of falling back to "Draft saved".
   publishFailed: boolean
+  // INV-PUB-06 (PB-PUBLISH-R1) — the server-issued optimistic-concurrency token last
+  // received. Echoed on the next save/publish; replaced ONLY by a successful
+  // authoritative response, never advanced optimistically before commit.
+  versionToken: string | null
+  // INV-PUB-06 — a save/publish was rejected because the layout changed in another
+  // session. Local work is kept; the user must explicitly reload to reconcile.
+  conflict: boolean
+  // PB-PUBLISH-R1-H1 (Defect 2) — an explicit conflict reconciliation (fetch latest
+  // context + atomic state/token replace) is in flight. Local work stays until it
+  // succeeds; a failed reconcile leaves this false with the conflict + work preserved.
+  reconciling: boolean
   error: string | null
   owner: OwnerContext | null
   layout: LayoutContext | null
@@ -101,6 +123,15 @@ interface State {
   contextMenu: ContextMenuState
   dirty: boolean
   inspectorDirty: boolean
+  // PB-PROD-2 — Save Safety. `savePending` = an autosave is debounced/armed but not
+  // yet sent; `saveFailed` = the last save attempt (manual OR autosave) failed and
+  // local work is at risk; `savedFlash` = transient "just saved" hint; `autosaveTimer`
+  // = the pending debounce handle. These never overload publish state.
+  savePending: boolean
+  saveFailed: boolean
+  savedFlash: boolean
+  autosaveEnabled: boolean
+  autosaveTimer: number | null
   canvasMode: CanvasMode
   previewHtml: string
   previewLoading: boolean
@@ -179,6 +210,10 @@ let inlineFlush: (() => Promise<void>) | null = null
 // it is imperative plumbing, not view data.
 let savePromise: Promise<boolean> | null = null
 
+// PB-PROD-2 — the single `beforeunload` handler (module-level so install is
+// idempotent and teardown removes exactly the listener that was added).
+let unloadHandler: ((e: BeforeUnloadEvent) => void) | null = null
+
 export const useEditorStore = defineStore('pbEditor', {
   state: (): State => ({
     boot: null,
@@ -187,6 +222,9 @@ export const useEditorStore = defineStore('pbEditor', {
     saving: false,
     publishing: false,
     publishFailed: false,
+    versionToken: null,
+    conflict: false,
+    reconciling: false,
     error: null,
     owner: null,
     layout: null,
@@ -207,6 +245,11 @@ export const useEditorStore = defineStore('pbEditor', {
     // `dirty` (the page/BuilderState) so the exit/mode-switch guard can warn even
     // when only the inspector draft is unsaved.
     inspectorDirty: false,
+    savePending: false,
+    saveFailed: false,
+    savedFlash: false,
+    autosaveEnabled: true,
+    autosaveTimer: null,
     canvasMode: 'tree',
     previewHtml: '',
     previewLoading: false,
@@ -260,6 +303,24 @@ export const useEditorStore = defineStore('pbEditor', {
       return 'unpublished'
     },
     isBuilderMode: (state) => state.layout?.editor_mode === 'builder',
+
+    // PB-PROD-2 — the explicit save-state model (never overloaded with publish
+    // status). Precedence: an in-flight write → a failed attempt → an armed autosave
+    // → local unsaved edits (page or inspector) → a transient "just saved" → clean.
+    saveState: (state): SaveState => {
+      if (state.saving) return 'saving'
+      if (state.saveFailed) return 'failed'
+      if (state.savePending) return 'pending'
+      if (state.dirty || state.inspectorDirty) return 'dirty'
+      if (state.savedFlash) return 'saved'
+      return 'clean'
+    },
+
+    // PB-PROD-2 — any state where abandoning the session would lose or misclassify
+    // work: unsaved edits, an armed/in-flight save, or a failed save. Drives both the
+    // `beforeunload` guard and internal-navigation confirmation.
+    hasUnsavedRisk: (state): boolean =>
+      state.dirty || state.inspectorDirty || state.saving || state.savePending || state.saveFailed,
     nodeTree(state): ComponentNode[] {
       return buildNodeTree(state.currentPayload)
     },
@@ -277,6 +338,31 @@ export const useEditorStore = defineStore('pbEditor', {
     definitionOf: (state) => (kind: string, type: string): DefinitionMeta | null => {
       const list = kind === 'section' ? state.metadata?.sections : state.metadata?.blocks
       return list?.find((d) => d.type === type) ?? null
+    },
+
+    // PB-TEMPLATE-REGISTRY-2-D — the editor-facing "is this component registered?" adapter.
+    // It is a thin projection over the ONE existing registry authority (definitionOf →
+    // metadata.sections/blocks); it introduces NO second list of known types. A stored node
+    // whose non-empty type resolves to no definition is an UNKNOWN node: its data is lossless
+    // and must never be filtered/normalized — only its editor presentation changes. Reactive
+    // on metadata, so registering a type later flips a node back to known with no migration.
+    isKnownType(): (kind: string, type: string) => boolean {
+      return (kind: string, type: string): boolean => this.definitionOf(kind, type) !== null
+    },
+
+    // The selected node is an unknown component (exists, non-empty type, no definition).
+    selectedIsUnknown(state): boolean {
+      const sel = findComponentById(state.currentPayload, state.selectedComponentId)
+      if (!sel || typeof sel.type !== 'string' || sel.type.trim() === '') return false
+      return this.selectedDefinition === null
+    },
+
+    // PB-TEMPLATE-REGISTRY-2-D — a server-resolved (Admin UI locale) editor chrome string by
+    // stable slug, or the given English fallback. Delivered in the boot payload (like the
+    // Resource Browser catalog strings) so new UI copy is EN/VI at parity and Admin-UI-locale
+    // controlled, never a hardcoded translation. Node data identity stays locale-invariant.
+    uiString(state) {
+      return (key: string, fallback = ''): string => state.boot?.strings?.[key] ?? fallback
     },
 
     // ---- Property Inspector (Phase 15) --------------------------------
@@ -360,6 +446,15 @@ export const useEditorStore = defineStore('pbEditor', {
       this.currentPayload = pickPayload(context.layout)
       this.dirty = false
       this.publishFailed = false
+      // INV-PUB-06 — a full (re)load is an explicit reconcile: adopt the authoritative
+      // token and clear any prior conflict so the next save/publish starts from truth.
+      this.versionToken = context.layout?.version_token ?? null
+      this.conflict = false
+      // PB-PROD-2 — a fresh hydration is CLEAN: cancel any armed autosave and clear
+      // save-safety flags so initial load never autosaves or shows stale risk.
+      this.cancelAutosave()
+      this.saveFailed = false
+      this.savedFlash = false
       this.undoStack = []
       this.redoStack = []
       this.closeContextMenu()
@@ -378,6 +473,19 @@ export const useEditorStore = defineStore('pbEditor', {
 
     applyLayout(layout: LayoutContext) {
       this.layout = layout
+      // INV-PUB-06 (PB-PUBLISH-R1-H1) — adopt the new authoritative token ONLY from a
+      // successful response, and ONLY when it is a real (non-empty string) server token.
+      // Defensive hardening (NOT the Defect 1 root cause — that was a server-side, non-empty
+      // token mismatch fixed in PageBuilderLayout::tokenFor): a malformed 200 whose token is
+      // missing/null/'' must never erase the last known-good token, since overwriting it with
+      // an empty value would make the very next save send an empty token and 409 with
+      // `token_required`. Keeping the good token on a malformed response fails safe and never
+      // weakens server CAS.
+      const next = layout.version_token
+      if (typeof next === 'string' && next !== '') {
+        this.versionToken = next
+      }
+      this.conflict = false
     },
 
     async loadContext() {
@@ -390,6 +498,38 @@ export const useEditorStore = defineStore('pbEditor', {
         this.error = (e as Error).message
       } finally {
         this.loading = false
+      }
+    },
+
+    /**
+     * PB-PUBLISH-R1-H1 (Defect 2) — explicit conflict reconciliation.
+     *
+     * The ONLY supported recovery from a typed version conflict. It is never called
+     * automatically: the UI invokes it only after the user confirms that the current
+     * unsaved work will be replaced (no silent run, no last-write-wins retry, no
+     * auto-merge, no `location.reload`, and it never bypasses the unload guard). It
+     * fetches the newest authoritative context through the canonical context endpoint
+     * and, via {@see applyContext}, replaces the editor state AND the version token
+     * atomically, clearing the conflict ONLY on success. If the fetch fails, the user's
+     * current local work, the conflict flag, and a truthful error are all preserved so
+     * nothing is silently lost.
+     */
+    async reconcile(): Promise<boolean> {
+      if (!this.client || this.reconciling) return false
+      this.reconciling = true
+      this.error = null
+      try {
+        // applyContext replaces owner/layout/payload + adopts the authoritative token and
+        // clears the conflict in one step — the atomic state+token swap.
+        this.applyContext(await this.client.getContext())
+        return true
+      } catch (e) {
+        // Fail safe: keep the stale local work, keep the conflict flagged, surface the
+        // real error. The user can retry the reload or keep editing offline.
+        this.error = (e as Error).message
+        return false
+      } finally {
+        this.reconciling = false
       }
     },
 
@@ -527,16 +667,38 @@ export const useEditorStore = defineStore('pbEditor', {
     async persistDraft(): Promise<boolean> {
       if (!this.client) return false
       const payload = this.currentPayload
+      // A real write is starting — supersede any armed autosave so it never fires a
+      // redundant second save on top of this one (PB-PROD-2).
+      this.cancelAutosave()
       this.saving = true
       // A fresh save supersedes any earlier failed publish; clear the flag so the
       // status reflects the new draft (which will read 'unpublished' until published).
       this.publishFailed = false
       this.error = null
       try {
-        this.applyLayout(await this.client.saveDraft(payload))
+        this.applyLayout(await this.client.saveDraft(payload, this.versionToken))
+        // Only clean when no newer edit landed while the request was in flight — a
+        // later mutation replaces `currentPayload` (the generation), so a stale
+        // success can never clean newer work.
         if (this.currentPayload === payload) this.dirty = false
+        this.saveFailed = false
+        this.savedFlash = true
         return true
       } catch (e) {
+        // INV-PUB-06 — a version conflict means the layout changed in another session.
+        // Keep local work (dirty untouched), do NOT adopt the server token or auto-merge,
+        // and surface a truthful message so the user reloads to reconcile. Never a
+        // reassuring "saved".
+        if (e instanceof LayoutConflictError) {
+          this.conflict = true
+          this.saveFailed = true
+          this.savedFlash = false
+          this.error = e.message
+          return false
+        }
+        // Local work is preserved (dirty untouched) and the failure is surfaced so
+        // the status reads "Save failed" and navigation stays protected (PB-PROD-2).
+        this.saveFailed = true
         this.error = (e as Error).message
         return false
       } finally {
@@ -568,13 +730,18 @@ export const useEditorStore = defineStore('pbEditor', {
       if (!(await this.saveDraft())) return false
       this.publishing = true
       try {
-        this.applyLayout(await this.client.publish())
+        this.applyLayout(await this.client.publish(this.versionToken))
         return true
       } catch (e) {
         // A publish attempt that reached this point (draft persisted) but failed must
         // NOT fall back to a reassuring "Draft saved": record the failure so the
         // status reads "Publish failed" and the user knows the public page is stale.
         this.publishFailed = true
+        // INV-PUB-06 — a version conflict at publish (state advanced between our save and
+        // publish): flag it so the UI can offer reload/reconcile, never a false success.
+        if (e instanceof LayoutConflictError) {
+          this.conflict = true
+        }
         this.error = (e as Error).message
         return false
       } finally {
@@ -584,9 +751,20 @@ export const useEditorStore = defineStore('pbEditor', {
 
     markDirty() {
       this.dirty = true
+      // A new edit invalidates any "just saved" hint and any prior failure, and
+      // (re)arms the debounced autosave. This is the single choke point every
+      // mutation routes through.
+      this.savedFlash = false
+      this.saveFailed = false
+      this.maybeScheduleAutosave()
     },
 
     exit() {
+      // PB-PROD-2 — confirm before abandoning unsaved work (dirty, pending/in-flight
+      // autosave, or a failed save). The browser-standard confirm keeps this testable.
+      if (this.hasUnsavedRisk && typeof window !== 'undefined' && !window.confirm(DISCARD_MESSAGE)) {
+        return
+      }
       const url = this.boot?.exitUrl
       if (url) {
         window.location.assign(url)
@@ -671,7 +849,7 @@ export const useEditorStore = defineStore('pbEditor', {
           this.pushHistory(before)
           this.currentPayload = result.payload
           this.selectedComponentId = result.selection?.selected ?? null
-          this.dirty = true
+          this.markDirty()
           this.maybeSchedulePreview()
         }
         return changed
@@ -880,7 +1058,7 @@ export const useEditorStore = defineStore('pbEditor', {
       if (previous === undefined) return
       this.redoStack.push(clonePayload(this.currentPayload))
       this.currentPayload = previous
-      this.dirty = true
+      this.markDirty()
       this.maybeSchedulePreview()
     },
 
@@ -889,7 +1067,7 @@ export const useEditorStore = defineStore('pbEditor', {
       if (next === undefined) return
       this.undoStack.push(clonePayload(this.currentPayload))
       this.currentPayload = next
-      this.dirty = true
+      this.markDirty()
       this.maybeSchedulePreview()
     },
 
@@ -910,6 +1088,61 @@ export const useEditorStore = defineStore('pbEditor', {
         this.previewTimer = null
         void this.refreshPreview()
       }, delay)
+    },
+
+    // ---- Autosave (PB-PROD-2) -----------------------------------------
+    // Arm a debounced draft autosave for a dirty edit. Called from every mutation
+    // that marks dirty; re-arming coalesces a burst into ONE save after the quiet
+    // period. Never runs during hydration (nothing is dirty then) and never when
+    // autosave is disabled.
+    maybeScheduleAutosave() {
+      if (!this.autosaveEnabled || !this.dirty) return
+      this.scheduleAutosave()
+    },
+
+    scheduleAutosave(delay: number = AUTOSAVE_DEBOUNCE_MS) {
+      if (this.autosaveTimer !== null) window.clearTimeout(this.autosaveTimer)
+      this.savePending = true
+      this.autosaveTimer = window.setTimeout(() => {
+        this.autosaveTimer = null
+        this.savePending = false
+        void this.runAutosave()
+      }, delay)
+    },
+
+    cancelAutosave() {
+      if (this.autosaveTimer !== null) window.clearTimeout(this.autosaveTimer)
+      this.autosaveTimer = null
+      this.savePending = false
+    },
+
+    // Persist the current draft if (and only if) there is unsaved work. Reuses the
+    // authoritative `saveDraft()` path — same serializer, same in-flight join, same
+    // draft-only contract — so autosave can never publish or race a manual save.
+    async runAutosave(): Promise<void> {
+      if (!this.autosaveEnabled || !this.dirty || this.saving) return
+      await this.saveDraft()
+    },
+
+    // ---- Unsaved-change (beforeunload) guard (PB-PROD-2) --------------
+    // Standards-compatible protection: prevent the unload only while there is
+    // meaningful unsaved risk, using the browser's own confirmation (no custom text).
+    installUnloadGuard() {
+      if (unloadHandler || typeof window === 'undefined') return
+      unloadHandler = (e: BeforeUnloadEvent) => {
+        if (!this.hasUnsavedRisk) return
+        e.preventDefault()
+        // Legacy browsers require a non-empty returnValue to show the prompt.
+        e.returnValue = ''
+      }
+      window.addEventListener('beforeunload', unloadHandler)
+    },
+
+    teardownUnloadGuard() {
+      if (unloadHandler && typeof window !== 'undefined') {
+        window.removeEventListener('beforeunload', unloadHandler)
+      }
+      unloadHandler = null
     },
 
     async refreshPreview() {

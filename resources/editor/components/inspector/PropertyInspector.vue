@@ -30,6 +30,7 @@ import { resolveComponentStyleValue } from './styleBinding/resolveComponentStyle
 import { buildDefaultData, diffFieldPaths, editableFields, hasMeaningfulValues } from './resetData'
 import InspectorTabs from './InspectorTabs.vue'
 import InspectorSearch from './InspectorSearch.vue'
+import UnknownNodePlaceholder from '../UnknownNodePlaceholder.vue'
 
 const store = useEditorStore()
 const rootEl = ref<HTMLElement | null>(null)
@@ -585,6 +586,15 @@ function action(fn: (id: string) => void) {
         </div>
 
         <InspectorTabs v-if="hasFields" :key="selected.id" :tabs="tabs" :focus-field="focusField" />
+        <!-- PB-TEMPLATE-REGISTRY-2-D — an unknown (unregistered-type) node gets a read-only
+             safety panel instead of a generic empty state: no schema form, no raw JSON, no
+             data dump. The node itself is never mutated; editing returns when it is available. -->
+        <UnknownNodePlaceholder
+          v-else-if="store.selectedIsUnknown"
+          variant="inspector"
+          :type="selected.type"
+          :kind="selected.kind"
+        />
         <p v-else class="pb-inspector__empty">This component has no editable properties.</p>
 
         <footer class="pb-inspector__foot">

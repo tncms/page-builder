@@ -12,7 +12,7 @@ function featureColumn(title: string): PatternBlockSnapshot {
     type: 'column',
     data: {
       blocks: [
-        { type: 'heading', data: { level: 3, text: title } },
+        { type: 'heading', data: { level: 'h3', text: title } },
         { type: 'text', data: { text: 'A concise description of this feature and why it matters.' } },
       ],
     },
@@ -25,13 +25,19 @@ export const featureGridBasic: TemplateDefinition = {
   description: 'Three columns of features with headings and short descriptions.',
   category: 'features',
   version: '1.0.0',
+  // Real catalog thumbnail (PB-FREE-LIBRARY-DESIGN-1-F): a plugin-owned WebP rendered
+  // from this template's canonical payload through the Runtime Preview engine.
+  preview: '/vendor/page-builder/img/thumbnails/template-feature-grid-basic.webp',
   layout: {
     kind: 'tree',
     tree: {
       sections: [
         {
           type: 'section',
-          data: { padding: { top: 48, bottom: 48 } },
+          // Canonical generic-section spacing (PB-FREE-LIBRARY-DESIGN-1-F): box-model
+          // `spacing.padding` replaces the legacy `padding:{top,bottom}` object that threw
+          // in section.blade. Vertical intent (48px) is preserved exactly.
+          data: { spacing: { padding: { top: 48, right: 0, bottom: 48, left: 0 } } },
           blocks: [
             {
               type: 'container',

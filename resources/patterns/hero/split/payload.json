@@ -17,7 +17,7 @@
             "type": "image-section",
             "data": {
                 "align": "center",
-                "image_url": "",
+                "image_url": "/vendor/page-builder/img/placeholders/image.svg",
                 "alt": "Product screenshot",
                 "caption": ""
             }

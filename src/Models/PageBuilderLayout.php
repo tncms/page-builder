@@ -89,4 +89,71 @@ class PageBuilderLayout extends Model
     {
         return $this->published_payload !== null;
     }
+
+    /**
+     * The server-issued optimistic-concurrency token for this owner's authoritative
+     * layout state (PB-PUBLISH-R1, INV-PUB-06 — Version Safety).
+     *
+     * A content hash over a CANONICAL (recursively key-sorted) serialization of the
+     * persisted state — draft + published payloads and render mode. It is derived from
+     * persisted content only, never object identity, timestamps, client state, OR the
+     * object-key order a store happened to persist (see {@see self::tokenFor}), so two
+     * rows with identical content yield the same token, a repeat publish with no change
+     * is idempotent, and the token a save issues equals the token the next save's CAS
+     * recomputes even after the row round-trips a normalizing JSON column. Save Draft /
+     * Publish compare the caller's token against this inside a locked transaction.
+     */
+    public function versionToken(): string
+    {
+        return self::tokenFor($this->draft_payload, $this->published_payload, $this->editor_mode);
+    }
+
+    /**
+     * The token for an owner that has no stored layout row yet (first open) — the
+     * baseline both the client and the server start from before the first write.
+     */
+    public static function emptyToken(): string
+    {
+        return self::tokenFor(null, null, self::MODE_CLASSIC);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $draft
+     * @param  array<string, mixed>|null  $published
+     */
+    private static function tokenFor(?array $draft, ?array $published, ?string $mode): string
+    {
+        // PB-PUBLISH-R1-H1 (Defect 1) — hash a CANONICAL (recursively key-sorted)
+        // serialization so the token depends only on content, never on object-key
+        // ORDER. This is required because the token issued by a save (computed from the
+        // just-written, un-reloaded model in PHP insertion order) is compared on the
+        // NEXT save against the same row re-read from storage — and MySQL's native JSON
+        // type normalizes (reorders) object keys on write. Without canonicalization the
+        // two orderings hash differently, so a single editor's second consecutive save
+        // 409s against a token the server itself just issued (Save #1 ok, Save #2
+        // conflict). Sorting keys makes both orderings collapse to one token; list
+        // (0..n) order is preserved because ksort keeps already-ordered numeric keys.
+        return hash('sha256', (string) json_encode([
+            'draft' => self::canonicalize($draft),
+            'published' => self::canonicalize($published),
+            'mode' => $mode ?? self::MODE_CLASSIC,
+        ], JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * Recursively sort array keys so a structure hashes identically regardless of the
+     * object-key order a store (e.g. MySQL JSON) chose to persist it in. Scalars and
+     * null pass through untouched; sequential lists keep their meaningful order.
+     */
+    private static function canonicalize(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $canonical = array_map([self::class, 'canonicalize'], $value);
+        ksort($canonical);
+
+        return $canonical;
+    }
 }

@@ -72,6 +72,32 @@ final class EditorUrls
         return content_url($owner);
     }
 
+    /**
+     * The PRIVATE, authenticated editor-document URL for the frontend editor iframe
+     * (PB-DRAFT-PREVIEW-R1), in $locale when given.
+     *
+     * Identity-based (ownerType/ownerId) and private: unlike {@see publicUrl()} it
+     * does NOT depend on the owner's public slug being routable, so the editor canvas
+     * loads the persisted draft even while the Core content entity is unpublished. The
+     * route is guarded (`page-builder.edit` + locale validation) inside its controller;
+     * an unregistered route (isolated test where the plugin is inactive) yields null so
+     * the caller can fall back. This is the iframe document URL — NOT the public page:
+     * {@see publicUrl()} stays the authority for the "View Page" action.
+     */
+    public static function document(string $ownerType, int|string $ownerId, ?string $locale = null): ?string
+    {
+        try {
+            $url = route('page-builder.editor-document', [
+                'ownerType' => $ownerType,
+                'ownerId' => (string) $ownerId,
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return self::withLocale($url, $locale);
+    }
+
     /** The owner's classic admin edit URL (null when the resource is absent). */
     public static function classic(string $ownerType, Content $owner): ?string
     {

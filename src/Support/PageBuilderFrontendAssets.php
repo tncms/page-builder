@@ -45,7 +45,10 @@ final class PageBuilderFrontendAssets
     {
         $href = e(EditorAssets::url(self::STYLESHEET));
 
-        $runtimeCss = $this->tokenCss->render().$this->columnWidths->cssRules().$this->dynamicStyles->cssRules();
+        // Content tokens are scoped to the PB rendered root (`.pb-section`), never
+        // the global `:root` (PB-FREE-LIBRARY-DESIGN-1-C). Per-page runtime column
+        // widths and dynamic styles follow.
+        $runtimeCss = $this->tokenCss->renderScoped().$this->columnWidths->cssRules().$this->dynamicStyles->cssRules();
 
         return '<style '.self::MARKER_ATTR.'>'.$runtimeCss.'</style>'
             .'<link rel="stylesheet" '.self::MARKER_ATTR.' href="'.$href.'">';

@@ -48,7 +48,47 @@ final class PatternManifest
         public readonly string $builder = '1.0',
         public readonly array $metadata = [],
         public readonly PatternDependencies $dependencies = new PatternDependencies(),
+        // Per-field Admin-UI-locale maps for the human presentation fields only
+        // ({name?: {locale: string}, description?: {locale: string}}), resolved at the
+        // catalog presentation boundary (PB-FREE-LIBRARY-DESIGN-1-F). Machine fields
+        // (id/slug/category/tags/schema/payload) stay locale-invariant.
+        public readonly array $localized = [],
     ) {}
+
+    /**
+     * Resolve the pattern's display name for a single Admin UI locale: requested locale
+     * → platform default → the invariant (English) name. Only human labels are localized.
+     */
+    public function localizedName(?string $locale, ?string $fallback = null): string
+    {
+        return $this->resolveLocalized('name', $locale, $fallback) ?? $this->name;
+    }
+
+    /** Resolve the pattern's description for a single Admin UI locale (same fallback chain). */
+    public function localizedDescription(?string $locale, ?string $fallback = null): string
+    {
+        return $this->resolveLocalized('description', $locale, $fallback) ?? $this->description;
+    }
+
+    private function resolveLocalized(string $field, ?string $locale, ?string $fallback): ?string
+    {
+        $map = $this->localized[$field] ?? null;
+        if (! is_array($map)) {
+            return null;
+        }
+
+        foreach ([$locale, $fallback] as $code) {
+            if (! is_string($code) || $code === '') {
+                continue;
+            }
+            $value = $map[strtolower($code)] ?? null;
+            if (is_string($value) && $value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * @param  array<string, mixed>  $data
@@ -83,7 +123,41 @@ final class PatternManifest
             builder: (string) ($data['builder'] ?? '1.0'),
             metadata: self::metadata($data),
             dependencies: PatternDependencies::fromArray($data['dependencies'] ?? []),
+            localized: self::localizedMap($data['localized'] ?? null),
         );
+    }
+
+    /**
+     * Parse the optional per-field locale maps: {name?: {locale: string}, description?:
+     * {locale: string}}. Locale keys are lowercased; anything malformed is dropped so a
+     * bad map degrades to the invariant field rather than leaking a raw key.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private static function localizedMap(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $out = [];
+        foreach (['name', 'description'] as $field) {
+            $map = $value[$field] ?? null;
+            if (! is_array($map)) {
+                continue;
+            }
+            $fieldOut = [];
+            foreach ($map as $locale => $text) {
+                if (is_string($locale) && $locale !== '' && is_string($text) && $text !== '') {
+                    $fieldOut[strtolower($locale)] = $text;
+                }
+            }
+            if ($fieldOut !== []) {
+                $out[$field] = $fieldOut;
+            }
+        }
+
+        return $out;
     }
 
     /**

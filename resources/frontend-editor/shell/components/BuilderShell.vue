@@ -12,9 +12,16 @@ import BuilderSidebar from './BuilderSidebar.vue'
 import BuilderStatusBar from './BuilderStatusBar.vue'
 import BuilderToast from './BuilderToast.vue'
 import FrontendIframeCanvas from '../FrontendIframeCanvas.vue'
+import ConflictReconciler from '../../../editor/components/ConflictReconciler.vue'
 import PbNotice from '../../../shared-ui/PbNotice.vue'
+import { ResourceBrowser, useResourceBrowserLauncher } from '../../../editor/browser'
 
 const store = useEditorStore()
+
+// PB-TEMPLATE-REGISTRY-2-B — the SAME shared Resource Browser component + store the
+// Structure Builder uses. The two shells are never mounted together; this is the
+// frontend surface's thin launch adapter over the one shared authority.
+const resourceBrowser = useResourceBrowserLauncher()
 
 // Phase 24.1 — Ctrl/Cmd+S in the Live Builder. saveDraft() flushes the inspector
 // first (which now Applies any staged edit), so this is "Apply → Save Draft". The
@@ -25,15 +32,30 @@ function onKeydown(e: KeyboardEvent): void {
     void store.saveDraft()
   }
 }
-onMounted(() => document.addEventListener('keydown', onKeydown))
-onUnmounted(() => document.removeEventListener('keydown', onKeydown))
+onMounted(() => {
+  document.addEventListener('keydown', onKeydown)
+  // PB-PROD-2 — protect unsaved work from a raw browser refresh/close/navigation.
+  store.installUnloadGuard()
+})
+onUnmounted(() => {
+  document.removeEventListener('keydown', onKeydown)
+  store.teardownUnloadGuard()
+})
 </script>
 
 <template>
   <div class="pb-live-builder-shell">
     <BuilderTopBar />
 
-    <PbNotice v-if="store.error" variant="danger" emphasis="solid" class="pb-live-builder-error">{{ store.error }}</PbNotice>
+    <!-- PB-TEMPLATE-REGISTRY-2-B — launch the shared Resource Browser (never mutates). -->
+    <button type="button" class="pb-rb-launch" aria-haspopup="dialog" @click="resourceBrowser.open('pattern')">
+      Patterns
+    </button>
+
+    <!-- A typed version conflict owns its own banner + reconcile action (Defect 2);
+         the generic error notice covers every other failure so they never double up. -->
+    <ConflictReconciler />
+    <PbNotice v-if="store.error && !store.conflict" variant="danger" emphasis="solid" class="pb-live-builder-error">{{ store.error }}</PbNotice>
 
     <div class="pb-live-builder-body">
       <BuilderSidebar />
@@ -46,5 +68,6 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
     </div>
 
     <BuilderStatusBar />
+    <ResourceBrowser />
   </div>
 </template>

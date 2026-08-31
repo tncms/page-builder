@@ -30,6 +30,15 @@ final class DynamicStyleRegistry
     /** @var array<string, DynamicStyleDeclaration> class ("pb-ds-83f4e1") => declaration */
     private array $rules = [];
 
+    /**
+     * PB-PROD-1: the `@media` condition for a responsive class, keyed by the same
+     * class. A class absent here (every pre-existing, non-responsive rule) is
+     * emitted with no media wrapper.
+     *
+     * @var array<string, string>
+     */
+    private array $media = [];
+
     public function __construct(
         private readonly DynamicStyleNormalizer $normalizer,
         private readonly DynamicStyleHasher $hasher,
@@ -41,9 +50,14 @@ final class DynamicStyleRegistry
      * class — or null when nothing survives validation (so the caller adds no
      * class and no unsafe value can ever reach the stylesheet).
      *
+     * A non-null `$media` (PB-PROD-1) namespaces the class by that `@media`
+     * condition and emits the rule inside the block, so the same declarations under
+     * different breakpoints get distinct classes. With null media the behaviour is
+     * unchanged.
+     *
      * @param  array<string, mixed>  $declarations
      */
-    public function register(array $declarations): ?string
+    public function register(array $declarations, ?string $media = null): ?string
     {
         $declaration = $this->normalizer->normalize($declarations);
 
@@ -51,8 +65,12 @@ final class DynamicStyleRegistry
             return null;
         }
 
-        $class = 'pb-ds-'.$this->hasher->hash($declaration);
+        $class = 'pb-ds-'.$this->hasher->hash($declaration, $media);
         $this->rules[$class] ??= $declaration;
+
+        if ($media !== null) {
+            $this->media[$class] = $media;
+        }
 
         return $class;
     }
@@ -61,6 +79,7 @@ final class DynamicStyleRegistry
     public function reset(): void
     {
         $this->rules = [];
+        $this->media = [];
     }
 
     /** Whether any declaration has been registered this request. */
@@ -76,7 +95,7 @@ final class DynamicStyleRegistry
      */
     public function cssRules(): string
     {
-        return $this->generator->stylesheet($this->rules, (bool) config('page-builder.runtime_style_debug', false));
+        return $this->generator->stylesheet($this->rules, (bool) config('page-builder.runtime_style_debug', false), $this->media);
     }
 
     /**

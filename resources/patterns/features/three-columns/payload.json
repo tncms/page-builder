@@ -9,60 +9,63 @@
             "blocks": [
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "heading",
-                            "data": {
-                                "text": "Fast",
-                                "level": "h3"
+                    "data": {
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Fast",
+                                    "level": "h3"
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "data": {
+                                    "text": "Blazing performance out of the box, with zero configuration."
+                                }
                             }
-                        },
-                        {
-                            "type": "text",
-                            "data": {
-                                "content": "Blazing performance out of the box, with zero configuration."
-                            }
-                        }
-                    ]
+                        ]
+                    }
                 },
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "heading",
-                            "data": {
-                                "text": "Secure",
-                                "level": "h3"
+                    "data": {
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Secure",
+                                    "level": "h3"
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "data": {
+                                    "text": "Security best practices baked in at every layer."
+                                }
                             }
-                        },
-                        {
-                            "type": "text",
-                            "data": {
-                                "content": "Security best practices baked in at every layer."
-                            }
-                        }
-                    ]
+                        ]
+                    }
                 },
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "heading",
-                            "data": {
-                                "text": "Scalable",
-                                "level": "h3"
+                    "data": {
+                        "blocks": [
+                            {
+                                "type": "heading",
+                                "data": {
+                                    "text": "Scalable",
+                                    "level": "h3"
+                                }
+                            },
+                            {
+                                "type": "text",
+                                "data": {
+                                    "text": "Grows with your team from day one to millions of users."
+                                }
                             }
-                        },
-                        {
-                            "type": "text",
-                            "data": {
-                                "content": "Grows with your team from day one to millions of users."
-                            }
-                        }
-                    ]
+                        ]
+                    }
                 }
             ]
         }

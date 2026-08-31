@@ -4,7 +4,9 @@
 
 .pb-live-toolbar {
   position: fixed;
-  z-index: 2147483000;
+  /* PB-TEMPLATE-REGISTRY-2-H1 — the transient in-canvas toolbar sits at the bottom of the
+     application-overlay band, so a full-screen modal (Resource Browser) layers above it. */
+  z-index: var(--pb-ui-z-live-toolbar);
   display: flex;
   flex-direction: column;
   gap: 4px;

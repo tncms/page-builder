@@ -10,5 +10,15 @@
         "split",
         "image"
     ],
-    "featured": true
+    "featured": true,
+    "localized": {
+        "name": {
+            "en": "Split Hero",
+            "vi": "Hero chia đôi"
+        },
+        "description": {
+            "en": "Hero headline paired with a supporting image section.",
+            "vi": "Tiêu đề hero ghép với một khu vực ảnh minh họa."
+        }
+    }
 }

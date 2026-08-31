@@ -39,28 +39,25 @@
         ]);
     }
 
-    // The iframe loads the owner's real public page with the editor flag. The
-    // FrontendEditorRenderer only honours that flag for a user with
-    // page-builder.edit, so the draft render + editor assets stay private.
-    //
-    // LT-M1 — the base URL is built IN THE RESOLVED LOCALE so its prefix (e.g.
-    // `/vi/...`) drives Core's ApplyPublicLocale for the WHOLE document (theme,
-    // page title, header/menu, language control), not just the page-builder canvas
-    // (which reads `?locale=` below). Falls back to the canonical URL when the
-    // locale has no public URL yet, so the editor still opens.
+    // View Page target: the owner's REAL public page in the resolved locale. This is
+    // the canonical public URL (for the "View Page" action + public-state diagnostics)
+    // — NOT the iframe document. Available only when the content entity is published;
+    // an unpublished owner has no accessible public page (PB-DRAFT-PREVIEW-R1 §12).
     $publicUrl = $owner
         ? EditorUrls::publicUrl($owner, $resolvedLocale !== '' ? $resolvedLocale : null)
         : url('/');
-    $sep = str_contains($publicUrl, '?') ? '&' : '?';
-    // Carry the resolved locale into the iframe so the preview renderer resolves the
-    // SAME effective owner as the editor (LT-M1B Inc2) — the VI iframe shows the VI
-    // draft, not the source layout.
-    $iframeUrl = $publicUrl.$sep.http_build_query([
-        'pb_editor' => 1,
-        'pb_owner_type' => $ownerType,
-        'pb_owner_id' => $ownerId,
-        'locale' => $resolvedLocale,
-    ]);
+    $publicUrlAvailable = $owner !== null && (string) $owner->status === 'published';
+
+    // The iframe canvas loads the PRIVATE, authenticated editor-document — an
+    // identity-based route that renders the persisted DRAFT through the theme even
+    // while the content entity is unpublished, so it never depends on the owner's
+    // public slug being routable (PB-DRAFT-PREVIEW-R1). The route carries the resolved
+    // locale so the renderer resolves the SAME effective owner as the editor (the VI
+    // iframe shows the VI draft, not the source layout). Falls back to the public URL
+    // only if the private route is unavailable (plugin inactive in an isolated test).
+    $iframeUrl = ($owner
+        ? EditorUrls::document($ownerType, $ownerId, $resolvedLocale !== '' ? $resolvedLocale : null)
+        : null) ?? $publicUrl;
 
     // Same-origin for postMessage targeting/validation.
     $frontendOrigin = ($scheme = parse_url($iframeUrl, PHP_URL_SCHEME))
@@ -101,15 +98,28 @@
         'iframeUrl' => $iframeUrl,
         'frontendOrigin' => $frontendOrigin,
         'publicUrl' => $publicUrl,
+        // Whether "View Page" points at a real, accessible public page. False while
+        // the content entity is unpublished — the top bar disables the action and
+        // explains it is available after publication (PB-DRAFT-PREVIEW-R1 §12).
+        'publicUrlAvailable' => $publicUrlAvailable,
         'structureEditUrl' => $structureEditUrl,
         'nav' => $nav,
         'selected' => is_string($selected) ? $selected : null,
+        // PB-TEMPLATE-REGISTRY-2-D — Admin-UI-locale chrome strings for the unknown-node UX.
+        'strings' => \Plugins\PageBuilder\Support\EditorChromeStrings::resolve(\Plugins\PageBuilder\Support\CatalogLocale::admin()),
         'api' => [
             'context' => url($ownerPath.$localeQuery),
             'draft' => url($ownerPath.'/draft'.$localeQuery),
             'publish' => url($ownerPath.'/publish'.$localeQuery),
             'command' => url($apiPrefix.'/state/command'),
             'preview' => url($apiPrefix.'/editor/preview'),
+            // PB-TEMPLATE-REGISTRY-2-C — the shared Resource Browser previews/materializes
+            // in the Frontend/Live Builder too, so it needs the same Runtime Preview base +
+            // Full Page Template import routes as the Structure Builder. Reuses the existing
+            // preview engine + FullPageImportService (RID resolved server-side).
+            'resourcePreview' => url('page-builder/preview'),
+            'templateImportPlan' => url('page-builder/library/import/plan'),
+            'templateImport' => url('page-builder/library/import'),
         ],
     ];
 @endphp

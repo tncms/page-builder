@@ -46,6 +46,19 @@ final class FrontendEditorRenderer
      */
     public const REQUEST_KEY = 'pb.frontend_editor';
 
+    /**
+     * Request-attribute flag set by the private, authenticated editor-document
+     * route ({@see \Plugins\PageBuilder\Http\Controllers\EditorDocumentController})
+     * to declare editor intent WITHOUT the public `?pb_editor=1` query flag.
+     *
+     * The public page iframe carries `?pb_editor=1`; the private document route
+     * carries this trusted attribute instead, because it renders through Core's
+     * signed-preview-free {@see \TheNguyen\CMS\Http\Controllers\FrontendController::renderPreviewable()}
+     * seam for unpublished owners whose public slug is not routable. Either signal
+     * still requires `page-builder.edit`, so draft disclosure stays authorised.
+     */
+    public const EDITOR_DOCUMENT_ATTR = 'pb.editor_document';
+
     public function __construct(
         private readonly LayoutStore $layouts,
         private readonly PageBuilderManager $manager,
@@ -64,7 +77,16 @@ final class FrontendEditorRenderer
 
         $request ??= request();
 
-        if (! $request instanceof Request || ! $request->boolean('pb_editor')) {
+        if (! $request instanceof Request) {
+            return false;
+        }
+
+        // Editor intent comes from EITHER the public page iframe (`?pb_editor=1`)
+        // or the private, authenticated editor-document route (trusted attribute).
+        $intended = $request->boolean('pb_editor')
+            || $request->attributes->get(self::EDITOR_DOCUMENT_ATTR) === true;
+
+        if (! $intended) {
             return false;
         }
 
@@ -113,7 +135,15 @@ final class FrontendEditorRenderer
         $ownerType = (string) $content->type;
         $ownerId = $content->getKey();
 
-        return $this->wrapCanvas($this->renderInner($ownerType, $ownerId, $classicBody));
+        return $this->wrapCanvas($this->renderInner(
+            $ownerType,
+            $ownerId,
+            $classicBody,
+            // Heading-context parity (PB-FREE-LIBRARY-DESIGN-1-E-H1): the editor
+            // canvas reflects the same page-title visibility as the public render,
+            // so the hero heading rank the author sees matches what ships.
+            (bool) ($content->show_page_title ?? true),
+        ));
     }
 
     /**
@@ -122,7 +152,7 @@ final class FrontendEditorRenderer
      * the editor still has visual context (the shell replaces it on first edit).
      * Any failure degrades to the classic body — the editor can never 500 a page.
      */
-    private function renderInner(string $ownerType, int|string $ownerId, string $classicBody): string
+    private function renderInner(string $ownerType, int|string $ownerId, string $classicBody, bool $externalTitleRendered = false): string
     {
         // LT-M1B Increment 2 — preview resolves the SAME effective owner as the
         // editor. The editor's iframe URL carries `?locale=`, so a VI preview shows
@@ -149,10 +179,17 @@ final class FrontendEditorRenderer
                     // under (INV-PB-L10N-02), fail-soft + restored, so translatable
                     // values match the effective owner's locale, not the ambient one.
                     $withIds = $this->manager->state($payload)->payload();
-                    $html = RenderLocale::scope(
-                        RenderLocale::enabled($this->requestLocale()),
-                        fn (): string => $this->manager->renderForEditor($withIds),
-                    );
+                    $runtime = $this->manager->runtime();
+                    $runtime->setExternalHeadingPresent($externalTitleRendered);
+
+                    try {
+                        $html = RenderLocale::scope(
+                            RenderLocale::enabled($this->requestLocale()),
+                            fn (): string => $this->manager->renderForEditor($withIds),
+                        );
+                    } finally {
+                        $runtime->setExternalHeadingPresent(false);
+                    }
 
                     if (trim($html) !== '') {
                         return $html;

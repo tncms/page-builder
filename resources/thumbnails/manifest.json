@@ -1,0 +1,203 @@
+{
+  "generator": "page-builder/scripts/generate-thumbnails.mjs",
+  "viewport": {
+    "width": 1200,
+    "height": 900
+  },
+  "deviceScaleFactor": 1,
+  "output": {
+    "width": 600,
+    "height": 450
+  },
+  "webpQuality": 82,
+  "count": 17,
+  "thumbnails": [
+    {
+      "key": "section-hero-modern",
+      "source": "rid",
+      "ref": "builtin:section:hero-modern",
+      "file": "section-hero-modern.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 5874,
+      "renderHash": "dfe70f35436401e1c0acf6ca0d10d632101f89d4f0c6a961a6ebbae1a0c0c7cf",
+      "thumbHash": "3040dc467e632ab6c38f9ceb8f2ed569c104e8ba3c7b090cc34797e2e2665b68"
+    },
+    {
+      "key": "section-hero-company",
+      "source": "rid",
+      "ref": "builtin:section:hero-company",
+      "file": "section-hero-company.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 5294,
+      "renderHash": "81b5d47e52d379cedbf47ad66d733a0532016a42a5dc83f9498378035f8fe0ab",
+      "thumbHash": "d81238a15a8d1784cb364d75b4d771aabcac302df2f2ecedaedcec484f3b19c4"
+    },
+    {
+      "key": "section-hero-saas",
+      "source": "rid",
+      "ref": "builtin:section:hero-saas",
+      "file": "section-hero-saas.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 5538,
+      "renderHash": "7de35af364ad30ac2dfbea32e970192605e62e4e2fcf2ce0d86e8a8eb738e708",
+      "thumbHash": "14b398e812912b939cbe1caa45a3b717af88ebb043d6d4b03940eaa3091c2a06"
+    },
+    {
+      "key": "section-feature-grid",
+      "source": "rid",
+      "ref": "builtin:section:feature-grid",
+      "file": "section-feature-grid.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 2648,
+      "renderHash": "9350a1504e81319849a9d358de64686db9060258d44cae948ce764b2504a002a",
+      "thumbHash": "74851625b1e53bbee38aa401a62d87a14aaad1ccb31dfb8102036d0d7a40c9a1"
+    },
+    {
+      "key": "section-feature-cards",
+      "source": "rid",
+      "ref": "builtin:section:feature-cards",
+      "file": "section-feature-cards.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 3842,
+      "renderHash": "2550be4a22f913d42b63a4cc0877f85275d8d98629cc7228c4a8b7fd6c24c2a7",
+      "thumbHash": "f1af5ebe16204d03cce1598e5144e2e37ecf7a014afeb224d11385981561bc26"
+    },
+    {
+      "key": "section-testimonials",
+      "source": "rid",
+      "ref": "builtin:section:testimonials",
+      "file": "section-testimonials.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 9356,
+      "renderHash": "150695ea56de2d44fa579f6cddb14313fd6b80b219e83bc276c57c4bcfd9e192",
+      "thumbHash": "eb85ddd140d88e005e936ef844ef01c87c071e447a60d071602f6b09532094a9"
+    },
+    {
+      "key": "section-logo-strip",
+      "source": "rid",
+      "ref": "builtin:section:logo-strip",
+      "file": "section-logo-strip.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 1682,
+      "renderHash": "87e031772050ddb838270c2e1bf6b1c5dca18111afd52ead7e84bd8113f161b1",
+      "thumbHash": "b79c3eb2982a3b4b9f2db599b35c2984be54f448f4fac504ba1accf8be41d07b"
+    },
+    {
+      "key": "section-cta-banner",
+      "source": "rid",
+      "ref": "builtin:section:cta-banner",
+      "file": "section-cta-banner.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 3430,
+      "renderHash": "177ee70c87462817f0230fea1774959615093381e1c5616dc31fe46cb0b3eb57",
+      "thumbHash": "1ca631f835955457761c55c73913b27c6ff798bd38fc30508e1bf27547656d7a"
+    },
+    {
+      "key": "section-pricing",
+      "source": "rid",
+      "ref": "builtin:section:pricing",
+      "file": "section-pricing.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 5404,
+      "renderHash": "9aedcfc4a76853ff1eb700528652bf6ef43b3a3238ff1c47348b0c5d45707066",
+      "thumbHash": "ec2a70b9d7657dd99b4247f28f1c3e75796b4dabbec10114ee1ed96ff3fa23ec"
+    },
+    {
+      "key": "page-company-home",
+      "source": "rid",
+      "ref": "builtin:page:company-home",
+      "file": "page-company-home.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 10762,
+      "renderHash": "e7fa117d4452a6edb9d93db1b38e6a70a5ebac19465cd11a3a6791762fdac4ed",
+      "thumbHash": "564c39e6f89a573aa1bbef2e9ec91373a52dc0d654531cf3f1c6ee628a9859b7"
+    },
+    {
+      "key": "page-agency-home",
+      "source": "rid",
+      "ref": "builtin:page:agency-home",
+      "file": "page-agency-home.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 14928,
+      "renderHash": "41472f6aabdeeec76f7b24c2ddb6846c1dc948499e081e5bf4f72cc5faa843bb",
+      "thumbHash": "b6f7a8c807d8dd45e251c371ab5bddf70ee3368ddea2efe07540d32f1a1fdd0e"
+    },
+    {
+      "key": "page-saas-landing",
+      "source": "rid",
+      "ref": "builtin:page:saas-landing",
+      "file": "page-saas-landing.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 9300,
+      "renderHash": "f673f58a4f7b374b7c513a089176211c02f969d062d775a2b0c1af532c69d788",
+      "thumbHash": "71c751af8c2ddaccc040047eedb2f3ca67d90e957891672bfb78176e7ff8818d"
+    },
+    {
+      "key": "page-portfolio",
+      "source": "rid",
+      "ref": "builtin:page:portfolio",
+      "file": "page-portfolio.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 11692,
+      "renderHash": "fd6cdd82b7d0fbdb6b42c6bf362a67d1f62fb5ef4b326b4a34d1872fc08a25fb",
+      "thumbHash": "20a87ea92b070aeb271f0259b7c25a6cf45500b24223efb6948a861386a6987c"
+    },
+    {
+      "key": "page-blog-home",
+      "source": "rid",
+      "ref": "builtin:page:blog-home",
+      "file": "page-blog-home.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 8922,
+      "renderHash": "6072ae3b1892002f023bf1e19a8d795bfa85df0ca4e55cba2e8d48b434730eea",
+      "thumbHash": "b8b71a3cef9306fb6a09ff964e6a97dc8040369bedebcdfb77313402abfc0c7c"
+    },
+    {
+      "key": "template-hero-basic",
+      "source": "builtin-template",
+      "ref": "hero-basic",
+      "file": "template-hero-basic.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 3458,
+      "renderHash": "0bab43f1ef6626d9d2d9d367cb213e13df363c2b08a9bdc040a5212765dccf5c",
+      "thumbHash": "7ef1c32f295694b4246dc9f3c89bbbc0b78d6e4f2078b0607ae096523e70330b"
+    },
+    {
+      "key": "template-feature-grid-basic",
+      "source": "builtin-template",
+      "ref": "feature-grid-basic",
+      "file": "template-feature-grid-basic.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 3876,
+      "renderHash": "37e451c5997a339e58b55465f5cea3836ebb992327f9b8c6670f448859093f63",
+      "thumbHash": "b786e855aa82df07489c6bc49554a1e5c4fc1e9363b7f6e86557a3b24ceddecd"
+    },
+    {
+      "key": "template-cta-basic",
+      "source": "builtin-template",
+      "ref": "cta-basic",
+      "file": "template-cta-basic.webp",
+      "width": 600,
+      "height": 450,
+      "bytes": 1980,
+      "renderHash": "723e89c09419a0ee954be816afa429a5d6a445116d76f1a964c07f55c7b2ebea",
+      "thumbHash": "972f49b9fddb3156c6ff5c35d9d8e5f94cfc4841369d5903b450b6e909fe9ca7"
+    }
+  ]
+}

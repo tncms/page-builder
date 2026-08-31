@@ -9,42 +9,54 @@
             "blocks": [
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "image",
-                            "data": {
-                                "image_url": "",
-                                "alt": "Gallery image one"
+                    "data": {
+                        "width": "33",
+                        "halign": "center",
+                        "blocks": [
+                            {
+                                "type": "image",
+                                "data": {
+                                    "src": "/vendor/page-builder/img/placeholders/image.svg",
+                                    "alt": "Product dashboard showing an overview of recent activity",
+                                    "caption": "A calm, focused dashboard"
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 },
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "image",
-                            "data": {
-                                "image_url": "",
-                                "alt": "Gallery image two"
+                    "data": {
+                        "width": "33",
+                        "halign": "center",
+                        "blocks": [
+                            {
+                                "type": "image",
+                                "data": {
+                                    "src": "/vendor/page-builder/img/placeholders/image.svg",
+                                    "alt": "Team members collaborating on a shared workspace",
+                                    "caption": "Collaboration built in"
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 },
                 {
                     "type": "column",
-                    "data": [],
-                    "blocks": [
-                        {
-                            "type": "image",
-                            "data": {
-                                "image_url": "",
-                                "alt": "Gallery image three"
+                    "data": {
+                        "width": "33",
+                        "halign": "center",
+                        "blocks": [
+                            {
+                                "type": "image",
+                                "data": {
+                                    "src": "/vendor/page-builder/img/placeholders/image.svg",
+                                    "alt": "Reports and insights presented as clear charts",
+                                    "caption": "Insights at a glance"
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
             ]
         }

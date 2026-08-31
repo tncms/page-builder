@@ -16,9 +16,10 @@ const liveUrl = computed(() => store.navLinks?.live ?? null)
 const viewUrl = computed(() => store.navLinks?.public ?? null)
 
 function goLive(): void {
-  // Carry the current selection across, and guard unsaved changes.
+  // Carry the current selection across, and guard ANY unsaved risk (dirty, an
+  // armed/in-flight autosave, or a failed save) — PB-PROD-2.
   guardedNavigate(appendSelection(liveUrl.value, store.selectedComponentId), {
-    dirty: store.dirty || store.inspectorDirty,
+    dirty: store.hasUnsavedRisk,
   })
 }
 // PB-STATE-2V — truthful publication status (shared with the Live Builder status

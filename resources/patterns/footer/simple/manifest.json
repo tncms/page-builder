@@ -9,5 +9,15 @@
     "tags": [
         "footer",
         "links"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Simple Footer",
+            "vi": "Chân trang đơn giản"
+        },
+        "description": {
+            "en": "A minimal multi-column footer.",
+            "vi": "Chân trang nhiều cột tối giản."
+        }
+    }
 }

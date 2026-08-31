@@ -84,6 +84,9 @@ final class EditorContext
                 // from THIS rather than the local save flag, so a saved-but-unpublished
                 // draft can never read as a safe "Draft saved".
                 'is_published_current' => $this->publishedIsCurrent($draft, $published),
+                // INV-PUB-06 — the server-issued optimistic-concurrency token the client
+                // echoes back on the next save/publish; a stale token is rejected (409).
+                'version_token' => $layout?->versionToken() ?? PageBuilderLayout::emptyToken(),
                 'last_saved_at' => $savedAt,
                 'published_at' => $published !== null ? $savedAt : null,
             ],
@@ -152,6 +155,9 @@ final class EditorContext
                 // from THIS rather than the local save flag, so a saved-but-unpublished
                 // draft can never read as a safe "Draft saved".
                 'is_published_current' => $this->publishedIsCurrent($draft, $published),
+                // INV-PUB-06 — the server-issued optimistic-concurrency token the client
+                // echoes back on the next save/publish; a stale token is rejected (409).
+                'version_token' => $layout?->versionToken() ?? PageBuilderLayout::emptyToken(),
                 'last_saved_at' => $savedAt,
                 'published_at' => $published !== null ? $savedAt : null,
             ],
@@ -181,6 +187,7 @@ final class EditorContext
             'has_draft' => $draft !== null,
             'has_published' => $published !== null,
             'is_published_current' => $this->publishedIsCurrent($draft, $published),
+            'version_token' => $layout->versionToken(),
             'last_saved_at' => $savedAt,
             'published_at' => $published !== null ? $savedAt : null,
         ];

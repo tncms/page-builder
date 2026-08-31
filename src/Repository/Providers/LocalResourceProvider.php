@@ -106,6 +106,7 @@ final class LocalResourceProvider implements DesignResourceProvider
             description: 'A ready-made sample page assembled from built-in components.',
             compatibility: ['schemaVersion' => '1'],
             distribution: ['entitlement' => 'free'],
+            browsable: false,
         );
     }
 
@@ -135,6 +136,7 @@ final class LocalResourceProvider implements DesignResourceProvider
             vendor: self::SOURCE,
             compatibility: ['schemaVersion' => '1'],
             distribution: ['entitlement' => 'free'],
+            browsable: false,
         );
     }
 
@@ -170,6 +172,7 @@ final class LocalResourceProvider implements DesignResourceProvider
             vendor: self::SOURCE,
             compatibility: ['schemaVersion' => '1'],
             distribution: ['entitlement' => 'free'],
+            browsable: false,
         );
     }
 

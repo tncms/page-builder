@@ -70,6 +70,13 @@ class ColumnBlock extends AbstractBlockDefinition
                     ->options(['stretch' => 'Stretch', 'start' => 'Left', 'center' => 'Center', 'end' => 'Right'])
                     ->default('stretch'),
                 ColorField::make('background')->label('Background'),
+                // Theme-neutral surface preset (PB-FREE-LIBRARY-DESIGN-1-D): a bounded
+                // enum mapped to an allowlisted, token-based column class (surface/card).
+                // Default `none` keeps legacy output byte-equivalent; there is no raw
+                // class or CSS field, and the classes consume only Phase-C tokens.
+                SelectField::make('surface')->label('Surface')
+                    ->options(['none' => 'None', 'surface' => 'Surface', 'card' => 'Card'])
+                    ->default('none'),
                 SelectField::make('padding')->label('Padding')
                     ->options(['none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large'])
                     ->default('none'),

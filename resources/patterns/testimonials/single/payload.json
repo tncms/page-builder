@@ -4,9 +4,9 @@
         {
             "type": "testimonial",
             "data": {
-                "quote": "This product completely changed how our team ships work.",
+                "quote": "We replaced three tools and a two-week design backlog with one page builder. Our marketing team now ships polished, on-brand landing pages in an afternoon — no engineering tickets required.",
                 "author": "Jane Cooper",
-                "role": "VP Engineering, Acme"
+                "role": "VP of Marketing, Northwind"
             }
         }
     ]

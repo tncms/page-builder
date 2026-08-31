@@ -10,5 +10,15 @@
         "testimonial",
         "quote",
         "social-proof"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Single Testimonial",
+            "vi": "Nhận xét đơn"
+        },
+        "description": {
+            "en": "A single, prominent customer quote.",
+            "vi": "Một trích dẫn khách hàng nổi bật."
+        }
+    }
 }

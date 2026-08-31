@@ -12,19 +12,14 @@
 --}}
 @php
     $gap = $data['gap'] ?? 'md';
-    $space = ['none' => '0px', 'sm' => '0.5rem', 'md' => '1rem', 'lg' => '2rem'];
-    $gutter = $space[$gap] ?? '1rem';
-    // `gap:0` is set EXPLICITLY (not just omitted): the public stylesheet has
-    // historically set a flex `gap` on `.pb-columns__inner` (legacy grid model),
-    // which the editor CSS does not. Without this inline reset that external gap
-    // is added ON TOP of the columns' exact percentages and wraps them onto two
-    // rows publicly while the editor stays correct. Inline `gap:0` neutralises any
-    // such rule, so the legacy Columns section stays self-contained and matches the
-    // Container's flex-gutter model (gutter = column padding via `--pb-col-gap`).
-    $innerStyle = 'display:flex;flex-wrap:wrap;flex-direction:row;align-items:stretch;gap:0;--pb-col-gap:'.$gutter.';';
+    // Geometry authority (PB-FREE-LIBRARY-DESIGN-1-C): the flex row, its `gap:0`
+    // gutter model (gutter = column padding via `--pb-col-gap`) and the tablet
+    // stacking are owned entirely by CSS classes (`.pb-columns__inner` +
+    // `.pb-columns--gap-*`), so ONE responsive authority governs every surface —
+    // no inline `display:flex`/`flex-direction` that a media query cannot override.
 @endphp
 <section class="pb-section pb-section--columns pb-columns pb-columns--gap-{{ $gap }} pb-columns--cols-{{ $data['columns'] ?? 'auto' }}">
-    <div class="pb-columns__inner" style="{{ $innerStyle }}">
+    <div class="pb-columns__inner">
         @if (trim($children) === '' && ($pbEditor ?? false))
             <div class="pb-placeholder">{{ __('Add columns to this row') }}</div>
         @else

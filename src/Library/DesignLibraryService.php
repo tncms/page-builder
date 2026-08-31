@@ -14,6 +14,8 @@ use Plugins\PageBuilder\Repository\Contracts\DesignResourceRepositoryInterface;
 use Plugins\PageBuilder\Repository\DesignResource;
 use Plugins\PageBuilder\Repository\ResourceCollection;
 use Plugins\PageBuilder\Repository\ResourceQuery;
+use Plugins\PageBuilder\Support\CatalogLocale;
+use Plugins\PageBuilder\Support\ResourceMetadataLocalizer;
 use Throwable;
 
 /**
@@ -28,11 +30,15 @@ use Throwable;
  */
 final class DesignLibraryService
 {
+    private readonly ResourceMetadataLocalizer $localizer;
+
     public function __construct(
         private readonly DesignResourceRepositoryInterface $repository,
         private readonly ResourceAvailabilityResolver $availability,
         private readonly ?CommunityDiscoveryService $discovery = null,
+        ?ResourceMetadataLocalizer $localizer = null,
     ) {
+        $this->localizer = $localizer ?? new ResourceMetadataLocalizer;
     }
 
     /**
@@ -218,9 +224,15 @@ final class DesignLibraryService
         // and previewable.
         $availability = $this->availability->resolve($resource);
 
+        // Human labels resolved for the Admin UI locale (PB-TEMPLATE-REGISTRY-1-H3) — never the
+        // editing locale. Identity/category/tags stay invariant; legacy single-string metadata is
+        // returned unchanged.
+        $locale = CatalogLocale::admin();
+        $fallback = CatalogLocale::fallback();
+
         return new LibraryCard(
             rid: $resource->rid,
-            name: $resource->name,
+            name: $this->localizer->name($resource, $locale, $fallback),
             kind: $resource->kind,
             vendor: $resource->vendor ?? $resource->source,
             version: $resource->version,
@@ -230,7 +242,7 @@ final class DesignLibraryService
             entitlement: $resource->entitlement(),
             available: $availability->available,
             favorite: $favorite,
-            description: $resource->description,
+            description: $this->localizer->description($resource, $locale, $fallback),
             locked: $availability->locked,
             requiredCapability: $availability->requiredCapability,
             sectionCount: $this->sectionCount($resource),

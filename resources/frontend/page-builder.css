@@ -110,24 +110,24 @@
   transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease, color .12s ease;
 }
 .pb-button:hover { transform: translateY(-1px); }
-.pb-button:focus-visible { outline: 2px solid var(--pb-color-primary, #2563eb); outline-offset: 2px; }
+.pb-button:focus-visible { outline: 2px solid var(--pb-color-focus, #2563eb); outline-offset: 2px; }
 
 .pb-button--primary {
   background: var(--pb-color-primary, #2563eb);
-  color: #fff;
+  color: var(--pb-color-on-accent, #fff);
   box-shadow: var(--pb-shadow-sm, 0 1px 2px rgba(0, 0, 0, .06));
 }
 .pb-button--primary:hover { box-shadow: var(--pb-shadow-md, 0 4px 12px rgba(0, 0, 0, .10)); }
 .pb-button--secondary {
   background: var(--pb-color-secondary, #7c3aed);
-  color: #fff;
+  color: var(--pb-color-on-accent, #fff);
 }
 .pb-button--outline {
   background: transparent;
   color: var(--pb-color-primary, #2563eb);
   border-color: currentColor;
 }
-.pb-button--outline:hover { background: var(--pb-color-primary, #2563eb); color: #fff; }
+.pb-button--outline:hover { background: var(--pb-color-primary, #2563eb); color: var(--pb-color-on-accent, #fff); }
 .pb-button--ghost {
   background: transparent;
   color: var(--pb-color-text, #111827);
@@ -175,7 +175,7 @@
 .pb-hero--dark {
   background: var(--pb-color-text, #111827);
 }
-.pb-hero--dark .pb-hero__title { color: #fff; }
+.pb-hero--dark .pb-hero__title { color: var(--pb-color-inverse, #fff); }
 .pb-hero--dark .pb-hero__subtitle { color: rgba(255, 255, 255, .72); }
 
 /* ------------------------------------------------------------------ *
@@ -237,6 +237,27 @@
 .pb-column--middle { justify-content: center; }
 .pb-column--bottom { justify-content: flex-end; }
 
+/* Theme-neutral column surface presets (PB-FREE-LIBRARY-DESIGN-1-D). A bounded
+ * `surface` enum on the column maps to these allowlisted, TOKEN-ONLY, column-owned
+ * classes so a curated resource (pricing tiers, testimonial cards) can read as a
+ * card WITHOUT a hardcoded colour. Interior padding gives the surface breathing
+ * room; a theme overriding the Phase-C tokens restyles them through the cascade.
+ * They are presentation only — geometry stays owned by `.pb-cw-*` + the 768px
+ * stacking contract, so a surfaced column still stacks full-width on mobile. */
+.pb-column--surface {
+  background: var(--pb-color-surface, #f8fafc);
+  border: 1px solid var(--pb-color-border, #e5e7eb);
+  border-radius: var(--pb-radius-lg, 1rem);
+  padding: var(--pb-space-lg, 2rem);
+}
+.pb-column--card {
+  background: var(--pb-color-background, #fff);
+  border: 1px solid var(--pb-color-border, #e5e7eb);
+  border-radius: var(--pb-radius-lg, 1rem);
+  padding: var(--pb-space-lg, 2rem);
+  box-shadow: var(--pb-shadow-md, 0 4px 12px rgba(0, 0, 0, .10));
+}
+
 @media (max-width: 640px) {
   .pb-columns--cols-2 .pb-columns__inner,
   .pb-columns--cols-3 .pb-columns__inner,
@@ -262,7 +283,7 @@
 .pb-cta__button { margin-top: var(--pb-space-sm, 0.5rem); }
 .pb-cta--banner .pb-cta__inner { flex-direction: row; flex-wrap: wrap; justify-content: space-between; align-items: center; text-align: left; }
 .pb-cta--dark .pb-cta__inner { background: var(--pb-color-text, #111827); }
-.pb-cta--dark .pb-cta__title { color: #fff; }
+.pb-cta--dark .pb-cta__title { color: var(--pb-color-inverse, #fff); }
 .pb-cta--dark .pb-cta__text { color: rgba(255, 255, 255, .72); }
 
 /* ------------------------------------------------------------------ *
@@ -290,7 +311,7 @@
 .pb-accordion-item__question::-webkit-details-marker { display: none; }
 .pb-accordion-item__question::after { content: "+"; margin-left: 1rem; color: var(--pb-color-muted, #6b7280); font-weight: 400; }
 .pb-accordion-item[open] .pb-accordion-item__question::after { content: "\2212"; }
-.pb-accordion-item__question:focus-visible { outline: 2px solid var(--pb-color-primary, #2563eb); outline-offset: -2px; }
+.pb-accordion-item__question:focus-visible { outline: 2px solid var(--pb-color-focus, #2563eb); outline-offset: -2px; }
 .pb-accordion-item__answer { padding: 0 var(--pb-space-md, 1rem) var(--pb-space-md, 1rem); color: var(--pb-color-muted, #6b7280); line-height: 1.7; }
 
 /* ------------------------------------------------------------------ *
@@ -390,10 +411,15 @@
 
 /* Gutter as an inherited CSS variable, keyed by the gap class (inline
  * `--pb-col-gap` is sanitised away). Columns pad by half of it (border-box). */
-.pb-layout-container--gap-none, .pb-columns--gap-none .pb-columns__inner { --pb-col-gap: 0px; }
-.pb-layout-container--gap-sm,   .pb-columns--gap-sm .pb-columns__inner   { --pb-col-gap: var(--pb-space-sm, 0.5rem); }
-.pb-layout-container--gap-md,   .pb-columns--gap-md .pb-columns__inner   { --pb-col-gap: var(--pb-space-md, 1rem); }
-.pb-layout-container--gap-lg,   .pb-columns--gap-lg .pb-columns__inner   { --pb-col-gap: var(--pb-space-lg, 2rem); }
+/* The gutter is column padding, never an external flex `gap`. These rules also
+ * pin `gap: 0` at the SAME (class,class) specificity as the legacy grid gap
+ * (`.pb-columns--gap-* .pb-columns__inner { gap: … }` above) so the flex model
+ * wins by order now that the column geometry is class-owned (no inline `gap:0`
+ * masking it) — otherwise a stray flex gap pushes exact percentages past 100%. */
+.pb-layout-container--gap-none, .pb-columns--gap-none .pb-columns__inner { --pb-col-gap: 0px; gap: 0; }
+.pb-layout-container--gap-sm,   .pb-columns--gap-sm .pb-columns__inner   { --pb-col-gap: var(--pb-space-sm, 0.5rem); gap: 0; }
+.pb-layout-container--gap-md,   .pb-columns--gap-md .pb-columns__inner   { --pb-col-gap: var(--pb-space-md, 1rem); gap: 0; }
+.pb-layout-container--gap-lg,   .pb-columns--gap-lg .pb-columns__inner   { --pb-col-gap: var(--pb-space-lg, 2rem); gap: 0; }
 
 /* Column shell. The exact percentage basis comes from the `.pb-cw-*` <head>
  * rule (arbitrary %) or the alias classes below (fixed) — NOT from the inline
@@ -418,4 +444,52 @@
     min-width: 0;
     box-sizing: border-box;
     padding-inline: calc(var(--pb-col-gap, 0px) / 2);
+}
+
+/* ------------------------------------------------------------------ *
+ * Responsive layout & overflow contract (PB-FREE-LIBRARY-DESIGN-1-C)  *
+ *                                                                     *
+ * ONE deterministic breakpoint, reusing the certified PB-PROD-1 tablet*
+ * threshold (768px — Breakpoints / TokenRegistry). At or below it a   *
+ * multi-column row collapses to a single full-width column IN SOURCE  *
+ * ORDER. This block is appended LAST so it wins by cascade over the   *
+ * fixed/percentage basis (.pb-cw-*, .pb-column--half/third/quarter,   *
+ * .pb-layout-column) and the <head> runtime block by cascade order —  *
+ * no forced-override flags, no specificity escalation, no DOM          *
+ * reordering, and no user-agent sniffing.                             *
+ * Per-node responsive spacing (.pb-ds-* @media, padding/margin only)  *
+ * is a different property and is untouched, so authored responsive    *
+ * overrides remain authoritative.                                     *
+ * ------------------------------------------------------------------ */
+
+/* Long unbroken words/URLs never force horizontal document overflow;
+ * `min-width: 0` on the column above already lets intrinsic content shrink. */
+.pb-section { overflow-wrap: break-word; }
+.pb-heading, .pb-block--heading,
+.pb-text, .pb-block--text { overflow-wrap: break-word; }
+
+/* Editor render-marker geometry (class-owned). In editor mode the marker div —
+ * not the `.pb-column` inside it — is the flex participant, so it carries the box
+ * model here and the flex-basis/max-width through the shared `.pb-cw-*` class (or
+ * flexes freely when auto). Owning this in CSS (not inline) lets the tablet
+ * stacking rule below govern the editor/preview surfaces too. */
+.pb-editor-render-marker--column { box-sizing: border-box; min-width: 0; }
+.pb-editor-render-marker--column-auto { flex: 1 1 0; }
+
+@media (max-width: 768px) {
+  .pb-columns__inner,
+  .pb-layout-container--row.pb-container--flex {
+    flex-direction: column;
+  }
+  /* Every geometry-bearing flex child — the public column root, the editor column
+   * marker, the arbitrary-percentage `.pb-cw-*` widths (via those roots) and the
+   * legacy width aliases — becomes a full-width stacked row in source order. */
+  .pb-columns__inner > *,
+  .pb-layout-container--row.pb-container--flex > *,
+  .pb-layout-column,
+  .pb-editor-render-marker--column,
+  .pb-column--half, .pb-column--third, .pb-column--quarter {
+    flex-basis: auto;
+    max-width: 100%;
+  }
 }

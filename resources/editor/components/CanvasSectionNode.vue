@@ -5,9 +5,15 @@ import type { ComponentNode } from '../types'
 import CanvasNodeTree from './CanvasNodeTree.vue'
 import CanvasNodeToolbar from './CanvasNodeToolbar.vue'
 import OutlineDropZone from './outline/OutlineDropZone.vue'
+import UnknownNodePlaceholder from './UnknownNodePlaceholder.vue'
 
 const props = defineProps<{ node: ComponentNode }>()
 const store = useEditorStore()
+
+// PB-TEMPLATE-REGISTRY-2-D — a stored section whose type has no registered definition is an
+// unknown node. It stays selectable at its position and keeps its children; only its editor
+// presentation gains a placeholder. Recognition is the store's registry adapter (no 2nd list).
+const unknown = computed(() => !store.isKnownType(props.node.kind, props.node.type))
 
 const selected = computed(() => store.selectedComponentId === props.node.id)
 const hovered = computed(() => store.hoveredComponentId === props.node.id)
@@ -45,6 +51,7 @@ function onHandleDown(e: PointerEvent) {
       'pb-editor-node-disabled': node.disabled,
       'pb-editor-node-collapsed': collapsed,
       'pb-editor-node-dragging': isDragSource,
+      'pb-editor-node-unknown': unknown,
     }"
     :style="{ '--pb-depth': node.depth }"
     role="button"
@@ -71,12 +78,17 @@ function onHandleDown(e: PointerEvent) {
       <span class="pb-editor-node-kind">Section</span>
       <span class="pb-editor-node-type">{{ node.type }}</span>
       <span v-if="node.disabled" class="pb-editor-node-flag">Disabled</span>
+      <span v-if="unknown" class="pb-editor-node-flag pb-editor-node-flag--unknown">{{ store.uiString('unknownBadge', 'Unavailable') }}</span>
     </div>
     <div class="pb-editor-node-meta">
       <code>{{ node.id }}</code>
       <span>{{ node.children.length }} block(s)</span>
       <span v-if="collapsed && node.children.length" class="pb-editor-node-collapsed-badge">collapsed</span>
     </div>
+
+    <!-- PB-TEMPLATE-REGISTRY-2-D — unknown section: a presentation-only placeholder; the node
+         object, its data, and its children are untouched below. -->
+    <UnknownNodePlaceholder v-if="unknown" :type="node.type" :kind="node.kind" />
 
     <div v-if="node.children.length && !collapsed" class="pb-editor-node-children">
       <CanvasNodeTree :nodes="node.children" :parent-id="node.id" />

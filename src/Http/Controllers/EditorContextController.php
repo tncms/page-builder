@@ -14,7 +14,7 @@ use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\EditorContext;
 use Plugins\PageBuilder\Support\LayoutNormalizer;
 use Plugins\PageBuilder\Support\LayoutStore;
-use Plugins\PageBuilder\Models\PageBuilderLayout;
+use Plugins\PageBuilder\Support\LayoutVersionConflictException;
 use TheNguyen\CMS\Models\Content;
 
 /**
@@ -71,7 +71,13 @@ final class EditorContextController
                 is_array($request->input('payload')) ? $request->input('payload') : null,
             );
 
-            $layout = $this->layouts->saveDraft($effective->ownerType, $effective->ownerId, $payload, $this->userId());
+            $layout = $this->layouts->saveDraft(
+                $effective->ownerType,
+                $effective->ownerId,
+                $payload,
+                $this->userId(),
+                $this->requireToken($request, $effective),
+            );
 
             return response()->json([
                 'success' => true,
@@ -88,13 +94,17 @@ final class EditorContextController
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
             $this->provisioner->ensure($effective, $this->userId());
 
-            // Publishing from the editor makes the owner render with the builder on
-            // the public frontend (Phase 14.3), so ensure builder mode is set on the
-            // resolved (locale-specific) owner — never on the source when editing a
-            // translation.
-            $this->layouts->setEditorMode($effective->ownerType, $effective->ownerId, PageBuilderLayout::MODE_BUILDER, $this->userId());
-
-            $layout = $this->layouts->publish($effective->ownerType, $effective->ownerId, $this->userId());
+            // Publishing from the editor makes the owner render with the builder on the
+            // public frontend (Phase 14.3). LayoutStore::publish sets builder mode and
+            // copies draft → published in ONE token-checked transaction on the resolved
+            // (locale-specific) owner — never the source when editing a translation — so
+            // a stale publish (INV-PUB-06) cannot slip between a mode set and the copy.
+            $layout = $this->layouts->publishAsBuilder(
+                $effective->ownerType,
+                $effective->ownerId,
+                $this->userId(),
+                $this->requireToken($request, $effective),
+            );
 
             return response()->json([
                 'success' => true,
@@ -119,7 +129,54 @@ final class EditorContextController
                 'error' => $e->reason,
                 'message' => $e->getMessage(),
             ], $e->statusCode);
+        } catch (LayoutVersionConflictException $e) {
+            // INV-PUB-06 — a stale save/publish is a truthful 409 conflict carrying the
+            // current-version metadata for safe reload/reconciliation (no payload, no
+            // auto-merge, no silent overwrite). Authorization already passed in
+            // guardOwner(), so this never discloses state to an unauthorized actor.
+            return response()->json([
+                'success' => false,
+                'error' => LayoutVersionConflictException::ERROR_CODE,
+                'message' => $e->getMessage(),
+                'data' => $e->current,
+            ], 409);
         }
+    }
+
+    /**
+     * The version token the editor MUST carry on a save/publish (INV-PUB-06). An
+     * absent/empty token cannot bypass optimistic concurrency at the HTTP boundary —
+     * even though {@see LayoutStore}'s internal seam permits a null token for trusted
+     * server-side callers — so a missing token is rejected as a conflict carrying the
+     * current authoritative token for reconciliation (zero mutation; thrown before any
+     * write, after authorization).
+     *
+     * @throws LayoutVersionConflictException when the request omits a usable token.
+     */
+    private function requireToken(Request $request, EffectiveLayoutOwner $effective): string
+    {
+        $token = $this->tokenFrom($request);
+
+        if ($token !== null) {
+            return $token;
+        }
+
+        $current = $this->layouts->currentToken($effective->ownerType, $effective->ownerId);
+
+        throw new LayoutVersionConflictException($current, [
+            'token' => $current,
+            'reason' => 'token_required',
+        ]);
+    }
+
+    /**
+     * The raw optimistic-concurrency token from the request, or null when absent/empty.
+     */
+    private function tokenFrom(Request $request): ?string
+    {
+        $token = $request->input('token');
+
+        return is_string($token) && $token !== '' ? $token : null;
     }
 
     /**

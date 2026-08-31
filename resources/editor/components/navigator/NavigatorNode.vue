@@ -287,6 +287,11 @@ const label = computed(() => customNodeLabel(props.node) ?? fallbackLabel.value)
 
 const iconName = computed(() => (store.definitionOf(props.node.kind, props.node.type)?.icon as string) ?? '')
 
+// PB-TEMPLATE-REGISTRY-2-D — an unknown (unregistered-type) node keeps its place in the tree;
+// it only gains an accessible "Unavailable" badge. Recognition is the store's registry adapter.
+const unknown = computed(() => !store.isKnownType(props.node.kind, props.node.type))
+const unknownBadge = computed(() => store.uiString('unknownBadge', 'Unavailable'))
+
 // Phase 25.3.1 §10 — layout nodes surface extra context in the tree: a column
 // shows its width, a container/column shows its child count (or "empty").
 const isColumn = computed(() => props.node.type === 'column')
@@ -464,6 +469,13 @@ function onMenuKeydown(e: KeyboardEvent): void {
       <span v-if="isLayoutNode" class="pb-editor-navigator-meta pb-editor-navigator-meta--count">{{ childSummary }}</span>
       <span v-if="node.disabled" class="pb-editor-navigator-flag">off</span>
       <span v-if="isLocked" class="pb-editor-navigator-flag pb-editor-navigator-flag--locked" aria-label="Locked" title="Locked">locked</span>
+      <span
+        v-if="unknown"
+        class="pb-editor-navigator-flag pb-editor-navigator-flag--unknown"
+        :aria-label="unknownBadge"
+        :title="unknownBadge"
+        data-testid="navigator-unknown-badge"
+      >{{ unknownBadge }}</span>
 
       <button
         type="button"

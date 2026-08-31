@@ -19,8 +19,16 @@ final class DynamicStyleHasher
     /** Hash length (hex chars). 8 keeps classes short while making collisions negligible. */
     private const LENGTH = 8;
 
-    public function hash(DynamicStyleDeclaration $declaration): string
+    /**
+     * Hash the declaration, optionally namespaced by a `@media` condition so the
+     * SAME declarations under different breakpoints hash to distinct classes
+     * (PB-PROD-1). When `$media` is null the hash is unchanged, so every existing
+     * (non-responsive) class stays byte-identical.
+     */
+    public function hash(DynamicStyleDeclaration $declaration, ?string $media = null): string
     {
-        return substr(sha1($declaration->toCss()), 0, self::LENGTH);
+        $input = ($media !== null ? $media.'|' : '').$declaration->toCss();
+
+        return substr(sha1($input), 0, self::LENGTH);
     }
 }

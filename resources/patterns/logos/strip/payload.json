@@ -4,35 +4,42 @@
         {
             "type": "logo-strip",
             "data": {
-                "heading": "Trusted by teams everywhere"
+                "heading": "Trusted by teams at fast-growing companies"
             },
             "blocks": [
                 {
                     "type": "logo",
                     "data": {
-                        "image_url": "",
+                        "src": "/vendor/page-builder/img/placeholders/logo.svg",
                         "alt": "Acme"
                     }
                 },
                 {
                     "type": "logo",
                     "data": {
-                        "image_url": "",
+                        "src": "/vendor/page-builder/img/placeholders/logo.svg",
                         "alt": "Globex"
                     }
                 },
                 {
                     "type": "logo",
                     "data": {
-                        "image_url": "",
+                        "src": "/vendor/page-builder/img/placeholders/logo.svg",
                         "alt": "Umbrella"
                     }
                 },
                 {
                     "type": "logo",
                     "data": {
-                        "image_url": "",
+                        "src": "/vendor/page-builder/img/placeholders/logo.svg",
                         "alt": "Initech"
+                    }
+                },
+                {
+                    "type": "logo",
+                    "data": {
+                        "src": "/vendor/page-builder/img/placeholders/logo.svg",
+                        "alt": "Hooli"
                     }
                 }
             ]

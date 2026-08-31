@@ -11,5 +11,15 @@
         "grid",
         "columns"
     ],
-    "featured": true
+    "featured": true,
+    "localized": {
+        "name": {
+            "en": "Three Feature Columns",
+            "vi": "Ba cột tính năng"
+        },
+        "description": {
+            "en": "A three-column grid highlighting key product features.",
+            "vi": "Lưới ba cột làm nổi bật các tính năng chính của sản phẩm."
+        }
+    }
 }

@@ -25,6 +25,17 @@ declare(strict_types=1);
     \Plugins\PageBuilder\Http\Controllers\PreviewController::class,
 )->name('page-builder.preview');
 
+// PB-DRAFT-PREVIEW-R1 — private, authenticated editor-document for the frontend
+// editor iframe. Identity-based (ownerType/ownerId), so it never depends on the
+// (unpublished) owner's public slug being routable. Auth (`page-builder.edit`) +
+// locale validation are enforced inside the controller, which renders the DRAFT
+// through Core's status-gate-free preview seam and stamps a private/noindex
+// response. Never makes draft content public (INV-DRAFT-PREVIEW-01..10).
+\Illuminate\Support\Facades\Route::get(
+    'page-builder/{ownerType}/{ownerId}/editor-document',
+    \Plugins\PageBuilder\Http\Controllers\EditorDocumentController::class,
+)->name('page-builder.editor-document');
+
 // Phase 26.43 — Design Library admin UI. Server-rendered from the Design Resource
 // Repository; previews are served exclusively by the Runtime Preview route above.
 \Illuminate\Support\Facades\Route::get(

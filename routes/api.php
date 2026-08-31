@@ -9,6 +9,7 @@ use Plugins\PageBuilder\Http\Controllers\EditorContextController;
 use Plugins\PageBuilder\Http\Controllers\EditorMetadataController;
 use Plugins\PageBuilder\Http\Controllers\EditorPreviewController;
 use Plugins\PageBuilder\Http\Controllers\PatternController;
+use Plugins\PageBuilder\Http\Controllers\ResourceCatalogController;
 use Plugins\PageBuilder\Http\Controllers\StateCommandController;
 
 /*
@@ -32,6 +33,11 @@ Route::get('status', function () {
 })->name('status');
 
 Route::get('editor/metadata', EditorMetadataController::class)->name('editor.metadata');
+
+// PB-TEMPLATE-REGISTRY-2-B — unified Resource Browser catalog (metadata only, lazy).
+// Section resources are patterns, page resources are templates; labels resolve for the
+// Admin UI locale. Requires the page-builder.edit permission (enforced in the controller).
+Route::get('editor/resource-catalog', ResourceCatalogController::class)->name('editor.resource-catalog');
 
 // Phase 9 — Vue editor shell: owner-scoped bootstrap context + draft / publish.
 Route::get('editor/context/{ownerType}/{ownerId}', [EditorContextController::class, 'show'])

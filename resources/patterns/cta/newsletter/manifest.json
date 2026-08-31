@@ -10,5 +10,15 @@
         "newsletter",
         "subscribe",
         "email"
-    ]
+    ],
+    "localized": {
+        "name": {
+            "en": "Newsletter CTA",
+            "vi": "CTA đăng ký bản tin"
+        },
+        "description": {
+            "en": "Invite visitors to subscribe to your newsletter.",
+            "vi": "Mời khách truy cập đăng ký nhận bản tin của bạn."
+        }
+    }
 }
