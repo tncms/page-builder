@@ -31,6 +31,7 @@
     "Resource Browser": "Resource Browser",
     "Patterns": "Patterns",
     "Templates": "Templates",
+    "Blocks": "Blocks",
     "Search resources": "Search resources",
     "Source": "Source",
     "Category": "Category",
@@ -71,5 +72,17 @@
     "This content is preserved and will be saved unchanged.": "This content is preserved and will be saved unchanged.",
     "This component is not currently available in this site.": "This component is not currently available in this site.",
     "Editing controls will return when this component is available again.": "Editing controls will return when this component is available again.",
-    "Unavailable component": "Unavailable component"
+    "Unavailable component": "Unavailable component",
+    "This inserted design could not be verified. Please re-open the resource browser and insert it again.": "This inserted design could not be verified. Please re-open the resource browser and insert it again.",
+    "This inserted design changed before saving and can no longer be attributed. Please re-insert it.": "This inserted design changed before saving and can no longer be attributed. Please re-insert it.",
+    "This design has conflicting attribution and was not saved. Please re-insert it.": "This design has conflicting attribution and was not saved. Please re-insert it.",
+    "Please save your draft before inserting more designs.": "Please save your draft before inserting more designs.",
+    "This inserted design expired before saving; revalidating…": "This inserted design expired before saving; revalidating…",
+    "This inserted design can no longer be revalidated. Re-insert it to keep its attribution.": "This inserted design can no longer be revalidated. Re-insert it to keep its attribution.",
+    "Part of an inserted design was removed; updating its attribution…": "Part of an inserted design was removed; updating its attribution…",
+    "This inserted design could not be revalidated. Your edits are kept; please re-insert it.": "This inserted design could not be revalidated. Your edits are kept; please re-insert it.",
+    "This inserted design could not be updated. Your edits are kept; please re-insert it.": "This inserted design could not be updated. Your edits are kept; please re-insert it.",
+    "Remove the attribution for this inserted design?": "Remove the attribution for this inserted design?",
+    "This design could not be inserted. Please try again.": "This design could not be inserted. Please try again.",
+    "This page changed in another session. Please reload to continue.": "This page changed in another session. Please reload to continue."
 }

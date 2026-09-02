@@ -274,6 +274,12 @@ export interface BootData {
     // Both resolve the RID server-side (the client never sends a builder payload).
     templateImportPlan?: string
     templateImport?: string
+    // PB-TREG-2 — mint-at-insert orchestration + opaque-group renew/rebind lifecycle.
+    // Optional so legacy boot payloads remain compatible; the client fails closed to a
+    // recoverable state when a required provenance endpoint is absent.
+    insertRegisteredResource?: string
+    attestationRenew?: string
+    attestationRebind?: string
   }
 }
 

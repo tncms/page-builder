@@ -1,7 +1,7 @@
 {
     "name": "thenguyen/page-builder",
     "description": "Foundation for a structured, block-based Page Builder. The admin editor is a heavy client; the frontend stays lightweight by rendering a structured (non-HTML) layout tree. Phase 1 ships the plugin skeleton only — registries, manager, facade, permissions and an admin status dashboard.",
-    "version": "0.1.0-alpha.2",
+    "version": "0.1.0-alpha.3",
     "type": "library",
     "license": "MIT",
     "keywords": [

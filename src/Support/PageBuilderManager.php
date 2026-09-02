@@ -27,7 +27,7 @@ use Plugins\PageBuilder\State\LayoutMutator;
  */
 class PageBuilderManager
 {
-    public const VERSION = '0.1.0-alpha.2';
+    public const VERSION = '0.1.0-alpha.3';
 
     /** Lazily-created Phase 8 state helpers (stateless singletons). */
     private ?CommandBus $commandBus = null;

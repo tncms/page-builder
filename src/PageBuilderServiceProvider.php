@@ -158,6 +158,15 @@ class PageBuilderServiceProvider extends ServiceProvider
         // the PageBuilderLayout model, so a singleton is safe and cheap.
         $this->app->singleton(LayoutStore::class);
 
+        // PB-TREG-2 provenance schema authority: a signing key derived from APP_KEY
+        // (never persisted) and the single reconciliation authority used by the save and
+        // full-page-import lifecycles. A missing/invalid APP_KEY fails closed at resolve.
+        $this->app->singleton(
+            \Plugins\PageBuilder\Provenance\MaterializationAttestation::class,
+            static fn (): \Plugins\PageBuilder\Provenance\MaterializationAttestation => \Plugins\PageBuilder\Provenance\MaterializationAttestation::fromAppKey(config('app.key')),
+        );
+        $this->app->singleton(\Plugins\PageBuilder\Provenance\ProvenanceReconciler::class);
+
         // Per-request collector of the arbitrary column widths used on a public
         // page. A singleton so the columns populate it during render and the head
         // asset injector reads the same instance (column-width parity hotfix).

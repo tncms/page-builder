@@ -26,7 +26,7 @@ function catalog(): ResourceCatalog {
 }
 
 const strings: ResourceBrowserStrings = {
-  title: 'Trình duyệt tài nguyên', patterns: 'Mẫu khối', templates: 'Mẫu trang', search: 'Tìm tài nguyên',
+  title: 'Trình duyệt tài nguyên', patterns: 'Mẫu khối', templates: 'Mẫu trang', blocks: 'Khối', search: 'Tìm tài nguyên',
   source: 'Nguồn', category: 'Danh mục', availability: 'Tình trạng', all: 'Tất cả', available: 'Có sẵn',
   unavailable: 'Không khả dụng', sourceBuiltin: 'Tích hợp sẵn', sourceTheme: 'Giao diện', clearFilters: 'Xóa bộ lọc',
   results: 'kết quả', noResults: 'Không có tài nguyên phù hợp', empty: 'Chưa có tài nguyên nào', locked: 'Đã khóa', close: 'Đóng',
@@ -51,13 +51,16 @@ describe('shell structure + localized chrome', () => {
     expect(wrapper.get('.pb-rb__title').text()).toBe('Trình duyệt tài nguyên')
   })
 
-  it('renders Patterns/Templates tabs with the active one selected', () => {
+  it('renders Patterns/Templates/Blocks tabs with the active one selected', () => {
     const { wrapper } = open()
     const tabs = wrapper.findAll('[role="tab"]')
-    expect(tabs).toHaveLength(2)
+    expect(tabs).toHaveLength(3)
     expect(tabs[0].text()).toBe('Mẫu khối')
+    expect(tabs[1].text()).toBe('Mẫu trang')
+    expect(tabs[2].text()).toBe('Khối')
     expect(tabs[0].attributes('aria-selected')).toBe('true')
     expect(tabs[1].attributes('aria-selected')).toBe('false')
+    expect(tabs[2].attributes('aria-selected')).toBe('false')
   })
 
   it('shows a localized result count', () => {

@@ -55,6 +55,7 @@ final class ThemeResourceReader
     private const KIND_MAP = [
         ActiveThemeResourceLocator::KIND_PATTERNS => Rid::KIND_SECTION,
         ActiveThemeResourceLocator::KIND_TEMPLATES => Rid::KIND_PAGE,
+        ActiveThemeResourceLocator::KIND_BLOCKS => Rid::KIND_BLOCK,
     ];
 
     /** @var array<int, DesignResource>|null */

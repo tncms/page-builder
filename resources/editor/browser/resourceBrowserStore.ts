@@ -53,7 +53,16 @@ interface State {
   previewLocale: string
 }
 
-const EMPTY: ResourceCatalog = { patterns: [], templates: [] }
+const EMPTY: ResourceCatalog = { patterns: [], templates: [], blocks: [] }
+
+/** Normalize a (possibly legacy) catalog payload, tolerating a missing blocks bucket. */
+function normalizeCatalog(c: Partial<ResourceCatalog> | null | undefined): ResourceCatalog {
+  return {
+    patterns: c?.patterns ?? [],
+    templates: c?.templates ?? [],
+    blocks: c?.blocks ?? [],
+  }
+}
 
 /** Distinct invariant values (sorted) with per-value counts for the active kind. */
 function optionsFor(items: ResourceBrowserItem[], pick: (i: ResourceBrowserItem) => string): FilterOption[] {
@@ -96,7 +105,9 @@ export const useResourceBrowserStore = defineStore('pbResourceBrowser', {
     /** All items for the active kind (server order preserved — server owns ordering). */
     items(state): ResourceBrowserItem[] {
       const catalog = state.catalog ?? EMPTY
-      return state.activeKind === 'pattern' ? catalog.patterns : catalog.templates
+      if (state.activeKind === 'pattern') return catalog.patterns
+      if (state.activeKind === 'block') return catalog.blocks ?? []
+      return catalog.templates
     },
 
     /** Filtered + searched result set for the active kind, in catalog order. */
@@ -173,7 +184,7 @@ export const useResourceBrowserStore = defineStore('pbResourceBrowser', {
   actions: {
     /** Hydrate the catalog directly (tests / pre-fetched boot). */
     setCatalog(catalog: ResourceCatalog, strings?: ResourceBrowserStrings): void {
-      this.catalog = { patterns: catalog.patterns, templates: catalog.templates }
+      this.catalog = normalizeCatalog(catalog)
       if (strings) this.strings = strings
       this.loaded = true
       this.error = null
@@ -186,7 +197,7 @@ export const useResourceBrowserStore = defineStore('pbResourceBrowser', {
       this.error = null
       try {
         const bundle = await client.getResourceCatalog()
-        this.catalog = { patterns: bundle.patterns, templates: bundle.templates }
+        this.catalog = normalizeCatalog(bundle)
         this.strings = bundle.strings ?? {}
         this.categoryLabels = bundle.categoryLabels ?? {}
         this.loaded = true
@@ -296,7 +307,9 @@ export const useResourceBrowserStore = defineStore('pbResourceBrowser', {
     async insertSelected(): Promise<void> {
       if (this.actionPending) return
       const it = this.selectedItem
-      if (!it || it.kind !== 'pattern') return
+      // Patterns (sections) and portable blocks both insert directly; templates
+      // apply through the explicit two-stage confirmation, never here.
+      if (!it || (it.kind !== 'pattern' && it.kind !== 'block')) return
       if (!(it.available && !it.locked)) {
         this.actionError = { code: 'unavailable', message: this.label('unavailableReason', 'This resource is unavailable.') }
         return
@@ -306,7 +319,10 @@ export const useResourceBrowserStore = defineStore('pbResourceBrowser', {
       this.actionPending = true
       this.actionError = null
       try {
-        const outcome = await this.materializer.insertPattern(it.rid)
+        const outcome =
+          it.kind === 'block'
+            ? await this.materializer.insertBlock(it.rid)
+            : await this.materializer.insertPattern(it.rid)
         if (outcome.status === 'inserted') {
           this.closeBrowser()
         } else if (outcome.status === 'unavailable') {

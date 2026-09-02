@@ -8,8 +8,11 @@ use Illuminate\Support\Facades\DB;
 use Plugins\PageBuilder\Import\Exceptions\ImportControlException;
 use Plugins\PageBuilder\Registries\BlockRegistry;
 use Plugins\PageBuilder\Registries\SectionRegistry;
+use Plugins\PageBuilder\Provenance\LayoutProvenance;
+use Plugins\PageBuilder\Provenance\ProvenanceReconciler;
 use Plugins\PageBuilder\Repository\Contracts\DesignResourceRepositoryInterface;
 use Plugins\PageBuilder\Repository\DesignResource;
+use Plugins\PageBuilder\Repository\Theme\ActiveThemeResourceLocator;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\Html;
 use Plugins\PageBuilder\Support\LayoutNormalizer;
@@ -38,6 +41,8 @@ final class FullPageImportService
         private readonly SectionRegistry $sections,
         private readonly BlockRegistry $blocks,
         private readonly NodeIdGenerator $ids,
+        private readonly ProvenanceReconciler $reconciler,
+        private readonly ActiveThemeResourceLocator $themeLocator,
     ) {
     }
 
@@ -148,6 +153,17 @@ final class FullPageImportService
                 $resource = $this->repository->find($request->rid);
                 $incoming = $this->normalizer->normalize($resource->payload);
                 $final = $this->ids->assign($incoming);
+
+                // PB-TREG-2 — a server-side full-page import is already trusted: stamp
+                // provenance directly on every imported top-level root through the shared
+                // authority (no browser attestation round trip).
+                $provenance = LayoutProvenance::fromResource(
+                    $resource,
+                    $resource->source === 'theme' ? ($this->themeLocator->activeThemeSlug() ?? 'theme') : $resource->source,
+                );
+                if ($provenance !== null) {
+                    $final = $this->reconciler->stampDirect($final, $provenance);
+                }
 
                 // 8. Replace once (draft only — never published/mode/SEO/slug).
                 $this->layouts->saveDraft($request->ownerType, $request->ownerId, $final, $request->actorId);

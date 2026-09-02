@@ -10,6 +10,11 @@ use Plugins\PageBuilder\Editor\Translation\EditorOwnerResolutionException;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\EffectiveLayoutOwner;
 use Plugins\PageBuilder\Editor\Translation\FirstOpenLayoutProvisioner;
+use Plugins\PageBuilder\Provenance\AttestationContext;
+use Plugins\PageBuilder\Provenance\ProvenanceReconciler;
+use Plugins\PageBuilder\Provenance\ProvenanceReconciliationException;
+use Plugins\PageBuilder\Provenance\RegisteredResourceInsertion;
+use Plugins\PageBuilder\Provenance\RegisteredResourceInsertionException;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\EditorContext;
 use Plugins\PageBuilder\Support\LayoutNormalizer;
@@ -40,6 +45,8 @@ final class EditorContextController
         private readonly EditorContext $context,
         private readonly EffectiveEditorOwnerResolver $owners,
         private readonly FirstOpenLayoutProvisioner $provisioner,
+        private readonly ProvenanceReconciler $reconciler,
+        private readonly RegisteredResourceInsertion $insertion,
     ) {}
 
     public function show(Request $request, string $ownerType, int|string $ownerId): JsonResponse
@@ -67,22 +74,102 @@ final class EditorContextController
             // guarantees a translation write never bypasses the clone pipeline.
             $this->provisioner->ensure($effective, $this->userId());
 
-            $payload = $this->normalizer->normalize(
+            // CAS order (PB-TREG-2): the stale-token gate runs BEFORE any provenance work,
+            // so a stale request 409s without reconciling/verifying/stamping anything. The
+            // authoritative in-transaction CAS in LayoutStore::saveDraft is the final guard.
+            $expectedToken = $this->requireToken($request, $effective);
+            $currentToken = $this->layouts->currentToken($effective->ownerType, $effective->ownerId);
+            if (! hash_equals($currentToken, $expectedToken)) {
+                throw new LayoutVersionConflictException($currentToken, [
+                    'token' => $currentToken,
+                    'reason' => 'stale_token',
+                ]);
+            }
+
+            // Normalize strips ALL raw browser metadata; the reconciler is the sole
+            // authority that re-attaches trusted provenance (preserve by server identity /
+            // stamp verified materialization groups). A bad group rejects the whole save.
+            $normalized = $this->normalizer->normalize(
                 is_array($request->input('payload')) ? $request->input('payload') : null,
+            );
+            $context = new AttestationContext(
+                (string) ($this->userId() ?? ''),
+                AttestationContext::owner($effective->ownerType, $effective->ownerId),
+                $expectedToken,
+            );
+            $reconciled = $this->reconciler->reconcileDraft(
+                $this->layouts->getDraftPayload($effective->ownerType, $effective->ownerId),
+                $normalized,
+                $this->attestationsFrom($request),
+                $context,
             );
 
             $layout = $this->layouts->saveDraft(
                 $effective->ownerType,
                 $effective->ownerId,
-                $payload,
+                $reconciled,
                 $this->userId(),
-                $this->requireToken($request, $effective),
+                $expectedToken,
             );
 
             return response()->json([
                 'success' => true,
                 'data' => $this->context->summarize($layout),
             ]);
+        });
+    }
+
+    /**
+     * Insert a registered registry resource (pattern/block) into the client's current
+     * unsaved editor state and mint provenance from the authoritative command result
+     * (PB-TREG-2 mint-at-insert). Orchestration only: it dispatches the EXISTING insert
+     * commands through the one CommandBus and PERSISTS NOTHING — the returned state is
+     * adopted by the client exactly as after any command, and the opaque attestation
+     * group rides to the later saveDraft. The token baseline is verified first; the final
+     * save CAS remains the race authority.
+     */
+    public function insertRegisteredResource(Request $request, string $ownerType, int|string $ownerId): JsonResponse
+    {
+        $owner = $this->guardOwner($ownerType, $ownerId, 'page-builder.edit');
+
+        return $this->resolving(function () use ($request, $ownerType, $owner): JsonResponse {
+            $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
+            $this->provisioner->ensure($effective, $this->userId());
+
+            // Token baseline verified BEFORE any registry resolution/insertion.
+            $expectedToken = $this->requireToken($request, $effective);
+            $currentToken = $this->layouts->currentToken($effective->ownerType, $effective->ownerId);
+            if (! hash_equals($currentToken, $expectedToken)) {
+                throw new LayoutVersionConflictException($currentToken, ['token' => $currentToken, 'reason' => 'stale_token']);
+            }
+
+            $context = new AttestationContext(
+                (string) ($this->userId() ?? ''),
+                AttestationContext::owner($effective->ownerType, $effective->ownerId),
+                $expectedToken,
+            );
+
+            $target = $request->input('target_parent_id');
+            $index = $request->input('index');
+            $result = $this->insertion->insert(
+                (string) $request->input('rid', ''),
+                is_array($request->input('payload')) ? $request->input('payload') : null,
+                $context,
+                is_string($target) && $target !== '' ? $target : null,
+                is_numeric($index) ? (int) $index : null,
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => array_merge($result['state'], [
+                    'artifacts' => [
+                        'provenanceAttestations' => $result['attestations'],
+                        'rootIds' => $result['rootIds'],
+                        'expiresAt' => $result['expiresAt'],
+                        'horizonAt' => $result['horizonAt'],
+                    ],
+                ]),
+            ])->header('Cache-Control', 'no-store, private');
         });
     }
 
@@ -140,7 +227,40 @@ final class EditorContextController
                 'message' => $e->getMessage(),
                 'data' => $e->current,
             ], 409);
+        } catch (ProvenanceReconciliationException $e) {
+            // A malformed/forged/expired/incomplete/conflicting materialization group
+            // rejects the whole save with a bounded, namespaced machine code — never a
+            // signature, key, token body, or path. The client keeps its unsaved payload
+            // and may re-open/renew (see the provenance transport contract).
+            return response()->json([
+                'success' => false,
+                'error' => 'pb_provenance_'.$e->reason,
+                'message' => __('This inserted design could not be verified. Please re-open the resource browser and insert it again.'),
+            ], 422);
+        } catch (RegisteredResourceInsertionException $e) {
+            // A registered-resource insertion failed (unknown/unavailable resource,
+            // invalid target/position, or an inconsistent authoritative result). Nothing
+            // was persisted; the client keeps its unsaved state.
+            return response()->json([
+                'success' => false,
+                'error' => 'pb_insert_'.$e->reason,
+                'message' => __('This design could not be inserted. Please try again.'),
+            ], 422);
         }
+    }
+
+    /**
+     * The relayed opaque provenance attestation tokens (transport only) as a list. A
+     * non-list yields an empty set; the reconciler enforces the authoritative count/byte
+     * bounds and rejects any non-string entry — the client never makes a trust decision.
+     *
+     * @return array<int, string>
+     */
+    private function attestationsFrom(Request $request): array
+    {
+        $raw = $request->input('provenanceAttestations');
+
+        return is_array($raw) ? array_values($raw) : [];
     }
 
     /**

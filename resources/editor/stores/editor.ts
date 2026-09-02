@@ -32,6 +32,7 @@ import { describeDropIntent, dropRejection, type DropIntent } from '../utils/dro
 import { validateLayout, type LayoutIssue } from '../utils/layoutValidation'
 import { fallbackNodeLabel, NAV_LABEL_MAX, NODE_LABEL_KEY } from '../utils/nodeLabel'
 import { useNavigatorLocksStore } from './navigatorLocks'
+import { useProvenanceGroupsStore } from '../browser/provenanceGroupsStore'
 import {
   EMPTY_PAYLOAD,
   type BootData,
@@ -676,13 +677,24 @@ export const useEditorStore = defineStore('pbEditor', {
       this.publishFailed = false
       this.error = null
       try {
-        this.applyLayout(await this.client.saveDraft(payload, this.versionToken))
+        // Relay any pending opaque provenance groups (PB-TREG-2). With no pending groups
+        // the call is identical to a legacy save (byte- and arity-compatible).
+        const groups = useProvenanceGroupsStore()
+        const relay = groups.relayTokens
+        this.applyLayout(
+          relay.length
+            ? await this.client.saveDraft(payload, this.versionToken, relay)
+            : await this.client.saveDraft(payload, this.versionToken),
+        )
         // Only clean when no newer edit landed while the request was in flight — a
         // later mutation replaces `currentPayload` (the generation), so a stale
         // success can never clean newer work.
         if (this.currentPayload === payload) this.dirty = false
         this.saveFailed = false
         this.savedFlash = true
+        // The server has now persisted the provenance; clear the pending transport
+        // groups ONLY after this confirmed successful save (failures retain them).
+        groups.clearAfterSuccessfulSave()
         return true
       } catch (e) {
         // INV-PUB-06 — a version conflict means the layout changed in another session.
@@ -1358,6 +1370,54 @@ export const useEditorStore = defineStore('pbEditor', {
           return false
         }
         return await this.executeCommand('insert-pattern', { sections })
+      } catch (e) {
+        this.commandError = (e as Error).message
+        return false
+      }
+    },
+
+    /**
+     * PB-TREG-2 mint-at-insert: insert a REGISTERED registry resource (pattern/block) by
+     * RID through the owner-scoped orchestration endpoint. The server dispatches the
+     * existing insert command, regenerates ids once, and mints provenance from the
+     * authoritative result; this store adopts the returned state EXACTLY as after any
+     * command (one server insertion, no local insertion, no id handling) and stores the
+     * opaque attestation group for the later save. Transport-only.
+     */
+    async insertRegisteredResource(
+      rid: string,
+      placement: { targetParentId?: string | null; index?: number | null } = {},
+    ): Promise<boolean> {
+      if (!this.client) return false
+      const groups = useProvenanceGroupsStore()
+      if (groups.atLimit) {
+        // Block further materializations until a successful save clears pending groups;
+        // never drop provenance or insert without it.
+        this.commandError = 'pb_provenance_limit'
+        return false
+      }
+      this.commandError = null
+      const before = this.currentPayload
+      try {
+        const result = await this.client.insertRegisteredResource(before, this.versionToken, rid, placement)
+        const changed = JSON.stringify(result.payload) !== JSON.stringify(before)
+        if (changed) {
+          this.pushHistory(before)
+          this.currentPayload = result.payload
+          this.selectedComponentId = result.selection?.selected ?? null
+          this.markDirty()
+          this.maybeSchedulePreview()
+        }
+        const artifacts = result.artifacts
+        if (artifacts?.provenanceAttestations?.length) {
+          groups.register({
+            tokens: artifacts.provenanceAttestations,
+            rootIds: artifacts.rootIds ?? [],
+            expiresAt: artifacts.expiresAt ?? 0,
+            horizonAt: artifacts.horizonAt ?? 0,
+          })
+        }
+        return changed
       } catch (e) {
         this.commandError = (e as Error).message
         return false

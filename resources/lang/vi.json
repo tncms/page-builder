@@ -31,6 +31,7 @@
     "Resource Browser": "Trình duyệt tài nguyên",
     "Patterns": "Mẫu khối",
     "Templates": "Mẫu trang",
+    "Blocks": "Khối",
     "Search resources": "Tìm tài nguyên",
     "Source": "Nguồn",
     "Category": "Danh mục",
@@ -71,5 +72,17 @@
     "This content is preserved and will be saved unchanged.": "Nội dung này được giữ nguyên và sẽ được lưu không thay đổi.",
     "This component is not currently available in this site.": "Thành phần này hiện không khả dụng trên trang này.",
     "Editing controls will return when this component is available again.": "Các điều khiển chỉnh sửa sẽ trở lại khi thành phần này khả dụng trở lại.",
-    "Unavailable component": "Thành phần không khả dụng"
+    "Unavailable component": "Thành phần không khả dụng",
+    "This inserted design could not be verified. Please re-open the resource browser and insert it again.": "Không thể xác minh thiết kế đã chèn. Vui lòng mở lại trình duyệt tài nguyên và chèn lại.",
+    "This inserted design changed before saving and can no longer be attributed. Please re-insert it.": "Thiết kế đã chèn bị thay đổi trước khi lưu và không thể ghi nguồn. Vui lòng chèn lại.",
+    "This design has conflicting attribution and was not saved. Please re-insert it.": "Thiết kế này có nguồn gốc xung đột và chưa được lưu. Vui lòng chèn lại.",
+    "Please save your draft before inserting more designs.": "Vui lòng lưu bản nháp trước khi chèn thêm thiết kế.",
+    "This inserted design expired before saving; revalidating…": "Thiết kế đã chèn hết hạn trước khi lưu; đang xác thực lại…",
+    "This inserted design can no longer be revalidated. Re-insert it to keep its attribution.": "Không thể xác thực lại thiết kế đã chèn. Chèn lại để giữ nguồn gốc.",
+    "Part of an inserted design was removed; updating its attribution…": "Một phần thiết kế đã chèn bị xóa; đang cập nhật nguồn gốc…",
+    "This inserted design could not be revalidated. Your edits are kept; please re-insert it.": "Không thể xác thực lại thiết kế đã chèn. Các chỉnh sửa của bạn được giữ; vui lòng chèn lại.",
+    "This inserted design could not be updated. Your edits are kept; please re-insert it.": "Không thể cập nhật thiết kế đã chèn. Các chỉnh sửa của bạn được giữ; vui lòng chèn lại.",
+    "Remove the attribution for this inserted design?": "Xóa nguồn gốc cho thiết kế đã chèn này?",
+    "This design could not be inserted. Please try again.": "Không thể chèn thiết kế này. Vui lòng thử lại.",
+    "This page changed in another session. Please reload to continue.": "Trang này đã thay đổi ở phiên khác. Vui lòng tải lại để tiếp tục."
 }

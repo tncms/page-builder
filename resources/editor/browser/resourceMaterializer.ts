@@ -16,7 +16,11 @@ export interface EditorMaterializationBridge {
   owner: { type: string; id: number | string } | null
   commandError: string | null
   /** Insert an id-free resource tree via the existing insert-pattern/insert-component command. */
-  insertBuilderResourceByRid(rid: string, kind: string): Promise<boolean>
+  /** PB-TREG-2 mint-at-insert: insert a registered resource server-side (state adopted,
+   *  opaque provenance group stored). The one server insertion per registry insertion. */
+  insertRegisteredResource(rid: string, placement: { targetParentId?: string | null; index?: number | null }): Promise<boolean>
+  /** The current container a block would drop into (null → its host section). */
+  blockInsertParent(): string | null
   /** Re-fetch the authoritative editor context and adopt its draft + version token. */
   loadContext(): Promise<void>
 }
@@ -49,7 +53,17 @@ export function createResourceMaterializer(deps: {
   async function insertPattern(rid: string): Promise<PatternInsertOutcome> {
     // A browser Pattern is a section resource; the editor regenerates ids + records
     // exactly one undo entry. On failure the draft/history/token are untouched.
-    const ok = await editor.insertBuilderResourceByRid(rid, 'section')
+    const ok = await editor.insertRegisteredResource(rid, {})
+    if (ok) return { status: 'inserted' }
+    return { status: 'failed', message: editor.commandError ?? undefined }
+  }
+
+  async function insertBlock(rid: string): Promise<PatternInsertOutcome> {
+    // A browser Block is a block resource; it routes through the SAME
+    // insertBuilderResourceByRid authority (insert-component into the current
+    // container, or its self-contained host section), which regenerates ids and
+    // records one undo entry server-side. No second insertion API is introduced.
+    const ok = await editor.insertRegisteredResource(rid, { targetParentId: editor.blockInsertParent() })
     if (ok) return { status: 'inserted' }
     return { status: 'failed', message: editor.commandError ?? undefined }
   }
@@ -88,5 +102,5 @@ export function createResourceMaterializer(deps: {
     return { status: 'failed', message: commit.data.issues?.[0]?.message }
   }
 
-  return { insertPattern, applyTemplate }
+  return { insertPattern, insertBlock, applyTemplate }
 }

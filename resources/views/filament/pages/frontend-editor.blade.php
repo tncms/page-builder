@@ -120,6 +120,10 @@
             'resourcePreview' => url('page-builder/preview'),
             'templateImportPlan' => url('page-builder/library/import/plan'),
             'templateImport' => url('page-builder/library/import'),
+            // PB-TREG-2 — mint-at-insert orchestration + opaque-group renew/rebind lifecycle.
+            'insertRegisteredResource' => url($ownerPath.'/insert-registered-resource'.$localeQuery),
+            'attestationRenew' => url($apiPrefix.'/builder/attestation/'.rawurlencode((string) $ownerType).'/'.rawurlencode((string) $ownerId).'/renew'.$localeQuery),
+            'attestationRebind' => url($apiPrefix.'/builder/attestation/'.rawurlencode((string) $ownerType).'/'.rawurlencode((string) $ownerId).'/rebind'.$localeQuery),
         ],
     ];
 @endphp

@@ -13,7 +13,8 @@ function editorBridge(over: Partial<EditorMaterializationBridge> = {}): EditorMa
   return {
     owner: { type: 'pages', id: 7 },
     commandError: null,
-    insertBuilderResourceByRid: vi.fn(async () => true),
+    insertRegisteredResource: vi.fn(async () => true),
+    blockInsertParent: vi.fn(() => null),
     loadContext: vi.fn(async () => {}),
     ...over,
   }
@@ -35,8 +36,8 @@ describe('pattern insertion delegation', () => {
     const outcome = await m.insertPattern('builtin:section:hero')
 
     expect(outcome).toEqual({ status: 'inserted' })
-    expect(editor.insertBuilderResourceByRid).toHaveBeenCalledTimes(1)
-    expect(editor.insertBuilderResourceByRid).toHaveBeenCalledWith('builtin:section:hero', 'section')
+    expect(editor.insertRegisteredResource).toHaveBeenCalledTimes(1)
+    expect(editor.insertRegisteredResource).toHaveBeenCalledWith('builtin:section:hero', {})
     // Insertion never touches the template import authority.
     const api = importClient()
     expect(api.planTemplateImport).not.toHaveBeenCalled()
@@ -44,12 +45,42 @@ describe('pattern insertion delegation', () => {
 
   it('surfaces a safe failure without reload when the insert command fails', async () => {
     const editor = editorBridge({
-      insertBuilderResourceByRid: vi.fn(async () => false),
+      insertRegisteredResource: vi.fn(async () => false),
       commandError: 'This design has no insertable content.',
     })
     const m = createResourceMaterializer({ editor, api: importClient() })
 
     const outcome = await m.insertPattern('builtin:section:hero')
+
+    expect(outcome.status).toBe('failed')
+    expect(editor.loadContext).not.toHaveBeenCalled()
+  })
+})
+
+describe('portable block insertion delegation (PB-TREG-2)', () => {
+  it('routes through the SAME insert authority exactly once as a block', async () => {
+    const editor = editorBridge()
+    const m = createResourceMaterializer({ editor, api: importClient() })
+
+    const outcome = await m.insertBlock('theme:block:cta-button')
+
+    expect(outcome).toEqual({ status: 'inserted' })
+    expect(editor.insertRegisteredResource).toHaveBeenCalledTimes(1)
+    // No second block insertion API: the same seam is called with the 'block' kind,
+    // so the server owns id regeneration + payload materialization.
+    expect(editor.insertRegisteredResource).toHaveBeenCalledWith('theme:block:cta-button', { targetParentId: null })
+    const api = importClient()
+    expect(api.planTemplateImport).not.toHaveBeenCalled()
+  })
+
+  it('surfaces a safe failure without reload when the block insert fails', async () => {
+    const editor = editorBridge({
+      insertRegisteredResource: vi.fn(async () => false),
+      commandError: 'This design has no insertable content.',
+    })
+    const m = createResourceMaterializer({ editor, api: importClient() })
+
+    const outcome = await m.insertBlock('theme:block:cta-button')
 
     expect(outcome.status).toBe('failed')
     expect(editor.loadContext).not.toHaveBeenCalled()

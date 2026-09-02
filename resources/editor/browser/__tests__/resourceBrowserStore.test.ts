@@ -195,3 +195,32 @@ describe('selection + payload boundary + immutability', () => {
     expect(store2.loaded).toBe(false)
   })
 })
+
+describe('portable blocks bucket (PB-TREG-2)', () => {
+  it('items returns the blocks bucket when the active kind is block', () => {
+    setActivePinia(createPinia())
+    const store = useResourceBrowserStore()
+    store.setCatalog({
+      patterns: [item({ rid: 'theme:section:hero', name: 'Hero' })],
+      templates: [],
+      blocks: [item({ rid: 'theme:block:cta', kind: 'block', name: 'CTA', source: 'theme' })],
+    })
+
+    store.setKind('block')
+    expect(store.activeKind).toBe('block')
+    expect(store.items.map((i) => i.rid)).toEqual(['theme:block:cta'])
+    // The blocks bucket never leaks into patterns/templates.
+    store.setKind('pattern')
+    expect(store.items.map((i) => i.rid)).toEqual(['theme:section:hero'])
+  })
+
+  it('normalizes a legacy catalog with no blocks bucket to an empty block kind', () => {
+    setActivePinia(createPinia())
+    const store = useResourceBrowserStore()
+    // A legacy payload without a blocks key stays compatible.
+    store.setCatalog({ patterns: [], templates: [] } as never)
+    store.setKind('block')
+    expect(store.items).toEqual([])
+    expect(store.isEmptyKind).toBe(true)
+  })
+})

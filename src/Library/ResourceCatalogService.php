@@ -21,9 +21,11 @@ use Plugins\PageBuilder\Support\ResourceMetadataLocalizer;
  * ships a resource's layout payload (that stays lazy for R2-C preview/insert).
  *
  * Kind mapping mirrors Registry 1: section resources are "patterns" (insertable),
- * page resources are "templates" (whole-page). Block and kit kinds are intentionally
- * excluded from the browser. Human labels resolve for the Admin UI locale (never the
- * editing or frontend locale); every other field is locale-invariant machine data.
+ * page resources are "templates" (whole-page). Block resources are "blocks" —
+ * curated portable blocks (PB-TREG-2); the raw component substrate stays excluded
+ * through the same `browsable` gate, so only curated blocks surface. Kit kinds remain
+ * excluded. Human labels resolve for the Admin UI locale (never the editing or
+ * frontend locale); every other field is locale-invariant machine data.
  */
 final class ResourceCatalogService
 {
@@ -39,12 +41,13 @@ final class ResourceCatalogService
      * by resolved (Admin UI locale) name. $locale/$fallback come from the verified Core
      * Admin-UI-locale authority via CatalogLocale; null degrades to invariant metadata.
      *
-     * @return array{patterns: array<int, array<string, mixed>>, templates: array<int, array<string, mixed>>}
+     * @return array{patterns: array<int, array<string, mixed>>, templates: array<int, array<string, mixed>>, blocks: array<int, array<string, mixed>>}
      */
     public function catalog(?string $locale = null, ?string $fallback = null): array
     {
         $patterns = [];
         $templates = [];
+        $blocks = [];
 
         foreach ($this->repository->all() as $resource) {
             // Raw component substrate (registry-generated palette fallback) is not a
@@ -58,15 +61,19 @@ final class ResourceCatalogService
                 $patterns[] = $this->item($resource, 'pattern', $locale, $fallback);
             } elseif ($resource->kind === Rid::KIND_PAGE) {
                 $templates[] = $this->item($resource, 'template', $locale, $fallback);
+            } elseif ($resource->kind === Rid::KIND_BLOCK) {
+                // Curated portable blocks only (PB-TREG-2). The raw component substrate
+                // is browsable=false and was already skipped above; kit stays excluded.
+                $blocks[] = $this->item($resource, 'block', $locale, $fallback);
             }
-            // block / kit kinds are not browser resources (Registry 1 rules 4/5).
         }
 
         $byName = static fn (array $a, array $b): int => strcmp((string) $a['name'], (string) $b['name']);
         usort($patterns, $byName);
         usort($templates, $byName);
+        usort($blocks, $byName);
 
-        return ['patterns' => $patterns, 'templates' => $templates];
+        return ['patterns' => $patterns, 'templates' => $templates, 'blocks' => $blocks];
     }
 
     /**

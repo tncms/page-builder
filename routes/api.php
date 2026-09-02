@@ -44,6 +44,12 @@ Route::get('editor/context/{ownerType}/{ownerId}', [EditorContextController::cla
     ->name('editor.context');
 Route::post('editor/context/{ownerType}/{ownerId}/draft', [EditorContextController::class, 'saveDraft'])
     ->name('editor.context.draft');
+// PB-TREG-2 — mint-at-insert orchestration: insert a registered resource by dispatching
+// the existing insert commands, then mint provenance from the authoritative result. It
+// persists nothing (saveDraft remains the only persistence authority) and returns
+// no-store. It is NOT a second insertion authority — it delegates to the one command bus.
+Route::post('editor/context/{ownerType}/{ownerId}/insert-registered-resource', [EditorContextController::class, 'insertRegisteredResource'])
+    ->name('editor.context.insert-registered-resource');
 Route::post('editor/context/{ownerType}/{ownerId}/publish', [EditorContextController::class, 'publish'])
     ->name('editor.context.publish');
 
@@ -73,6 +79,15 @@ Route::post('state/transaction', [StateCommandController::class, 'transaction'])
 // commands. Read-only; requires page-builder.edit + availability.
 Route::get('builder/resources', [\Plugins\PageBuilder\Http\Controllers\BuilderResourceController::class, 'payload'])
     ->name('builder.resources');
+
+// PB-TREG-2 — authenticated attestation lifecycle (POST only; CSRF via the web middleware
+// group; page-builder.edit; no-store responses). Minting happens only at insert time
+// (mint-at-insert, see editor.context.insert-registered-resource); these operate on an
+// already-issued opaque group. The read-only catalog/resource GET above mints nothing.
+Route::post('builder/attestation/{ownerType}/{ownerId}/renew', [\Plugins\PageBuilder\Http\Controllers\MaterializationController::class, 'renew'])
+    ->name('builder.attestation.renew');
+Route::post('builder/attestation/{ownerType}/{ownerId}/rebind', [\Plugins\PageBuilder\Http\Controllers\MaterializationController::class, 'rebind'])
+    ->name('builder.attestation.rebind');
 
 // Phase 26.48 — Save as Design: capture a Builder selection into a reusable design
 // resource through the single Design Capture Pipeline. External persistence action

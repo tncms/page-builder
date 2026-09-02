@@ -9,7 +9,7 @@ namespace Plugins\PageBuilder\Repository\Theme;
  * roots (PB-TEMPLATE-REGISTRY-1-H1).
  *
  * Page Builder pulls design resources ONLY from the active theme, and ONLY as
- * declarative data files under `themes/{active}/page-builder/{patterns,templates}`.
+ * declarative data files under `themes/{active}/page-builder/{patterns,templates,blocks}`.
  * The active theme identity is owned by Core (the `activeSlugResolver` closure reads
  * it through the verified Core theme authority); this locator never activates,
  * switches, writes, or executes theme PHP.
@@ -28,9 +28,10 @@ final class ActiveThemeResourceLocator
 {
     public const KIND_PATTERNS = 'patterns';
     public const KIND_TEMPLATES = 'templates';
+    public const KIND_BLOCKS = 'blocks';
 
     /** @var array<int, string> */
-    public const KINDS = [self::KIND_PATTERNS, self::KIND_TEMPLATES];
+    public const KINDS = [self::KIND_PATTERNS, self::KIND_TEMPLATES, self::KIND_BLOCKS];
 
     /** The theme-owned Page Builder subdirectory that carries declarative resources. */
     private const SUBDIR = 'page-builder';

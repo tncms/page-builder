@@ -28,6 +28,7 @@ const s = computed(() => (key: string, fallback = ''): string => store.label(key
 const kinds: Array<{ value: ResourceKind; key: string; fallback: string }> = [
   { value: 'pattern', key: 'patterns', fallback: 'Patterns' },
   { value: 'template', key: 'templates', fallback: 'Templates' },
+  { value: 'block', key: 'blocks', fallback: 'Blocks' },
 ]
 
 const availabilityOptions: Array<{ value: AvailabilityFilter; key: string; fallback: string }> = [

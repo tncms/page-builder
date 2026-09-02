@@ -6,8 +6,12 @@
 // other field is locale-invariant machine data. Availability is the canonical server
 // verdict and is never recomputed on the client.
 
-/** The browser kind — a section resource is a pattern, a page resource a template. */
-export type ResourceKind = 'pattern' | 'template'
+/**
+ * The browser kind — a section resource is a pattern, a page resource a template,
+ * a block resource a portable block (PB-TREG-2). These are the catalog-facing names
+ * for the invariant server Rid kinds (section/page/block).
+ */
+export type ResourceKind = 'pattern' | 'template' | 'block'
 
 export interface ResourceBrowserItem {
   /** Invariant identity (source:kind:resourceId). */
@@ -36,6 +40,11 @@ export interface ResourceBrowserItem {
 export interface ResourceCatalog {
   patterns: ResourceBrowserItem[]
   templates: ResourceBrowserItem[]
+  /**
+   * Curated portable blocks (PB-TREG-2). Optional so legacy payloads without a
+   * blocks bucket stay compatible; the store normalizes a missing bucket to [].
+   */
+  blocks?: ResourceBrowserItem[]
 }
 
 /** Server-resolved browser chrome strings (Admin UI locale), keyed by stable slug. */
@@ -72,7 +81,11 @@ export interface ActionError {
   message: string
 }
 
-/** Inserting a Pattern into the draft through the existing insert-pattern command. */
+/**
+ * Inserting a Pattern (section) or a portable Block into the draft through the
+ * existing insert-pattern / insert-component command. Both share this outcome shape;
+ * the server owns id regeneration and payload materialization.
+ */
 export type PatternInsertOutcome =
   | { status: 'inserted' }
   | { status: 'unavailable'; message?: string }
@@ -93,5 +106,7 @@ export type TemplateApplyOutcome =
  */
 export interface ResourceMaterializer {
   insertPattern(rid: string): Promise<PatternInsertOutcome>
+  /** Insert a portable block; routes through the same insert-component authority. */
+  insertBlock(rid: string): Promise<PatternInsertOutcome>
   applyTemplate(rid: string): Promise<TemplateApplyOutcome>
 }

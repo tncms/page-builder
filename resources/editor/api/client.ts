@@ -43,8 +43,61 @@ export class ApiClient {
     return this.request<EditorContextData>(this.boot.api.context, 'GET')
   }
 
-  async saveDraft(payload: LayoutPayload, token: string | null): Promise<LayoutContext> {
-    return this.request<LayoutContext>(this.boot.api.draft, 'POST', { payload, token })
+  async saveDraft(
+    payload: LayoutPayload,
+    token: string | null,
+    provenanceAttestations: string[] = [],
+  ): Promise<LayoutContext> {
+    // Relay opaque provenance groups only when present, so a legacy save (no pending
+    // groups) is byte-identical to before (PB-TREG-2). The client never parses them.
+    const body: Record<string, unknown> = { payload, token }
+    if (provenanceAttestations.length) body.provenanceAttestations = provenanceAttestations
+    return this.request<LayoutContext>(this.boot.api.draft, 'POST', body)
+  }
+
+  /**
+   * PB-TREG-2 mint-at-insert: insert a registered resource server-side (the server
+   * dispatches the existing insert command, regenerates IDs once, and mints provenance
+   * from the authoritative result) and receive the authoritative state plus an opaque
+   * attestation group. Transport-only: the client sends only RID + placement intent +
+   * current state + expected token, and never IDs/provider/provenance/payload.
+   */
+  async insertRegisteredResource(
+    payload: LayoutPayload,
+    token: string | null,
+    rid: string,
+    placement: { targetParentId?: string | null; index?: number | null } = {},
+  ): Promise<
+    StateResult & {
+      artifacts?: { provenanceAttestations: string[]; rootIds: string[]; expiresAt: number; horizonAt: number }
+    }
+  > {
+    const url = this.boot.api.insertRegisteredResource
+    if (!url) throw new Error('provenance_endpoint_unavailable')
+    return this.request(url, 'POST', {
+      payload,
+      token,
+      rid,
+      target_parent_id: placement.targetParentId ?? null,
+      index: placement.index ?? null,
+    })
+  }
+
+  /** Renew a complete opaque attestation group (operational expiry only). */
+  async renewAttestations(attestations: string[]): Promise<{ attestations: string[] }> {
+    const url = this.boot.api.attestationRenew
+    if (!url) throw new Error('provenance_endpoint_unavailable')
+    return this.request(url, 'POST', { attestations })
+  }
+
+  /** Narrow/rebind a complete opaque group to a strict subset of its roots, or discard. */
+  async rebindAttestations(
+    attestations: string[],
+    retainedRootIds: string[],
+  ): Promise<{ attestations: string[]; discarded?: boolean }> {
+    const url = this.boot.api.attestationRebind
+    if (!url) throw new Error('provenance_endpoint_unavailable')
+    return this.request(url, 'POST', { attestations, retainedRootIds })
   }
 
   async publish(token: string | null): Promise<LayoutContext> {

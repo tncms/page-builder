@@ -33,6 +33,7 @@ function catalog(): ResourceCatalog {
       item({ rid: 'builtin:section:gone', name: 'Gone', available: false }),
     ],
     templates: [item({ rid: 'builtin:page:company', kind: 'template', name: 'Company' })],
+    blocks: [item({ rid: 'theme:block:cta', kind: 'block', name: 'CTA', source: 'theme' })],
   }
 }
 
@@ -47,6 +48,7 @@ function scene() {
 function materializer(over: Partial<ResourceMaterializer> = {}): ResourceMaterializer {
   return {
     insertPattern: vi.fn(async () => ({ status: 'inserted' as const })),
+    insertBlock: vi.fn(async () => ({ status: 'inserted' as const })),
     applyTemplate: vi.fn(async () => ({ status: 'applied' as const })),
     ...over,
   }
@@ -89,6 +91,24 @@ describe('pattern insertion delegates once', () => {
     expect(m.insertPattern).toHaveBeenCalledTimes(1)
     expect(m.insertPattern).toHaveBeenCalledWith('builtin:section:hero')
     expect(store.open).toBe(false) // one documented rule: success closes the browser
+    expect(store.actionError).toBeNull()
+  })
+
+  it('inserts a portable block via insertBlock (not insertPattern) and closes the browser', async () => {
+    const store = scene()
+    const m = materializer()
+    store.bindMaterializer(m)
+    store.setKind('block')
+    store.select('theme:block:cta')
+
+    await store.insertSelected()
+
+    expect(m.insertBlock).toHaveBeenCalledTimes(1)
+    expect(m.insertBlock).toHaveBeenCalledWith('theme:block:cta')
+    // A block never routes through the pattern or template authority.
+    expect(m.insertPattern).not.toHaveBeenCalled()
+    expect(m.applyTemplate).not.toHaveBeenCalled()
+    expect(store.open).toBe(false)
     expect(store.actionError).toBeNull()
   })
 

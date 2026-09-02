@@ -60,6 +60,7 @@ final class ResourceCatalogController
             'title' => $t('Resource Browser'),
             'patterns' => $t('Patterns'),
             'templates' => $t('Templates'),
+            'blocks' => $t('Blocks'),
             'search' => $t('Search resources'),
             'source' => $t('Source'),
             'category' => $t('Category'),
