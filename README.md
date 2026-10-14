@@ -2,7 +2,7 @@
 
 > Foundation for a structured, block-based Page Builder. The admin editor is a heavy client; the frontend stays lightweight by rendering a structured (non-HTML) layout tree. Phase 1 ships the plugin skeleton only — registries, manager, facade, permissions and an admin status dashboard.
 
-**Slug:** `page-builder` · **Version:** `0.1.0-alpha.3`
+**Slug:** `page-builder` · **Version:** `0.1.0-alpha.4`
 
 The Page Builder Community plugin for TN CMS — single-node visual layout editing,
 whole-layout publish, translation, preview, theme override, registries, hooks, and a
