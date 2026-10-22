@@ -6,6 +6,8 @@ namespace Plugins\PageBuilder\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Plugins\PageBuilder\DataSources\DataSourceLayoutValidator;
+use Plugins\PageBuilder\DataSources\Exceptions\InvalidDataSourceConfigException;
 use Plugins\PageBuilder\Editor\Translation\EditorOwnerResolutionException;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\EffectiveLayoutOwner;
@@ -92,6 +94,9 @@ final class EditorContextController
             $normalized = $this->normalizer->normalize(
                 is_array($request->input('payload')) ? $request->input('payload') : null,
             );
+            // PB-XREG-2 — a data-source configuration that its KNOWN source rejects
+            // fails the whole save (bounded 422); unavailable sources are preserved.
+            app(DataSourceLayoutValidator::class)->assertValid($normalized);
             $context = new AttestationContext(
                 (string) ($this->userId() ?? ''),
                 AttestationContext::owner($effective->ownerType, $effective->ownerId),
@@ -236,6 +241,15 @@ final class EditorContextController
                 'success' => false,
                 'error' => 'pb_provenance_'.$e->reason,
                 'message' => __('This inserted design could not be verified. Please re-open the resource browser and insert it again.'),
+            ], 422);
+        } catch (InvalidDataSourceConfigException $e) {
+            // Bounded machine reason + the offending node/field only — never provider
+            // internals. The client keeps its unsaved payload and can correct the field.
+            return response()->json([
+                'success' => false,
+                'error' => 'pb_data_source_'.$e->reason,
+                'message' => __('A data source setting is not valid. Please review the highlighted component.'),
+                'data' => ['component_id' => $e->nodeId, 'field' => $e->field],
             ], 422);
         } catch (RegisteredResourceInsertionException $e) {
             // A registered-resource insertion failed (unknown/unavailable resource,

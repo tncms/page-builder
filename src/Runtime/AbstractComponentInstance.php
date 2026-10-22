@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\PageBuilder\Runtime;
 
 use Illuminate\Support\Facades\View;
+use Plugins\PageBuilder\Components\ComponentIdentifier;
 use Plugins\PageBuilder\Contracts\ComponentInstance;
 
 /**
@@ -246,6 +247,29 @@ abstract class AbstractComponentInstance implements ComponentInstance
     }
 
     // ---- Helpers --------------------------------------------------------
+
+    /**
+     * Whether this node's type is a canonical EXTERNAL identifier
+     * (`provider:local`), as opposed to a bare built-in id (PB-XREG-1).
+     */
+    protected function isExternalType(): bool
+    {
+        return ComponentIdentifier::classify($this->type) === ComponentIdentifier::KIND_EXTERNAL;
+    }
+
+    /**
+     * The trusted server renderer view for an external component, taken ONLY from
+     * the validated registration stamped onto the definition (PB-XREG-1). Null when
+     * the provider is unavailable (no definition) so the caller renders a safe,
+     * bounded fallback. The persisted namespaced identifier is NEVER turned into a
+     * view/filesystem path.
+     */
+    protected function trustedExternalView(): ?string
+    {
+        $view = $this->definition['render']['view'] ?? null;
+
+        return is_string($view) && $view !== '' ? $view : null;
+    }
 
     /**
      * Resolve the active-theme override then the plugin view for a kind/type.

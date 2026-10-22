@@ -27,7 +27,7 @@ use Plugins\PageBuilder\State\LayoutMutator;
  */
 class PageBuilderManager
 {
-    public const VERSION = '0.1.0-alpha.4';
+    public const VERSION = '0.1.0-alpha.6';
 
     /** Lazily-created Phase 8 state helpers (stateless singletons). */
     private ?CommandBus $commandBus = null;
@@ -97,7 +97,7 @@ class PageBuilderManager
      */
     public function commandBus(): CommandBus
     {
-        return $this->commandBus ??= new CommandBus();
+        return $this->commandBus ??= new CommandBus;
     }
 
     /**
@@ -105,7 +105,7 @@ class PageBuilderManager
      */
     public function mutator(): LayoutMutator
     {
-        return $this->mutator ??= new LayoutMutator();
+        return $this->mutator ??= new LayoutMutator;
     }
 
     /**
@@ -113,7 +113,7 @@ class PageBuilderManager
      */
     public function locator(): ComponentLocator
     {
-        return $this->locator ??= new ComponentLocator();
+        return $this->locator ??= new ComponentLocator;
     }
 
     /**
@@ -281,8 +281,8 @@ class PageBuilderManager
     {
         return [
             'version' => self::VERSION,
-            'sections' => $this->sectionDefinitions(),
-            'blocks' => $this->blockDefinitions(),
+            'sections' => $this->withDataSourceCatalog($this->sectionDefinitions()),
+            'blocks' => $this->withDataSourceCatalog($this->blockDefinitions()),
             'tokens' => $this->tokens(),
             'breakpoints' => $this->tokens->breakpoints(),
             // Phase 25.3 — layout presets (Section → Container → Column trees) the
@@ -308,6 +308,41 @@ class PageBuilderManager
     }
 
     /**
+     * PB-XREG-2 — stamp the server-filtered compatible data-source catalog and the
+     * Admin-UI-locale chrome strings into every `data-source` field, so the
+     * Inspector offers only registered, compatible sources. Definitions without
+     * such fields are returned untouched.
+     *
+     * @param  array<int, array<string, mixed>>  $definitions
+     * @return array<int, array<string, mixed>>
+     */
+    private function withDataSourceCatalog(array $definitions): array
+    {
+        if (! app()->bound(\Plugins\PageBuilder\DataSources\DataSourceProviderRegistry::class)) {
+            return $definitions;
+        }
+
+        $registry = app(\Plugins\PageBuilder\DataSources\DataSourceProviderRegistry::class);
+        $locale = \Plugins\PageBuilder\Support\CatalogLocale::admin();
+        $t = static fn (string $key): string => (string) __($key, [], $locale);
+        $strings = [
+            'source' => $t('Data source'),
+            'choose' => $t('Choose a data source…'),
+            'items' => $t('Number of items'),
+            'unavailable' => $t('This data source is unavailable. Its settings are kept and will apply again when its plugin is active.'),
+            'none' => $t('No compatible data sources are available.'),
+            'yes' => $t('Yes'),
+            'no' => $t('No'),
+        ];
+
+        // Provider-declared source/option labels resolve under the Admin UI locale too.
+        return \Plugins\PageBuilder\Support\RenderLocale::scope($locale, static fn (): array => array_map(
+            static fn (array $definition): array => \Plugins\PageBuilder\DataSources\DataSourceFields::enrichForEditor($definition, $registry, $strings),
+            $definitions,
+        ));
+    }
+
+    /**
      * The editor field schema for a single section/block, or null when the kind
      * is unknown or the type is not registered.
      *
@@ -329,6 +364,17 @@ class PageBuilderManager
         $definition = $registry->get($type);
 
         return is_array($definition) ? ($definition['schema'] ?? null) : null;
+    }
+
+    /**
+     * The truthful runtime state of a stored node `type` (PB-XREG-1):
+     * {@see \Plugins\PageBuilder\Components\ComponentAvailability} KNOWN, UNAVAILABLE
+     * (valid external id whose provider is not active) or UNKNOWN (malformed, or a
+     * bare id that is not a real built-in). Never rewrites the stored layout.
+     */
+    public function componentAvailability(string $type): string
+    {
+        return app(\Plugins\PageBuilder\Components\ComponentProviderRegistry::class)->availability($type);
     }
 
     /**

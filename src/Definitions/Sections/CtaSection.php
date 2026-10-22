@@ -12,6 +12,8 @@ use Plugins\PageBuilder\Schema\Fields\TextField;
 use Plugins\PageBuilder\Schema\Fields\UrlField;
 use Plugins\PageBuilder\Schema\Schema;
 use Plugins\PageBuilder\Schema\Tab;
+use Plugins\PageBuilder\Support\AccentPreset;
+use Plugins\PageBuilder\Support\TonePreset;
 
 /** Focused call-to-action band holding heading/text/button blocks. */
 class CtaSection extends AbstractSectionDefinition
@@ -65,6 +67,12 @@ class CtaSection extends AbstractSectionDefinition
                 SelectField::make('align')->label('Alignment')
                     ->options(['left' => 'Left', 'center' => 'Center', 'right' => 'Right'])
                     ->default('center'),
+                SelectField::make('accent')->label('Accent')
+                    ->options(AccentPreset::options())
+                    ->default(''),
+                SelectField::make('tone')->label('Surface tone')
+                    ->options(TonePreset::options())
+                    ->default(''),
                 ColorField::make('background')->label('Background')->token('color.primary'),
             ]),
         ])->toArray();

@@ -17,8 +17,11 @@
     // stacking are owned entirely by CSS classes (`.pb-columns__inner` +
     // `.pb-columns--gap-*`), so ONE responsive authority governs every surface —
     // no inline `display:flex`/`flex-direction` that a media query cannot override.
+    $accent = \Plugins\PageBuilder\Support\AccentPreset::classes($data['accent'] ?? null);
+    $variant = in_array($data['variant'] ?? '', ['cards', 'featured', 'timeline'], true) ? ' pb-columns--'.$data['variant'] : '';
+    $tone = \Plugins\PageBuilder\Support\TonePreset::classes($data['tone'] ?? null);
 @endphp
-<section class="pb-section pb-section--columns pb-columns pb-columns--gap-{{ $gap }} pb-columns--cols-{{ $data['columns'] ?? 'auto' }}">
+<section class="pb-section pb-section--columns pb-columns pb-columns--gap-{{ $gap }} pb-columns--cols-{{ $data['columns'] ?? 'auto' }}{{ $accent !== '' ? ' '.$accent : '' }}{{ $variant }}{{ $tone !== '' ? ' '.$tone : '' }}">
     <div class="pb-columns__inner">
         @if (trim($children) === '' && ($pbEditor ?? false))
             <div class="pb-placeholder">{{ __('Add columns to this row') }}</div>

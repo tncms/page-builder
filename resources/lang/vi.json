@@ -84,5 +84,13 @@
     "This inserted design could not be updated. Your edits are kept; please re-insert it.": "Không thể cập nhật thiết kế đã chèn. Các chỉnh sửa của bạn được giữ; vui lòng chèn lại.",
     "Remove the attribution for this inserted design?": "Xóa nguồn gốc cho thiết kế đã chèn này?",
     "This design could not be inserted. Please try again.": "Không thể chèn thiết kế này. Vui lòng thử lại.",
-    "This page changed in another session. Please reload to continue.": "Trang này đã thay đổi ở phiên khác. Vui lòng tải lại để tiếp tục."
+    "This page changed in another session. Please reload to continue.": "Trang này đã thay đổi ở phiên khác. Vui lòng tải lại để tiếp tục.",
+    "Data source": "Nguồn dữ liệu",
+    "Choose a data source…": "Chọn nguồn dữ liệu…",
+    "Number of items": "Số mục hiển thị",
+    "This data source is unavailable. Its settings are kept and will apply again when its plugin is active.": "Nguồn dữ liệu này hiện không khả dụng. Cài đặt vẫn được giữ và sẽ áp dụng lại khi plugin của nó được kích hoạt.",
+    "No compatible data sources are available.": "Không có nguồn dữ liệu tương thích nào.",
+    "Yes": "Có",
+    "No": "Không",
+    "A data source setting is not valid. Please review the highlighted component.": "Một cài đặt nguồn dữ liệu không hợp lệ. Vui lòng kiểm tra thành phần được đánh dấu."
 }

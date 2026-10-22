@@ -8,6 +8,7 @@ use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
 use Plugins\PageBuilder\Design\TokenRegistry;
 use Plugins\PageBuilder\Design\TokenResolver;
+use Plugins\PageBuilder\Exceptions\IncompatibleCoreException;
 use Plugins\PageBuilder\Filament\Forms\EditorLauncherPanel;
 use Plugins\PageBuilder\Filament\Forms\PageRenderSourceSection;
 use Plugins\PageBuilder\Http\Middleware\InjectFrontendEditorAssets;
@@ -20,10 +21,9 @@ use Plugins\PageBuilder\LayoutTranslation\DefaultLayoutTranslationCapabilityReso
 use Plugins\PageBuilder\LayoutTranslation\DefaultLayoutTranslationStateReader;
 use Plugins\PageBuilder\LayoutTranslation\LayoutRelationshipValidator;
 use Plugins\PageBuilder\LayoutTranslation\LayoutTranslationConfig;
-use Plugins\PageBuilder\LayoutTranslation\LayoutTranslationSetting;
 use Plugins\PageBuilder\LayoutTranslation\LayoutTranslationDiagnostics;
 use Plugins\PageBuilder\LayoutTranslation\LayoutTranslationResolver;
-use TheNguyen\CMS\Localization\Contracts\LanguageConfigurationContract;
+use Plugins\PageBuilder\LayoutTranslation\LayoutTranslationSetting;
 use Plugins\PageBuilder\Patterns\Dependencies\PatternCapabilityRegistry;
 use Plugins\PageBuilder\Patterns\Dependencies\PatternDependencyResolver;
 use Plugins\PageBuilder\Patterns\Migration\BuilderMigrator;
@@ -57,7 +57,7 @@ use Plugins\PageBuilder\Runtime\DesignTokenResolver;
 use Plugins\PageBuilder\Runtime\RuntimeHookManager;
 use Plugins\PageBuilder\Support\Breakpoints;
 use Plugins\PageBuilder\Support\ColumnWidthRegistry;
-use Plugins\PageBuilder\Support\DefaultLibrary;
+use Plugins\PageBuilder\Support\CoreCompatibility;
 use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleGenerator;
 use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleHasher;
 use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleNormalizer;
@@ -65,14 +65,13 @@ use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleRegistry;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\FrontendEditorRenderer;
 use Plugins\PageBuilder\Support\FrontendRenderer;
-use Plugins\PageBuilder\Support\LayoutNormalizer;
-use Plugins\PageBuilder\Support\ResponsiveSpacingStyle;
 use Plugins\PageBuilder\Support\HeadingRankResolver;
-use Plugins\PageBuilder\Support\CoreCompatibility;
+use Plugins\PageBuilder\Support\LayoutNormalizer;
 use Plugins\PageBuilder\Support\LayoutRenderer;
 use Plugins\PageBuilder\Support\LayoutStore;
 use Plugins\PageBuilder\Support\PageBuilderManager;
-use Plugins\PageBuilder\Exceptions\IncompatibleCoreException;
+use Plugins\PageBuilder\Support\ResponsiveSpacingStyle;
+use TheNguyen\CMS\Localization\Contracts\LanguageConfigurationContract;
 use TheNguyen\CMS\Models\Content;
 use TheNguyen\CMS\Services\PluginInstallationGuard;
 
@@ -153,6 +152,33 @@ class PageBuilderServiceProvider extends ServiceProvider
         // other plugins later) persists for the whole request.
         $this->app->singleton(SectionRegistry::class);
         $this->app->singleton(BlockRegistry::class);
+
+        // PB-XREG-1 — the ONE public Component Provider authority. A singleton so
+        // its owner map + freeze state persist for the request. Built-ins and
+        // external plugins register through it; it writes into the two registries
+        // above, so the runtime keeps resolving them unchanged.
+        $this->app->singleton(\Plugins\PageBuilder\Components\ComponentProviderRegistry::class, function ($app): \Plugins\PageBuilder\Components\ComponentProviderRegistry {
+            return new \Plugins\PageBuilder\Components\ComponentProviderRegistry(
+                $app->make(SectionRegistry::class),
+                $app->make(BlockRegistry::class),
+                new \Plugins\PageBuilder\Components\ComponentProviderComplianceValidator,
+                new \Plugins\PageBuilder\Components\ComponentProviderIdentity($app->make(\TheNguyen\CMS\Services\ExtensionManager::class)),
+            );
+        });
+
+        // PB-XREG-2 — the public Data Source authority: a sibling of (never merged
+        // with) the component registry above. Singleton so its owner map + freeze
+        // state persist for the request.
+        $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceProviderRegistry::class, function ($app): \Plugins\PageBuilder\DataSources\DataSourceProviderRegistry {
+            return new \Plugins\PageBuilder\DataSources\DataSourceProviderRegistry(
+                new \Plugins\PageBuilder\DataSources\DataSourceProviderComplianceValidator,
+                new \Plugins\PageBuilder\DataSources\DataSourceProviderIdentity($app->make(\TheNguyen\CMS\Services\ExtensionManager::class)),
+            );
+        });
+        $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceConfigValidator::class);
+        $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceExecutor::class);
+        $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceRenderResolver::class);
+        $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceLayoutValidator::class);
 
         // Layout persistence gateway (Phase 2 — Layout Storage). Stateless over
         // the PageBuilderLayout model, so a singleton is safe and cheap.
@@ -353,7 +379,7 @@ class PageBuilderServiceProvider extends ServiceProvider
         // Phase 26.47 — Design Package sharing (portable .tncms-design import/export).
         // The store is the only persistence; the imported provider serves resources
         // with source=imported through the repository.
-        $this->app->singleton(\Plugins\PageBuilder\Package\ImportedPackageStore::class, static fn () => new \Plugins\PageBuilder\Package\ImportedPackageStore());
+        $this->app->singleton(\Plugins\PageBuilder\Package\ImportedPackageStore::class, static fn () => new \Plugins\PageBuilder\Package\ImportedPackageStore);
         $this->app->singleton(\Plugins\PageBuilder\Repository\Providers\ImportedResourceProvider::class);
         $this->app->singleton(\Plugins\PageBuilder\Package\DesignPackageExporter::class);
         $this->app->singleton(\Plugins\PageBuilder\Package\DesignPackageImporter::class);
@@ -433,7 +459,7 @@ class PageBuilderServiceProvider extends ServiceProvider
         // Phase 26.48 — Save as Design: the single Design Capture Pipeline + its
         // persistent "my-designs" store and repository provider. The pipeline is the
         // only writer into the my-designs source; the palette group stays reserved.
-        $this->app->singleton(\Plugins\PageBuilder\Capture\UserDesignStore::class, static fn () => new \Plugins\PageBuilder\Capture\UserDesignStore());
+        $this->app->singleton(\Plugins\PageBuilder\Capture\UserDesignStore::class, static fn () => new \Plugins\PageBuilder\Capture\UserDesignStore);
         $this->app->singleton(\Plugins\PageBuilder\Repository\Providers\UserDesignProvider::class);
         $this->app->singleton(\Plugins\PageBuilder\Capture\DesignCaptureNormalizer::class);
         $this->app->singleton(\Plugins\PageBuilder\Capture\DesignCaptureValidator::class);
@@ -455,7 +481,7 @@ class PageBuilderServiceProvider extends ServiceProvider
         // Provider built on the SDK; it reads a local, offline-ready manifest store
         // and contributes resources to the ONE repository. No marketplace, commerce,
         // sync or publishing — foundation only.
-        $this->app->singleton(\Plugins\PageBuilder\Community\CommunityResourceStore::class, static fn () => new \Plugins\PageBuilder\Community\CommunityResourceStore());
+        $this->app->singleton(\Plugins\PageBuilder\Community\CommunityResourceStore::class, static fn () => new \Plugins\PageBuilder\Community\CommunityResourceStore);
         $this->app->singleton(\Plugins\PageBuilder\Community\Manifest\ManifestParser::class);
         $this->app->singleton(\Plugins\PageBuilder\Community\Manifest\ManifestValidator::class);
         $this->app->singleton(\Plugins\PageBuilder\Community\CommunityRepositoryProvider::class);
@@ -472,7 +498,7 @@ class PageBuilderServiceProvider extends ServiceProvider
         // the synchronization service that fetches a remote Repository Index, detects
         // change, reports conflicts and refreshes the local cache. Transport of metadata
         // only — no downloads, no payload transfer, no installation, no commerce.
-        $this->app->singleton(\Plugins\PageBuilder\Community\Synchronization\SynchronizationCache::class, static fn () => new \Plugins\PageBuilder\Community\Synchronization\SynchronizationCache());
+        $this->app->singleton(\Plugins\PageBuilder\Community\Synchronization\SynchronizationCache::class, static fn () => new \Plugins\PageBuilder\Community\Synchronization\SynchronizationCache);
         $this->app->singleton(\Plugins\PageBuilder\Community\Synchronization\CommunitySynchronizationService::class);
 
         // Phase 26.50D — Community discovery & catalog. A presentation/indexing layer
@@ -950,6 +976,7 @@ class PageBuilderServiceProvider extends ServiceProvider
 
         $this->registerPermissions();
         $this->registerDefaultLibrary();
+        $this->registerDataSourceRegistry();
         $this->registerResourceRepositoryProviders();
         $this->registerAdminFormIntegration();
         $this->registerFrontendRender();
@@ -1180,10 +1207,35 @@ class PageBuilderServiceProvider extends ServiceProvider
      */
     private function registerDefaultLibrary(): void
     {
-        (new DefaultLibrary)->register(
-            $this->app->make(SectionRegistry::class),
-            $this->app->make(BlockRegistry::class),
-        );
+        // PB-XREG-1 — built-ins enter through the ONE Component Provider authority
+        // (as the trusted internal provider), so they and external plugin
+        // components share a single registry and a single freeze. The authority
+        // writes the definitions into the Section/Block registries, preserving the
+        // runtime's existing `->get($type)` resolution and every bare built-in id.
+        $registry = $this->app->make(\Plugins\PageBuilder\Components\ComponentProviderRegistry::class);
+        $registry->register(new \Plugins\PageBuilder\Components\BuiltInComponentProvider);
+
+        // One deterministic freeze point: after EVERY active plugin provider has
+        // booted (each had its window to register), the registry locks and any
+        // further provider registration fails closed. `booted` callbacks run after
+        // the whole application boots, independent of plugin boot order.
+        $this->app->booted(static function () use ($registry): void {
+            $registry->freeze();
+        });
+    }
+
+    /**
+     * PB-XREG-2 — the Data Source registry ships no built-in sources; external
+     * plugins register theirs during their own boot(). It freezes at the SAME
+     * deterministic point as the component registry (after every provider booted).
+     */
+    private function registerDataSourceRegistry(): void
+    {
+        $registry = $this->app->make(\Plugins\PageBuilder\DataSources\DataSourceProviderRegistry::class);
+
+        $this->app->booted(static function () use ($registry): void {
+            $registry->freeze();
+        });
     }
 
     /**

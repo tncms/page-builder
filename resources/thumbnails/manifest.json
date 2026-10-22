@@ -129,9 +129,9 @@
       "file": "page-agency-home.webp",
       "width": 600,
       "height": 450,
-      "bytes": 14928,
-      "renderHash": "41472f6aabdeeec76f7b24c2ddb6846c1dc948499e081e5bf4f72cc5faa843bb",
-      "thumbHash": "b6f7a8c807d8dd45e251c371ab5bddf70ee3368ddea2efe07540d32f1a1fdd0e"
+      "bytes": 15858,
+      "renderHash": "79b7bfa4a1c74cebc9b11cc79a30ce461603e414896c6513b12117f0600c519e",
+      "thumbHash": "d2c84e0c14a5e021709ee668f8b840746d193fa5db0e0c1956a93bb71f66a97c"
     },
     {
       "key": "page-saas-landing",
@@ -140,9 +140,9 @@
       "file": "page-saas-landing.webp",
       "width": 600,
       "height": 450,
-      "bytes": 9300,
-      "renderHash": "f673f58a4f7b374b7c513a089176211c02f969d062d775a2b0c1af532c69d788",
-      "thumbHash": "71c751af8c2ddaccc040047eedb2f3ca67d90e957891672bfb78176e7ff8818d"
+      "bytes": 10604,
+      "renderHash": "4abfe3835c197aa29028f3f6c5a2ae1d6315dc620756f6d9034657059a6f3110",
+      "thumbHash": "f84ddec77d759fb6ad8b3e3e23eaddedc3a649b32f420d9b010cfc93a3361472"
     },
     {
       "key": "page-portfolio",
@@ -162,9 +162,9 @@
       "file": "page-blog-home.webp",
       "width": 600,
       "height": 450,
-      "bytes": 8922,
-      "renderHash": "6072ae3b1892002f023bf1e19a8d795bfa85df0ca4e55cba2e8d48b434730eea",
-      "thumbHash": "b8b71a3cef9306fb6a09ff964e6a97dc8040369bedebcdfb77313402abfc0c7c"
+      "bytes": 8688,
+      "renderHash": "196411861506043d251d34579f6b3bb7bc75b06e91216f82b569f693d70b5287",
+      "thumbHash": "f48a0fe3b08ac43cddf193629a228dbe1fb09c2b83f65d2c2a08a4ad57878386"
     },
     {
       "key": "template-hero-basic",

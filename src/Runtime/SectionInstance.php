@@ -18,6 +18,14 @@ class SectionInstance extends AbstractComponentInstance
 
     public function renderView(): string
     {
+        // PB-XREG-1 — external components resolve ONLY from trusted registration;
+        // their namespaced id never enters the theme/plugin view convention. An
+        // unavailable external section (provider absent) falls back to the safe,
+        // bounded generic wrapper instead of a crash.
+        if ($this->isExternalType()) {
+            return $this->trustedExternalView() ?? 'page-builder::sections.default';
+        }
+
         return $this->resolveThemeOrPlugin('sections', $this->type)
             ?? 'page-builder::sections.default';
     }

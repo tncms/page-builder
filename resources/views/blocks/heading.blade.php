@@ -15,5 +15,5 @@
     @php
         $level = app(\Plugins\PageBuilder\Support\HeadingRankResolver::class)->resolve($data['level'] ?? null);
     @endphp
-    <{{ $level }} class="pb-block pb-block--heading">{{ $text }}</{{ $level }}>
+    <{{ $level }} class="pb-block pb-block--heading{{ in_array($data['size'] ?? 'default', ['sm', 'md', 'lg', 'xl'], true) ? ' pb-heading--'.$data['size'] : '' }}">{{ $text }}</{{ $level }}>
 @endif

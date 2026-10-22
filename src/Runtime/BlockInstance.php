@@ -19,6 +19,13 @@ class BlockInstance extends AbstractComponentInstance
 
     public function renderView(): string
     {
+        // PB-XREG-1 — external components resolve ONLY from trusted registration;
+        // their namespaced id never enters the theme/plugin view convention. An
+        // unavailable external block (provider absent) renders nothing, not a crash.
+        if ($this->isExternalType()) {
+            return $this->trustedExternalView() ?? '';
+        }
+
         return $this->resolveThemeOrPlugin('blocks', $this->type) ?? '';
     }
 

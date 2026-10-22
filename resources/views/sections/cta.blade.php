@@ -7,8 +7,10 @@
     $text = \Plugins\PageBuilder\Support\Localize::text($data['text'] ?? '');
     $buttonLabel = \Plugins\PageBuilder\Support\Localize::text($data['button_label'] ?? '');
     $buttonUrl = $data['button_url'] ?? null;
+    $accent = \Plugins\PageBuilder\Support\AccentPreset::classes($data['accent'] ?? null);
+    $tone = \Plugins\PageBuilder\Support\TonePreset::classes($data['tone'] ?? null);
 @endphp
-<section class="pb-section pb-section--cta pb-cta pb-align--{{ $data['align'] ?? 'center' }}">
+<section class="pb-section pb-section--cta pb-cta pb-align--{{ $data['align'] ?? 'center' }}{{ $accent !== '' ? ' '.$accent : '' }}{{ $tone !== '' ? ' '.$tone : '' }}">
     <div class="pb-cta__inner">
         @if ($title !== '')
             <h2 class="pb-cta__title">{{ $title }}</h2>

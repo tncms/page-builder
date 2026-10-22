@@ -75,7 +75,12 @@
         .dl-card { background: var(--dl-surface); border: 1px solid var(--dl-line); border-radius: var(--dl-radius); overflow: hidden; display: flex; flex-direction: column; }
         .dl-card:focus-within { border-color: var(--dl-accent); }
         .dl-thumb { position: relative; aspect-ratio: 16 / 10; background: #0b0d12; overflow: hidden; border-bottom: 1px solid var(--dl-line); }
-        .dl-thumb iframe { position: absolute; inset: 0; width: 200%; height: 200%; transform: scale(.5); transform-origin: top left; border: 0; pointer-events: none; background: #fff; }
+        /* Render the preview at a desktop-width virtual viewport, then scale it to
+           fit the card top-anchored. The 4x width/height gives a ~1040px desktop
+           layout (real above-the-fold framing, not a cramped mobile breakpoint);
+           the parent clips the overflow and scrolling="no" on the iframe removes
+           its own scrollbars so the thumbnail never shows a scrollbar. */
+        .dl-thumb iframe { position: absolute; inset: 0; width: 400%; height: 400%; transform: scale(.25); transform-origin: top left; border: 0; pointer-events: none; overflow: hidden; background: #fff; }
         .dl-thumb--empty { display: grid; place-items: center; color: var(--dl-muted); font-size: .8rem; aspect-ratio: 16 / 10; }
         .dl-card__body { padding: .85rem 1rem 1rem; display: flex; flex-direction: column; gap: .5rem; flex: 1; }
         .dl-card__title { margin: 0; font-size: 1rem; }
@@ -84,8 +89,11 @@
         .dl-badge--kind { color: var(--dl-accent); border-color: color-mix(in oklab, var(--dl-accent), transparent 60%); }
         .dl-badge--pro { color: #ffcf70; border-color: #6b5a25; }
         .dl-meta { color: var(--dl-muted); font-size: .8rem; margin-top: auto; }
-        .dl-card__actions { display: flex; gap: .4rem; margin-top: .6rem; }
+        .dl-card__actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
         .dl-card__actions .dl-btn { padding: .4rem .7rem; font-size: .85rem; }
+        /* The primary action (e.g. "Use This Template") takes its own full-width
+           row so a long label never clips; the quiet actions wrap above it. */
+        .dl-card__actions .dl-btn--primary { flex: 1 1 100%; }
         .dl-fav[aria-pressed="true"] { color: #ffb3c7; border-color: #7a3b4d; }
         .dl-empty { text-align: center; padding: 4rem 1rem; color: var(--dl-muted); }
         .dl-modal[hidden] { display: none; }

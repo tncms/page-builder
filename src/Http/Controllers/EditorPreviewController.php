@@ -6,6 +6,7 @@ namespace Plugins\PageBuilder\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Plugins\PageBuilder\DataSources\DataSourceRenderResolver;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\PageBuilderManager;
 use Plugins\PageBuilder\Support\RenderLocale;
@@ -41,11 +42,42 @@ final class EditorPreviewController
             is_array($request->input('payload')) ? $request->input('payload') : null,
         )->payload();
 
+        // PB-XREG-2 — start from a clean diagnostics slate so only this render's
+        // data-source outcomes are reported.
+        if (app()->bound(DataSourceRenderResolver::class)) {
+            app(DataSourceRenderResolver::class)->drainDiagnostics();
+        }
+
+        $html = RenderLocale::scope($locale, fn (): string => $manager->renderForEditor($payload));
+
         return response()->json([
             'success' => true,
             'data' => [
-                'html' => RenderLocale::scope($locale, fn (): string => $manager->renderForEditor($payload)),
+                'html' => $html,
+                // Bounded data-source outcome codes for the rendered layout; never
+                // provider messages, SQL, paths, or traces.
+                'warnings' => $this->dataSourceWarnings(),
             ],
+        ])->withHeaders([
+            // Editor-only, per-user, possibly live-data HTML: never cache, never frame.
+            'Cache-Control' => 'no-store, private',
+            'Content-Security-Policy' => "default-src 'none'; frame-ancestors 'none'",
+            'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    /**
+     * @return list<array{code: string, component_id: ?string, field: string}>
+     */
+    private function dataSourceWarnings(): array
+    {
+        if (! app()->bound(DataSourceRenderResolver::class)) {
+            return [];
+        }
+
+        return array_map(
+            static fn (array $d): array => ['code' => 'data_source.'.$d['code'], 'component_id' => $d['component_id'], 'field' => $d['field']],
+            app(DataSourceRenderResolver::class)->drainDiagnostics(),
+        );
     }
 }

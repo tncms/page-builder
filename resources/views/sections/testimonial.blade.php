@@ -6,8 +6,11 @@
     $quote = \Plugins\PageBuilder\Support\Localize::text($data['quote'] ?? '');
     $author = \Plugins\PageBuilder\Support\Localize::text($data['author'] ?? '');
     $role = \Plugins\PageBuilder\Support\Localize::text($data['role'] ?? '');
+    $accent = \Plugins\PageBuilder\Support\AccentPreset::classes($data['accent'] ?? null);
+    $tone = \Plugins\PageBuilder\Support\TonePreset::classes($data['tone'] ?? null);
+    $feature = (($data['variant'] ?? '') === 'feature') ? ' pb-testimonial--feature' : '';
 @endphp
-<section class="pb-section pb-section--testimonial pb-testimonial">
+<section class="pb-section pb-section--testimonial pb-testimonial{{ $feature }}{{ $accent !== '' ? ' '.$accent : '' }}{{ $tone !== '' ? ' '.$tone : '' }}">
     <div class="pb-testimonial__inner">
         @if ($quote !== '')
             <blockquote class="pb-testimonial__quote">

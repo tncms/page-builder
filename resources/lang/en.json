@@ -84,5 +84,13 @@
     "This inserted design could not be updated. Your edits are kept; please re-insert it.": "This inserted design could not be updated. Your edits are kept; please re-insert it.",
     "Remove the attribution for this inserted design?": "Remove the attribution for this inserted design?",
     "This design could not be inserted. Please try again.": "This design could not be inserted. Please try again.",
-    "This page changed in another session. Please reload to continue.": "This page changed in another session. Please reload to continue."
+    "This page changed in another session. Please reload to continue.": "This page changed in another session. Please reload to continue.",
+    "Data source": "Data source",
+    "Choose a data source…": "Choose a data source…",
+    "Number of items": "Number of items",
+    "This data source is unavailable. Its settings are kept and will apply again when its plugin is active.": "This data source is unavailable. Its settings are kept and will apply again when its plugin is active.",
+    "No compatible data sources are available.": "No compatible data sources are available.",
+    "Yes": "Yes",
+    "No": "No",
+    "A data source setting is not valid. Please review the highlighted component.": "A data source setting is not valid. Please review the highlighted component."
 }

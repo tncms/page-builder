@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Plugins\PageBuilder\Definitions\Sections;
 
 use Plugins\PageBuilder\Definitions\AbstractSectionDefinition;
+use Plugins\PageBuilder\Schema\Fields\SelectField;
 use Plugins\PageBuilder\Schema\Fields\TextField;
 use Plugins\PageBuilder\Schema\Schema;
 use Plugins\PageBuilder\Schema\Tab;
+use Plugins\PageBuilder\Support\TonePreset;
 
 /** Optional heading over a row of logo blocks. */
 class LogoStripSection extends AbstractSectionDefinition
@@ -47,6 +49,11 @@ class LogoStripSection extends AbstractSectionDefinition
         return Schema::make()->tabs([
             Tab::make('content')->label('Content')->fields([
                 TextField::make('heading')->label('Heading'),
+            ]),
+            Tab::make('style')->label('Style')->fields([
+                SelectField::make('tone')->label('Surface tone')
+                    ->options(TonePreset::options())
+                    ->default(''),
             ]),
         ])->toArray();
     }

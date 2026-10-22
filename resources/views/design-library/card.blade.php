@@ -42,6 +42,7 @@
                 loading="lazy"
                 tabindex="-1"
                 aria-hidden="true"
+                scrolling="no"
                 sandbox="allow-same-origin"
                 src="{{ $card->previewUrl }}"></iframe>
         @else

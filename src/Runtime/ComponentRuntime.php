@@ -6,6 +6,8 @@ namespace Plugins\PageBuilder\Runtime;
 
 use Illuminate\Support\Facades\View;
 use Plugins\PageBuilder\Contracts\ComponentInstance;
+use Plugins\PageBuilder\DataSources\DataSourceFields;
+use Plugins\PageBuilder\DataSources\DataSourceRenderResolver;
 use Plugins\PageBuilder\Support\ColumnWidth;
 use Plugins\PageBuilder\Support\ColumnWidthRegistry;
 use Plugins\PageBuilder\Support\ResponsiveSpacingStyle;
@@ -245,6 +247,7 @@ class ComponentRuntime
             // primary heading (hero) can pick the correct semantic rank. Transient
             // render fact — not part of the stored payload.
             $data['pbDocumentTitleRendered'] = $this->externalHeadingPresent;
+            $data = $this->withDataSources($instance, $data);
 
             return View::make($view, $data)->render();
         }
@@ -255,8 +258,34 @@ class ComponentRuntime
 
         $data = $instance->renderData();
         $data['pbEditor'] = $this->editor;
+        $data = $this->withDataSources($instance, $data);
 
         return View::make($view, $data)->render();
+    }
+
+    /**
+     * PB-XREG-2 — add `$dataSources` (plain, freshly fetched, never persisted)
+     * for a component whose definition declares data-source fields. Components
+     * without such fields receive exactly the view data they always did.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withDataSources(ComponentInstance $instance, array $data): array
+    {
+        // Resolved per render (not injected) so the current request's registry
+        // state is always the authority, even in long-lived workers.
+        if (DataSourceFields::in($instance->definition()) === [] || ! app()->bound(DataSourceRenderResolver::class)) {
+            return $data;
+        }
+
+        $resolved = app(DataSourceRenderResolver::class)->resolve($instance, $this->editor);
+
+        if ($resolved !== null) {
+            $data['dataSources'] = $resolved;
+        }
+
+        return $data;
     }
 
     /**

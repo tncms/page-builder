@@ -9,6 +9,8 @@ use Plugins\PageBuilder\Schema\Fields\ColorField;
 use Plugins\PageBuilder\Schema\Fields\SelectField;
 use Plugins\PageBuilder\Schema\Schema;
 use Plugins\PageBuilder\Schema\Tab;
+use Plugins\PageBuilder\Support\AccentPreset;
+use Plugins\PageBuilder\Support\TonePreset;
 
 /**
  * A neutral, general-purpose section (Phase 25.3) — the top of the composition tree
@@ -55,6 +57,12 @@ class GenericSection extends AbstractSectionDefinition
                 SelectField::make('padding')->label('Padding')
                     ->options(['none' => 'None', 'sm' => 'Small', 'md' => 'Medium', 'lg' => 'Large'])
                     ->default('md'),
+                SelectField::make('accent')->label('Accent')
+                    ->options(AccentPreset::options())
+                    ->default(''),
+                SelectField::make('tone')->label('Surface tone')
+                    ->options(TonePreset::options())
+                    ->default(''),
                 ColorField::make('background')->label('Background'),
             ]),
         ])->toArray();

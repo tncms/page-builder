@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\PageBuilder\Definitions\Blocks;
 
 use Plugins\PageBuilder\Definitions\AbstractBlockDefinition;
+use Plugins\PageBuilder\Schema\Fields\SelectField;
 use Plugins\PageBuilder\Schema\Fields\TextareaField;
 use Plugins\PageBuilder\Schema\Schema;
 
@@ -35,6 +36,9 @@ class TextBlock extends AbstractBlockDefinition
     {
         return Schema::make()->fields([
             TextareaField::make('text')->label('Text')->translatable(),
+            SelectField::make('variant')->label('Style')
+                ->options(['default' => 'Default', 'eyebrow' => 'Eyebrow', 'lead' => 'Lead'])
+                ->default('default'),
         ])->toArray();
     }
 }

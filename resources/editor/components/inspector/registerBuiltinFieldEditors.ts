@@ -19,6 +19,7 @@ import BorderField from './fields/BorderField.vue'
 import BackgroundField from './fields/BackgroundField.vue'
 import LinkField from './fields/LinkField.vue'
 import ResponsiveField from './fields/ResponsiveField.vue'
+import DataSourceField from './fields/DataSourceField.vue'
 
 let registered = false
 
@@ -47,6 +48,9 @@ export function registerBuiltinFieldEditors(): void {
   // Phase 26.4 — `responsive` wraps a base field (its editor is resolved from this
   // same registry); it needs the field to find the inner descriptor.
   registerFieldEditor('responsive', { component: ResponsiveField, needsField: true })
+  // PB-XREG-2 — `data-source` reads the server-published compatible-source catalog
+  // (`editor.sources`) and chrome strings from the schema.
+  registerFieldEditor('data-source', { component: DataSourceField, needsField: true })
 }
 
 // Register on import so a bare `import './registerBuiltinFieldEditors'` is enough.

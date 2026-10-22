@@ -24,7 +24,9 @@
         'padding-bottom' => $pad,
         'background' => $bg,
     ]);
-    $classes = 'pb-section pb-section--section pb-section--w-'.$width.($dsClass ? ' '.$dsClass : '');
+    $accent = \Plugins\PageBuilder\Support\AccentPreset::classes($data['accent'] ?? null);
+    $tone = \Plugins\PageBuilder\Support\TonePreset::classes($data['tone'] ?? null);
+    $classes = 'pb-section pb-section--section pb-section--w-'.$width.($dsClass ? ' '.$dsClass : '').($accent !== '' ? ' '.$accent : '').($tone !== '' ? ' '.$tone : '');
 @endphp
 <section class="{{ $classes }}" style="{{ $styles }}">
     <div class="pb-section__inner">
