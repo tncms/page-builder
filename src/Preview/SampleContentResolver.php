@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\PageBuilder\Preview;
 
+use Plugins\PageBuilder\Repository\Starters\StarterAssets;
+
 /**
  * Fills empty, well-known fields of a resource tree with deterministic sample
  * content so previews look real (especially for sparse blocks/sections).
@@ -191,7 +193,8 @@ final class SampleContentResolver
             'name' => $this->pick(self::NAMES, $seed),
             'role' => $this->pick(self::ROLES, $seed),
             'url' => '#',
-            'image' => '/images/page-builder/preview/placeholder-'.($this->index($seed, 4) + 1).'.svg',
+            // The packaged placeholder (PB-PREVIEW-PARITY-R1): the former host path was never shipped and 404ed.
+            'image' => StarterAssets::IMAGE_PLACEHOLDER,
             default => '',
         };
     }

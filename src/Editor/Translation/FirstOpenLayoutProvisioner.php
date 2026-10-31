@@ -23,6 +23,9 @@ use Plugins\PageBuilder\Support\LayoutStore;
  * (the canonical layout is the source) and for an already-provisioned target
  * (a row already exists). On a non-recoverable clone failure it fails closed —
  * the caller must NOT open the target editor against the source layout.
+ *
+ * A source with no Page Builder content to copy (absent or empty) is NOT cloned:
+ * it raises the blank-layout decision ({@see BlankLayoutProvisioner} acts on it).
  */
 final class FirstOpenLayoutProvisioner
 {
@@ -30,6 +33,7 @@ final class FirstOpenLayoutProvisioner
         private readonly LayoutStore $layouts,
         private readonly LayoutTranslationCloneServiceInterface $cloneService,
         private readonly LayoutBaselineCaptureService $baselines,
+        private readonly SourceLayoutInspector $sources,
     ) {}
 
     public function ensure(EffectiveLayoutOwner $effective, ?string $actor): LayoutProvisionResult
@@ -42,6 +46,14 @@ final class FirstOpenLayoutProvisioner
         // Idempotent: an existing target row means this locale is already provisioned.
         if ($this->layouts->find($effective->ownerType, $effective->ownerId) !== null) {
             return LayoutProvisionResult::alreadyProvisioned();
+        }
+
+        // PB-CORE-AUTHORITY-REMEDIATION-R1 — never provision silently from a source
+        // with nothing to copy: an absent or empty source needs the user's explicit
+        // blank-layout decision. Decided before any write.
+        $sourceLayout = $this->sources->classifyFor($effective);
+        if ($sourceLayout !== SourceLayoutInspector::CLONEABLE) {
+            throw EditorOwnerResolutionException::blankDecisionRequired($effective->locale, $sourceLayout);
         }
 
         // First open: clone the source layout into the target owner. The frozen

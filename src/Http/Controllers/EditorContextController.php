@@ -6,22 +6,28 @@ namespace Plugins\PageBuilder\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Plugins\PageBuilder\Authority\AuthorityResponse;
+use Plugins\PageBuilder\Authority\ContentAuthority;
+use Plugins\PageBuilder\Authority\PageBuilderAuthorityException;
 use Plugins\PageBuilder\DataSources\DataSourceLayoutValidator;
 use Plugins\PageBuilder\DataSources\Exceptions\InvalidDataSourceConfigException;
 use Plugins\PageBuilder\Editor\Translation\EditorOwnerResolutionException;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\EffectiveLayoutOwner;
 use Plugins\PageBuilder\Editor\Translation\FirstOpenLayoutProvisioner;
+use Plugins\PageBuilder\Exceptions\AuthoredHtmlRejectedException;
 use Plugins\PageBuilder\Provenance\AttestationContext;
 use Plugins\PageBuilder\Provenance\ProvenanceReconciler;
 use Plugins\PageBuilder\Provenance\ProvenanceReconciliationException;
 use Plugins\PageBuilder\Provenance\RegisteredResourceInsertion;
 use Plugins\PageBuilder\Provenance\RegisteredResourceInsertionException;
+use Plugins\PageBuilder\Support\AuthoredHtmlLayoutValidator;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\EditorContext;
 use Plugins\PageBuilder\Support\LayoutNormalizer;
 use Plugins\PageBuilder\Support\LayoutStore;
 use Plugins\PageBuilder\Support\LayoutVersionConflictException;
+use TheNguyen\CMS\ContentAuthority\ContentWriteException;
 use TheNguyen\CMS\Models\Content;
 
 /**
@@ -36,8 +42,15 @@ use TheNguyen\CMS\Models\Content;
  * (`content_translation`, ContentTranslation.id). `show` additionally provisions
  * the translated layout on first open (clone + binding + baseline) via the frozen
  * LT pipeline. An invalid/forged locale/translation context fails closed (4xx).
- * All actions require `page-builder.edit` (publish additionally accepts
- * `page-builder.publish`).
+ *
+ * Authority (PB-CORE37-R1, {@see ContentAuthority}): every action needs draft
+ * authority on the canonical content (`page-builder.edit`, the Core type edit
+ * permission, strict edit-others unless own) and refuses extension-managed content;
+ * publish additionally needs strict `page-builder.publish` AND strict Core
+ * `{t}s.publish`, and runs as one Core content unit against the Core revision the
+ * editor was opened with (`content_revision`): Core row locked first, then the
+ * token-checked layout row. The layout token and the Core revision are compared
+ * independently; either one stale is a 409 with zero writes.
  */
 final class EditorContextController
 {
@@ -49,14 +62,16 @@ final class EditorContextController
         private readonly FirstOpenLayoutProvisioner $provisioner,
         private readonly ProvenanceReconciler $reconciler,
         private readonly RegisteredResourceInsertion $insertion,
+        private readonly ContentAuthority $authority,
     ) {}
 
     public function show(Request $request, string $ownerType, int|string $ownerId): JsonResponse
     {
-        $owner = $this->guardOwner($ownerType, $ownerId, 'page-builder.edit');
+        $owner = $this->guardOwner($ownerType, $ownerId);
 
         return $this->resolving(function () use ($request, $ownerType, $owner): JsonResponse {
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
+            $this->assertCanEditTranslation($owner, $effective);
             $provision = $this->provisioner->ensure($effective, $this->userId());
 
             return response()->json([
@@ -68,10 +83,11 @@ final class EditorContextController
 
     public function saveDraft(Request $request, string $ownerType, int|string $ownerId): JsonResponse
     {
-        $owner = $this->guardOwner($ownerType, $ownerId, 'page-builder.edit');
+        $owner = $this->guardOwner($ownerType, $ownerId);
 
         return $this->resolving(function () use ($request, $ownerType, $owner): JsonResponse {
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
+            $this->assertCanEditTranslation($owner, $effective);
             // Ensure the target row/binding/baseline exist before writing (idempotent);
             // guarantees a translation write never bypasses the clone pipeline.
             $this->provisioner->ensure($effective, $this->userId());
@@ -97,6 +113,9 @@ final class EditorContextController
             // PB-XREG-2 — a data-source configuration that its KNOWN source rejects
             // fails the whole save (bounded 422); unavailable sources are preserved.
             app(DataSourceLayoutValidator::class)->assertValid($normalized);
+            // PB-TEXT-AUTHORING-R1 — author HTML over the size / nesting bounds fails the
+            // whole save (bounded 422) before any write; the source is never rewritten.
+            app(AuthoredHtmlLayoutValidator::class)->assertValid($normalized);
             $context = new AttestationContext(
                 (string) ($this->userId() ?? ''),
                 AttestationContext::owner($effective->ownerType, $effective->ownerId),
@@ -135,10 +154,11 @@ final class EditorContextController
      */
     public function insertRegisteredResource(Request $request, string $ownerType, int|string $ownerId): JsonResponse
     {
-        $owner = $this->guardOwner($ownerType, $ownerId, 'page-builder.edit');
+        $owner = $this->guardOwner($ownerType, $ownerId);
 
         return $this->resolving(function () use ($request, $ownerType, $owner): JsonResponse {
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
+            $this->assertCanEditTranslation($owner, $effective);
             $this->provisioner->ensure($effective, $this->userId());
 
             // Token baseline verified BEFORE any registry resolution/insertion.
@@ -180,27 +200,36 @@ final class EditorContextController
 
     public function publish(Request $request, string $ownerType, int|string $ownerId): JsonResponse
     {
-        $owner = $this->guardOwner($ownerType, $ownerId, 'page-builder.publish', 'page-builder.edit');
+        $owner = $this->guardOwner($ownerType, $ownerId, publish: true);
 
         return $this->resolving(function () use ($request, $ownerType, $owner): JsonResponse {
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
             $this->provisioner->ensure($effective, $this->userId());
+            $token = $this->requireToken($request, $effective);
 
             // Publishing from the editor makes the owner render with the builder on the
             // public frontend (Phase 14.3). LayoutStore::publish sets builder mode and
             // copies draft → published in ONE token-checked transaction on the resolved
             // (locale-specific) owner — never the source when editing a translation — so
             // a stale publish (INV-PUB-06) cannot slip between a mode set and the copy.
-            $layout = $this->layouts->publishAsBuilder(
-                $effective->ownerType,
-                $effective->ownerId,
-                $this->userId(),
-                $this->requireToken($request, $effective),
+            // PB-CORE37-R1: that transaction runs inside the Core content unit (Core row
+            // locked + Core revision checked first, then the layout row).
+            $layout = $this->authority->withContentUnit(
+                $owner,
+                $this->revisionFrom($request),
+                auth()->user(),
+                fn () => $this->layouts->publishAsBuilder(
+                    $effective->ownerType,
+                    $effective->ownerId,
+                    $this->userId(),
+                    $token,
+                ),
+                recheck: ContentAuthority::PUBLISH,
             );
 
             return response()->json([
                 'success' => true,
-                'data' => $this->context->summarize($layout),
+                'data' => $this->context->summarize($layout) + ['content_revision' => $this->authority->revisionOf($owner)],
             ]);
         });
     }
@@ -215,12 +244,20 @@ final class EditorContextController
     {
         try {
             return $callback();
+        } catch (PageBuilderAuthorityException|ContentWriteException $e) {
+            // PB-CORE37-R1: authority / Core-revision refusals are handled 403/409
+            // responses with zero writes; the client keeps its unsaved work.
+            /** @var JsonResponse */
+            return AuthorityResponse::from($e);
         } catch (EditorOwnerResolutionException $e) {
-            return response()->json([
+            // PB-CORE-AUTHORITY-REMEDIATION-R1 — a refusal the UI must act on (the
+            // blank-layout decision) carries its structured, non-sensitive detail.
+            return response()->json(array_filter([
                 'success' => false,
                 'error' => $e->reason,
                 'message' => $e->getMessage(),
-            ], $e->statusCode);
+                'data' => $e->data === [] ? null : $e->data,
+            ], static fn ($value): bool => $value !== null), $e->statusCode)->header('Cache-Control', 'no-store, private');
         } catch (LayoutVersionConflictException $e) {
             // INV-PUB-06 — a stale save/publish is a truthful 409 conflict carrying the
             // current-version metadata for safe reload/reconciliation (no payload, no
@@ -251,6 +288,13 @@ final class EditorContextController
                 'message' => __('A data source setting is not valid. Please review the highlighted component.'),
                 'data' => ['component_id' => $e->nodeId, 'field' => $e->field],
             ], 422);
+        } catch (AuthoredHtmlRejectedException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'pb_html_'.$e->reason,
+                'message' => __('This HTML is too large or too deeply nested to save. Please shorten it.'),
+                'data' => ['component_id' => $e->nodeId, 'field' => $e->field],
+            ], 422)->header('Cache-Control', 'no-store, private');
         } catch (RegisteredResourceInsertionException $e) {
             // A registered-resource insertion failed (unknown/unavailable resource,
             // invalid target/position, or an inconsistent authoritative result). Nothing
@@ -332,34 +376,53 @@ final class EditorContextController
     }
 
     /**
-     * Authorize (any of the given permissions) and resolve the CANONICAL owner, or
-     * abort. Only supported page/post owner types are accepted here; the effective
-     * translation owner is derived server-side, never taken from the URL.
+     * Authorize and resolve the CANONICAL owner, or abort. Only supported page/post
+     * owner types are accepted here; the effective translation owner is derived
+     * server-side, never taken from the URL. A guest or an actor without
+     * `page-builder.edit` is refused before the owner is looked up; the per-content
+     * authority (Core edit / edit-others / managed marker, plus publication when
+     * $publish) is then a bounded 403 JSON refusal.
      */
-    private function guardOwner(string $ownerType, int|string $ownerId, string ...$permissions): Content
+    private function guardOwner(string $ownerType, int|string $ownerId, bool $publish = false): Content
     {
-        abort_unless($this->canAny(...$permissions), 403);
+        abort_unless(function_exists('cms_can') && auth()->check() && cms_can('page-builder.edit'), 403);
         abort_unless(EditableOwners::isSupported($ownerType), 404);
 
         $owner = EditableOwners::resolve($ownerType, $ownerId);
         abort_if($owner === null, 404);
 
+        try {
+            $publish
+                ? $this->authority->assertCanPublish($owner, auth()->user())
+                : $this->authority->assertCanEdit($owner, auth()->user());
+        } catch (PageBuilderAuthorityException $e) {
+            /** @var JsonResponse $refusal */
+            $refusal = AuthorityResponse::from($e);
+            abort($refusal);
+        }
+
         return $owner;
     }
 
-    private function canAny(string ...$permissions): bool
+    /**
+     * A translation's private draft is Core `edit_translation` for that locale
+     * (PB-CONTENT-AUTHORITY-R3); the source locale was decided by {@see guardOwner()}.
+     *
+     * @throws \Plugins\PageBuilder\Authority\PageBuilderAuthorityException
+     */
+    private function assertCanEditTranslation(Content $owner, EffectiveLayoutOwner $effective): void
     {
-        if (! function_exists('cms_can')) {
-            return false;
+        if ($effective->isTranslationOwner()) {
+            $this->authority->assertCanEdit($owner, auth()->user(), $effective->locale);
         }
+    }
 
-        foreach ($permissions as $permission) {
-            if (cms_can($permission)) {
-                return true;
-            }
-        }
+    /** The Core revision the editor captured when it opened, or null when absent. */
+    private function revisionFrom(Request $request): ?int
+    {
+        $revision = $request->input('content_revision');
 
-        return false;
+        return is_int($revision) || (is_string($revision) && ctype_digit($revision)) ? (int) $revision : null;
     }
 
     private function userId(): ?string

@@ -5,12 +5,15 @@ import type {
   BootData,
   BuilderResourcePayload,
   ComponentPreviewResult,
+  CreatedTranslation,
+  InteractiveManifest,
   DesignCaptureResponse,
   EditorContextData,
   FullPageImportPlanData,
   FullPageImportResultData,
   LayoutContext,
   LayoutPayload,
+  ModeSwitchResult,
   StateResult,
 } from '../types'
 import type { PatternDetailResult, PatternIndexResult, PatternPacksResult } from '../patterns/types'
@@ -37,10 +40,43 @@ export class LayoutConflictError extends Error {
 }
 
 export class ApiClient {
-  constructor(private readonly boot: BootData) {}
+  /**
+   * PB-CORE37-R1 — the Core content revision this session is based on: captured from the
+   * server boot context, echoed on publish / translation creation, and replaced ONLY by a
+   * successful response that carries the committed value. A 409 never advances it, so a
+   * stale session stays stale until the user explicitly reloads.
+   */
+  private contentRevision: number | null
+
+  constructor(private readonly boot: BootData) {
+    this.contentRevision = boot.context?.owner?.content_revision ?? null
+  }
+
+  /** The Core revision currently echoed on publish / translation creation. */
+  get coreRevision(): number | null {
+    return this.contentRevision
+  }
 
   async getContext(): Promise<EditorContextData> {
-    return this.request<EditorContextData>(this.boot.api.context, 'GET')
+    const context = await this.request<EditorContextData>(this.boot.api.context, 'GET')
+    this.adoptRevision(context?.owner?.content_revision)
+    return context
+  }
+
+  /**
+   * Create a missing locale's translation through the server-generated `createUrl`
+   * from the language selector model. The server creates the Core content
+   * translation + its layout atomically and returns the editor URL to open.
+   */
+  async createTranslation(createUrl: string, locale: string, layout?: 'blank'): Promise<CreatedTranslation> {
+    // PB-CORE-AUTHORITY-REMEDIATION-R1 — `layout: 'blank'` is the user's explicit
+    // "Create blank translation" choice; without it the server clones the source or
+    // answers with the blank-layout decision (409) and writes nothing.
+    const body: Record<string, unknown> = { locale, content_revision: this.contentRevision }
+    if (layout) body.layout = layout
+    const created = await this.request<CreatedTranslation>(createUrl, 'POST', body)
+    this.adoptRevision(created?.content_revision)
+    return created
   }
 
   async saveDraft(
@@ -101,7 +137,34 @@ export class ApiClient {
   }
 
   async publish(token: string | null): Promise<LayoutContext> {
-    return this.request<LayoutContext>(this.boot.api.publish, 'POST', { token })
+    const layout = await this.request<LayoutContext & { content_revision?: number | null }>(
+      this.boot.api.publish,
+      'POST',
+      { token, content_revision: this.contentRevision },
+    )
+    this.adoptRevision(layout?.content_revision)
+    return layout
+  }
+
+  /**
+   * Switch which source renders publicly (Classic content / Page Builder layout) for
+   * this editor's owner. Echoes the publication token the editor holds and the Core
+   * revision; a stale value is a typed 409 (LayoutConflictError) with zero writes.
+   */
+  async switchMode(mode: 'classic' | 'builder', publicationToken: string | null): Promise<ModeSwitchResult> {
+    const url = this.boot.api.mode
+    if (!url) throw new Error('mode_endpoint_unavailable')
+    const result = await this.request<ModeSwitchResult>(url, 'POST', {
+      mode,
+      publication_token: publicationToken,
+      content_revision: this.contentRevision,
+    })
+    this.adoptRevision(result?.content_revision)
+    return result
+  }
+
+  private adoptRevision(revision: unknown): void {
+    if (typeof revision === 'number' && Number.isInteger(revision)) this.contentRevision = revision
   }
 
   /**
@@ -122,7 +185,16 @@ export class ApiClient {
 
   /** Render the payload to marker-annotated HTML for the visual canvas (Phase 12). */
   async renderPreview(payload: LayoutPayload, ownerType: string, ownerId: string | number): Promise<string> {
-    const data = await this.request<{ html: string }>(this.boot.api.preview, 'POST', {
+    return (await this.renderPreviewResult(payload, ownerType, ownerId)).html
+  }
+
+  /** PB-XREG-3 — the full preview result, including the inert interactive manifest. */
+  async renderPreviewResult(
+    payload: LayoutPayload,
+    ownerType: string,
+    ownerId: string | number,
+  ): Promise<{ html: string; interactive: InteractiveManifest | null }> {
+    const data = await this.request<{ html: string; interactive?: InteractiveManifest }>(this.boot.api.preview, 'POST', {
       owner_type: ownerType,
       owner_id: ownerId,
       payload,
@@ -131,7 +203,7 @@ export class ApiClient {
       // server validates it (fail-closed) and scopes it around this render only.
       locale: this.boot.locale,
     })
-    return data.html
+    return { html: data.html, interactive: data.interactive ?? null }
   }
 
   /**

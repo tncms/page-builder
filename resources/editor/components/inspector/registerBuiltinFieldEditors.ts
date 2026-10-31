@@ -20,6 +20,8 @@ import BackgroundField from './fields/BackgroundField.vue'
 import LinkField from './fields/LinkField.vue'
 import ResponsiveField from './fields/ResponsiveField.vue'
 import DataSourceField from './fields/DataSourceField.vue'
+import RichTextField from './fields/RichTextField.vue'
+import HtmlSourceField from './fields/HtmlSourceField.vue'
 
 let registered = false
 
@@ -51,6 +53,10 @@ export function registerBuiltinFieldEditors(): void {
   // PB-XREG-2 — `data-source` reads the server-published compatible-source catalog
   // (`editor.sources`) and chrome strings from the schema.
   registerFieldEditor('data-source', { component: DataSourceField, needsField: true })
+  // PB-TEXT-AUTHORING-R1 — the visual Text editor and the Custom HTML source editor read
+  // their localized chrome and bounds from `editor.strings` / `editor.maxBytes`.
+  registerFieldEditor('richtext', { component: RichTextField, needsField: true })
+  registerFieldEditor('htmlsource', { component: HtmlSourceField, needsField: true })
 }
 
 // Register on import so a bare `import './registerBuiltinFieldEditors'` is enough.

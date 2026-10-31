@@ -7,6 +7,7 @@ namespace Plugins\PageBuilder\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Plugins\PageBuilder\DataSources\DataSourceRenderResolver;
+use Plugins\PageBuilder\Interactive\InteractiveRuntime;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\PageBuilderManager;
 use Plugins\PageBuilder\Support\RenderLocale;
@@ -48,6 +49,9 @@ final class EditorPreviewController
             app(DataSourceRenderResolver::class)->drainDiagnostics();
         }
 
+        // PB-XREG-3 — a fresh interactive scope so the manifest reflects only this render.
+        app(InteractiveRuntime::class)->reset();
+
         $html = RenderLocale::scope($locale, fn (): string => $manager->renderForEditor($payload));
 
         return response()->json([
@@ -57,6 +61,9 @@ final class EditorPreviewController
                 // Bounded data-source outcome codes for the rendered layout; never
                 // provider messages, SQL, paths, or traces.
                 'warnings' => $this->dataSourceWarnings(),
+                // PB-XREG-3 — inert manifest of interactive behaviors + server-derived asset URLs the canvas
+                // loads before mounting. Never taken from the payload.
+                'interactive' => app(InteractiveRuntime::class)->editorManifest(),
             ],
         ])->withHeaders([
             // Editor-only, per-user, possibly live-data HTML: never cache, never frame.

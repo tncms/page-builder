@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\PageBuilder\Support;
 
+use Plugins\PageBuilder\Authority\ContentAuthority;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\EffectiveLayoutOwner;
 use Plugins\PageBuilder\Editor\Translation\FirstOpenLayoutProvisioner;
@@ -28,6 +29,7 @@ final class EditorContext
         private readonly EffectiveEditorOwnerResolver $owners,
         private readonly FirstOpenLayoutProvisioner $provisioner,
         private readonly LocaleSwitchProjector $localeSwitch,
+        private readonly ContentAuthority $authority,
     ) {}
 
     /**
@@ -72,6 +74,10 @@ final class EditorContext
                 'label' => EditableOwners::label($ownerType),
                 'title' => $owner->translatedTitle(),
                 'edit_url' => EditableOwners::editUrl($ownerType, $owner),
+                // PB-CORE37-R1 — the Core revision this editor session is based on. The
+                // client echoes it on publish / translation creation; a stale value is a
+                // 409, never a silent overwrite.
+                'content_revision' => $this->authority->revisionOf($owner),
             ],
             'layout' => [
                 'editor_mode' => $layout?->editor_mode ?? PageBuilderLayout::MODE_CLASSIC,
@@ -87,15 +93,14 @@ final class EditorContext
                 // INV-PUB-06 — the server-issued optimistic-concurrency token the client
                 // echoes back on the next save/publish; a stale token is rejected (409).
                 'version_token' => $layout?->versionToken() ?? PageBuilderLayout::emptyToken(),
+                // PB-CORE-AUTHORITY-REMEDIATION-R1 — the public-state token (mode +
+                // published payload) the client echoes on a render-source switch.
+                'publication_token' => $layout?->publicationToken() ?? PageBuilderLayout::emptyToken(),
                 'last_saved_at' => $savedAt,
                 'published_at' => $published !== null ? $savedAt : null,
             ],
             'metadata' => $this->manager->editorMetadata(),
-            'permissions' => [
-                'can_edit' => $this->can('page-builder.edit'),
-                // Fall back to edit so a single-permission setup can still publish.
-                'can_publish' => $this->can('page-builder.publish') || $this->can('page-builder.edit'),
-            ],
+            'permissions' => $this->permissionsFor($owner, $layout),
         ];
     }
 
@@ -130,6 +135,10 @@ final class EditorContext
                 'label' => EditableOwners::label($ownerType),
                 'title' => $canonical->translatedTitle(),
                 'edit_url' => EditableOwners::editUrl($ownerType, $canonical),
+                // PB-CORE37-R1 — the Core revision this editor session is based on. The
+                // client echoes it on publish / translation creation; a stale value is a
+                // 409, never a silent overwrite.
+                'content_revision' => $this->authority->revisionOf($canonical),
             ],
             'translation' => $effective->toArray() + [
                 'layout_id' => $layout?->getKey(),
@@ -158,14 +167,14 @@ final class EditorContext
                 // INV-PUB-06 — the server-issued optimistic-concurrency token the client
                 // echoes back on the next save/publish; a stale token is rejected (409).
                 'version_token' => $layout?->versionToken() ?? PageBuilderLayout::emptyToken(),
+                // PB-CORE-AUTHORITY-REMEDIATION-R1 — the public-state token (mode +
+                // published payload) the client echoes on a render-source switch.
+                'publication_token' => $layout?->publicationToken() ?? PageBuilderLayout::emptyToken(),
                 'last_saved_at' => $savedAt,
                 'published_at' => $published !== null ? $savedAt : null,
             ],
             'metadata' => $this->manager->editorMetadata(),
-            'permissions' => [
-                'can_edit' => $this->can('page-builder.edit'),
-                'can_publish' => $this->can('page-builder.publish') || $this->can('page-builder.edit'),
-            ],
+            'permissions' => $this->permissionsFor($canonical, $layout),
         ];
     }
 
@@ -188,6 +197,7 @@ final class EditorContext
             'has_published' => $published !== null,
             'is_published_current' => $this->publishedIsCurrent($draft, $published),
             'version_token' => $layout->versionToken(),
+            'publication_token' => $layout->publicationToken(),
             'last_saved_at' => $savedAt,
             'published_at' => $published !== null ? $savedAt : null,
         ];
@@ -223,9 +233,27 @@ final class EditorContext
             === json_encode($published, JSON_UNESCAPED_UNICODE);
     }
 
-    private function can(string $permission): bool
+    /**
+     * UI flags derived from the SAME authority the endpoints enforce (PB-CORE37-R1):
+     * publish needs every draft right plus strict `page-builder.publish` and Core
+     * `{t}s.publish` (no edit-only fallback). The server re-checks on every mutation.
+     *
+     * @return array{can_edit: bool, can_publish: bool}
+     */
+    private function permissionsFor(Content $content, ?PageBuilderLayout $layout): array
     {
-        return function_exists('cms_can') && cms_can($permission);
+        $actor = auth()->user();
+        $canEdit = $this->authority->canEdit($content, $actor);
+        $canPublish = $this->authority->canPublish($content, $actor);
+
+        return [
+            'can_edit' => $canEdit,
+            'can_publish' => $canPublish,
+            // A render-source switch of a published layout changes public output
+            // (publication authority); otherwise draft authority. Advisory only: the
+            // mode endpoint re-checks on every request.
+            'can_switch_mode' => $layout?->hasPublished() ? $canPublish : $canEdit,
+        ];
     }
 
     private function actorId(): ?string

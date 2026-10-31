@@ -2,16 +2,68 @@
 // Phase 20 — Builder top bar: owner identity, device switcher, and the core
 // actions (Undo/Redo, Save Draft, Publish, Structure editor, View, Exit). Reuses
 // the structure-editor store for all state + commands.
-import { computed } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useEditorStore } from '../../../editor/stores/editor'
 import { appendSelection, guardedNavigate } from '../../../editor/utils/navigation'
+import { type EditorMode, type ModeSwitchChoice, runModeSwitch, targetModeFor } from '../modeSwitch'
 import { useShellStore } from '../shellStore'
 import BuilderDeviceSwitcher from './BuilderDeviceSwitcher.vue'
+import BuilderModeSwitchDialog from './BuilderModeSwitchDialog.vue'
 
 const store = useEditorStore()
 const shell = useShellStore()
 
 const modeLabel = computed(() => (store.isBuilderMode ? 'Page Builder' : 'Classic'))
+
+// PB-CORE-AUTHORITY-REMEDIATION-R1 — which source renders publicly, switched only
+// through the confirmation dialog (the server re-checks rights and staleness).
+const t = (key: string, fallback: string): string => store.uiString(key, fallback)
+const currentMode = computed<EditorMode>(() => (store.isBuilderMode ? 'builder' : 'classic'))
+const canSwitchMode = computed(() => Boolean(store.permissions?.can_switch_mode && store.boot?.api?.mode))
+const modeDialogOpen = ref(false)
+const modeTrigger = ref<HTMLButtonElement | null>(null)
+const modeBusy = ref(false)
+const modeError = ref<string | null>(null)
+
+function openModeDialog(): void {
+  modeError.value = null
+  modeDialogOpen.value = true
+}
+
+function closeModeDialog(): void {
+  if (modeBusy.value) return
+  modeDialogOpen.value = false
+  // Focus returns to the control that opened the dialog.
+  void nextTick(() => modeTrigger.value?.focus())
+}
+
+async function chooseMode(choice: ModeSwitchChoice): Promise<void> {
+  const client = store.client
+  if (!client || modeBusy.value) return
+  modeBusy.value = true
+  modeError.value = null
+
+  try {
+    const switched = await runModeSwitch(choice, targetModeFor(currentMode.value), {
+      save: () => store.saveDraft(),
+      stillDirty: () => store.hasUnsavedRisk,
+      switchMode: async (target) => {
+        store.applyModeSwitch(await client.switchMode(target, store.layout?.publication_token ?? null))
+      },
+    })
+
+    if (switched) {
+      modeDialogOpen.value = false
+    } else {
+      // The save failed: stay in the dialog with the editor's typed save error.
+      modeError.value = store.error ?? t('modeSwitchSaveFailed', 'The draft could not be saved, so nothing was switched.')
+    }
+  } catch (error) {
+    modeError.value = error instanceof Error ? error.message : t('modeSwitchFailed', 'The rendering source could not be changed.')
+  } finally {
+    modeBusy.value = false
+  }
+}
 
 // Phase 22.2 — cross-mode navigation (Live Builder is the active mode here).
 const structureUrl = computed(() => store.navLinks?.structure ?? shell.structureEditUrl)
@@ -107,6 +159,18 @@ function goStructure(): void {
       </nav>
 
       <button
+        v-if="canSwitchMode"
+        ref="modeTrigger"
+        type="button"
+        class="pb-ui-btn pb-live-builder-btn pb-live-builder-btn--ghost"
+        data-test="mode-switch-open"
+        :title="t('modeSwitchButtonTitle', 'Choose whether the classic content or the Page Builder layout renders publicly')"
+        @click="openModeDialog"
+      >
+        {{ currentMode === 'builder' ? t('modeSwitchButtonBuilder', 'Public: Page Builder') : t('modeSwitchButtonClassic', 'Public: Classic') }}
+      </button>
+
+      <button
         type="button"
         class="pb-ui-btn pb-live-builder-btn"
         :disabled="store.saving || !store.dirty"
@@ -127,5 +191,16 @@ function goStructure(): void {
         Exit
       </button>
     </div>
+    <BuilderModeSwitchDialog
+      v-if="modeDialogOpen"
+      :current="currentMode"
+      :target="targetModeFor(currentMode)"
+      :dirty="store.hasUnsavedRisk"
+      :busy="modeBusy"
+      :error="modeError"
+      :t="t"
+      @cancel="closeModeDialog"
+      @choose="chooseMode"
+    />
   </header>
 </template>

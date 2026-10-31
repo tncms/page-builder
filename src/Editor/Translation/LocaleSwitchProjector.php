@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Plugins\PageBuilder\Editor\Translation;
 
+use Plugins\PageBuilder\Authority\ContentAuthority;
+use Plugins\PageBuilder\LayoutTranslation\Identity\TranslationGroupKey;
+use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\EditorUrls;
 use Plugins\PageBuilder\Support\LayoutStore;
 use TheNguyen\CMS\Localization\Contracts\LanguageConfigurationContract;
@@ -19,6 +22,11 @@ use TheNguyen\CMS\Localization\Contracts\LanguageConfigurationContract;
  * a Core content translation exists, whether a Page Builder layout has been
  * provisioned yet, and the server-generated locale-aware editor URL.
  *
+ * A locale WITHOUT a Core content translation has no editor URL (opening it would
+ * fail closed); instead it carries `can_create` and, when the user may create it,
+ * the server-generated `create_url` that creates the translation through Core's
+ * content lifecycle before the editor opens it.
+ *
  * It reuses the ONE effective-owner resolver ({@see EffectiveEditorOwnerResolver})
  * — never a second resolution path — and is pure: no cloning, no writes.
  */
@@ -28,6 +36,8 @@ final class LocaleSwitchProjector
         private readonly LanguageConfigurationContract $languages,
         private readonly EffectiveEditorOwnerResolver $owners,
         private readonly LayoutStore $layouts,
+        private readonly ContentAuthority $authority,
+        private readonly SourceLayoutInspector $sources,
     ) {}
 
     /**
@@ -38,7 +48,11 @@ final class LocaleSwitchProjector
      *     is_current: bool,
      *     has_translation: bool,
      *     has_layout: bool,
-     *     editor_url: ?string
+     *     editor_url: ?string,
+     *     can_create: bool,
+     *     create_url: ?string,
+     *     source_layout: ?string,
+     *     requires_blank_decision: bool
      * }>
      */
     public function forOwner(string $canonicalType, int|string $canonicalId, string $currentLocale): array
@@ -53,6 +67,16 @@ final class LocaleSwitchProjector
         $current = $this->languages->normalize($currentLocale);
 
         $projection = [];
+        // PB-CORE37-R1 — offer creation only when the actor holds draft authority on
+        // THIS content (ownership, managed marker); Core's gate decides the write.
+        $canonical = EditableOwners::resolve($canonicalType, $canonicalId);
+        $canCreate = EditableOwners::canCreateTranslation($canonicalType)
+            && $canonical !== null
+            && $this->authority->canEdit($canonical, auth()->user());
+
+        // PB-CORE-AUTHORITY-REMEDIATION-R1 — what a new translated layout would be
+        // created from: one source document per group, classified once.
+        $sourceLayout = null;
 
         foreach ($this->languages->enabledLocales() as $raw) {
             $locale = $this->languages->normalize($raw);
@@ -69,12 +93,24 @@ final class LocaleSwitchProjector
                 $hasLayout = $this->layouts->find($effective->ownerType, $effective->ownerId) !== null;
             } catch (EditorOwnerResolutionException $e) {
                 // No Core content translation yet: still list the locale so the UI can
-                // offer it (opening provisions on first open). Any other fault — a
+                // offer to CREATE it (never to open it directly). Any other fault — a
                 // disabled/unknown locale — is not a real member of the group; skip it.
                 if ($e->reason !== 'translation_not_found') {
                     continue;
                 }
                 $hasTranslation = false;
+            }
+
+            // PB-CONTENT-AUTHORITY-R3 — offer it only when Core would allow the creation.
+            $createUrl = ! $hasTranslation && $canCreate && $this->authority->canCreateTranslation($canonical, auth()->user(), $locale)
+                ? $this->createUrl($canonicalType, $canonicalId)
+                : null;
+
+            // A translation without a layout is provisioned from the source; with no
+            // source content to copy the UI must ask for the explicit blank decision.
+            $needsLayout = ! $isSource && ! $hasLayout;
+            if ($needsLayout && $sourceLayout === null) {
+                $sourceLayout = $this->sources->classify(TranslationGroupKey::forOwner($canonicalType, $canonicalId), $source);
             }
 
             $projection[] = [
@@ -84,11 +120,31 @@ final class LocaleSwitchProjector
                 'is_current' => $locale === $current,
                 'has_translation' => $hasTranslation,
                 'has_layout' => $hasLayout,
-                'editor_url' => EditorUrls::live($canonicalType, $canonicalId, null, $locale),
+                'editor_url' => $hasTranslation ? EditorUrls::live($canonicalType, $canonicalId, null, $locale) : null,
+                'can_create' => $createUrl !== null,
+                'create_url' => $createUrl,
+                'source_layout' => $needsLayout ? $sourceLayout : null,
+                'requires_blank_decision' => $needsLayout && $sourceLayout !== SourceLayoutInspector::CLONEABLE,
             ];
         }
 
         return $projection;
+    }
+
+    /**
+     * The server-generated translation-create endpoint (null when the route is not
+     * registered, e.g. an isolated test boot — the locale is then not creatable).
+     */
+    private function createUrl(string $canonicalType, int|string $canonicalId): ?string
+    {
+        try {
+            return route('page-builder.api.editor.translations.store', [
+                'ownerType' => $canonicalType,
+                'ownerId' => $canonicalId,
+            ]);
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**

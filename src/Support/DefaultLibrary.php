@@ -11,6 +11,7 @@ use Plugins\PageBuilder\Definitions\Blocks\ButtonBlock;
 use Plugins\PageBuilder\Definitions\Blocks\ColumnBlock;
 use Plugins\PageBuilder\Definitions\Blocks\ContainerBlock;
 use Plugins\PageBuilder\Definitions\Blocks\HeadingBlock;
+use Plugins\PageBuilder\Definitions\Blocks\HtmlBlock;
 use Plugins\PageBuilder\Definitions\Blocks\IconBlock;
 use Plugins\PageBuilder\Definitions\Blocks\ImageBlock;
 use Plugins\PageBuilder\Definitions\Blocks\LogoBlock;
@@ -92,6 +93,7 @@ final class DefaultLibrary
             new ColumnBlock,
             new LogoBlock,
             new QuoteBlock,
+            new HtmlBlock,
         ]);
     }
 

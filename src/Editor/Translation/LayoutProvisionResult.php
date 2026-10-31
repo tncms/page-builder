@@ -17,6 +17,9 @@ final class LayoutProvisionResult
         public readonly bool $cloned,
         public readonly bool $baselineCaptured,
         public readonly int|string|null $layoutId,
+        // PB-CORE-AUTHORITY-REMEDIATION-R1 — true when this request created a BLANK
+        // layout on the user's explicit decision (no source content to copy).
+        public readonly bool $blank = false,
     ) {}
 
     public static function sourceLocale(): self
@@ -32,5 +35,10 @@ final class LayoutProvisionResult
     public static function cloned(int|string|null $layoutId, bool $baselineCaptured): self
     {
         return new self(true, $baselineCaptured, $layoutId);
+    }
+
+    public static function blank(int|string|null $layoutId, bool $baselineCaptured): self
+    {
+        return new self(false, $baselineCaptured, $layoutId, true);
     }
 }

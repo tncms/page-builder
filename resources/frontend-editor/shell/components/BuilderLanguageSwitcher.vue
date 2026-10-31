@@ -9,10 +9,28 @@
 // (store.saveDraft), via the accessible unsaved-change dialog — never a raw
 // confirm(). The whole control hides unless there is more than one locale to
 // switch between (single-language / feature-off => empty model).
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+//
+// A locale with no Core content translation is never opened by URL (that fails
+// closed server-side). When the server marks it creatable, selecting it POSTs the
+// server `create_url`, which creates the translation + layout atomically, and then
+// opens the editor URL the server returns. Otherwise it is listed but disabled.
+//
+// PB-CORE-AUTHORITY-REMEDIATION-R1 — when the source language has no Page Builder
+// content to copy, the server refuses that create with the blank-layout decision
+// (nothing written); the switcher then asks the user explicitly: Create blank
+// translation / Return to content editor / Cancel.
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useEditorStore } from '../../../editor/stores/editor'
-import type { TranslationLocaleOption } from '../localeSwitch'
-import { decideLocaleSwitch, saveAndSwitch, switchWithoutSaving } from '../localeSwitch'
+import type { BlankLayoutDecision, TranslationLocaleOption } from '../localeSwitch'
+import {
+  blankDecisionFrom,
+  createBlankAndOpen,
+  decideLocaleSwitch,
+  isOpenable,
+  openLocaleTarget,
+  saveAndSwitch,
+} from '../localeSwitch'
+import BuilderBlankTranslationDialog from './BuilderBlankTranslationDialog.vue'
 import BuilderLocaleSwitchDialog from './BuilderLocaleSwitchDialog.vue'
 
 const store = useEditorStore()
@@ -20,6 +38,13 @@ const store = useEditorStore()
 const menuOpen = ref(false)
 const pending = ref<TranslationLocaleOption | null>(null)
 const rootEl = ref<HTMLElement | null>(null)
+const toggleEl = ref<HTMLButtonElement | null>(null)
+const opening = ref(false)
+const openError = ref<string | null>(null)
+const blankDecision = ref<BlankLayoutDecision | null>(null)
+const blankBusy = ref(false)
+const blankError = ref<string | null>(null)
+const t = (key: string, fallback: string): string => store.uiString(key, fallback)
 
 const locales = computed<TranslationLocaleOption[]>(() => store.availableLocales)
 const enabled = computed(() => locales.value.length > 1)
@@ -48,16 +73,88 @@ function navigate(url: string): void {
   }
 }
 
+async function createTranslation(createUrl: string, locale: string, layout?: 'blank'): Promise<string | null> {
+  if (!store.client) {
+    throw new Error('The editor is not ready yet. Please try again.')
+  }
+
+  const created = layout
+    ? await store.client.createTranslation(createUrl, locale, layout)
+    : await store.client.createTranslation(createUrl, locale)
+
+  return created.editor_url
+}
+
+/** Open (or create, then open) the target locale; surfaces a failure inline and stays put. */
+async function openTarget(target: TranslationLocaleOption): Promise<void> {
+  openError.value = null
+  opening.value = true
+
+  try {
+    await openLocaleTarget(target, { create: createTranslation, navigate })
+  } catch (error) {
+    // No source content to copy: ask explicitly instead of failing.
+    const decision = target.create_url ? blankDecisionFrom(error, target.create_url) : null
+    if (decision) {
+      blankError.value = null
+      blankDecision.value = decision
+      return
+    }
+    openError.value = error instanceof Error ? error.message : 'This language could not be opened.'
+  } finally {
+    opening.value = false
+  }
+}
+
+async function onBlankCreate(): Promise<void> {
+  const decision = blankDecision.value
+  if (!decision || blankBusy.value) {
+    return
+  }
+
+  blankError.value = null
+  blankBusy.value = true
+  try {
+    await createBlankAndOpen(decision, { create: createTranslation, navigate })
+  } catch (error) {
+    blankError.value = error instanceof Error ? error.message : t('blankDecisionFailed', 'The blank translation could not be created.')
+  } finally {
+    blankBusy.value = false
+  }
+}
+
+function onBlankReturn(): void {
+  const url = blankDecision.value?.returnUrl
+  if (url) {
+    navigate(url)
+  }
+}
+
+/** Cancel writes nothing and keeps the current editor exactly as it is; focus returns to the toggle. */
+function onBlankCancel(): void {
+  blankDecision.value = null
+  blankError.value = null
+  void nextTick(() => toggleEl.value?.focus())
+}
+
+function optionHint(option: TranslationLocaleOption): string {
+  if (option.has_translation) {
+    return option.has_layout ? 'Has a layout' : 'No layout yet'
+  }
+
+  return option.can_create ? `Create the ${option.label} translation` : 'Not translated yet'
+}
+
 function select(target: TranslationLocaleOption): void {
   menuOpen.value = false
 
   const decision = decideLocaleSwitch(target, currentLocale.value, isDirty.value)
-  if (decision === 'noop' || !target.editor_url) {
+  if (decision === 'noop' || opening.value) {
     return
   }
 
   if (decision === 'navigate') {
-    navigate(target.editor_url)
+    void openTarget(target)
     return
   }
 
@@ -72,18 +169,19 @@ function onStay(): void {
 function onDiscard(): void {
   const target = pending.value
   pending.value = null
-  if (target?.editor_url) {
-    switchWithoutSaving(target.editor_url, navigate)
+  // A full navigation drops the unsaved client state without saving it.
+  if (target && isOpenable(target)) {
+    void openTarget(target)
   }
 }
 
 async function onSave(): Promise<void> {
   const target = pending.value
-  if (!target?.editor_url) {
+  if (!target || !isOpenable(target)) {
     return
   }
 
-  const navigated = await saveAndSwitch(target.editor_url, {
+  const navigated = await saveAndSwitch(() => openTarget(target), {
     save: () => store.saveDraft(),
     stillDirty: () => store.hasUnsavedRisk,
     navigate,
@@ -111,18 +209,24 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick, tru
     <span class="pb-live-builder-langswitch__heading">Editing language</span>
 
     <button
+      ref="toggleEl"
       type="button"
       class="pb-ui-btn pb-live-builder-btn pb-live-builder-btn--ghost pb-live-builder-langswitch__toggle"
       aria-haspopup="listbox"
       :aria-expanded="menuOpen"
       aria-label="Editing language"
       :title="`Editing language: ${currentLabel}`"
+      :disabled="opening"
+      :aria-busy="opening"
       @click="menuOpen = !menuOpen"
     >
       <span aria-hidden="true">🌐</span>
       <span class="pb-live-builder-langswitch__current">{{ currentLabel }}</span>
       <span aria-hidden="true">▾</span>
     </button>
+
+    <p v-if="opening" class="pb-live-builder-langswitch__status" role="status">Opening language…</p>
+    <p v-if="openError" class="pb-live-builder-langswitch__error" role="alert">{{ openError }}</p>
 
     <p v-if="sourceLabel" class="pb-live-builder-langswitch__source">
       <template v-if="isCurrentSource">Source language: {{ sourceLabel }}</template>
@@ -137,16 +241,19 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick, tru
           class="pb-live-builder-langswitch__option"
           :class="{ 'is-current': option.is_current }"
           :aria-selected="option.is_current"
-          :disabled="option.is_current"
+          :disabled="option.is_current || !isOpenable(option)"
+          :title="optionHint(option)"
           @click="select(option)"
         >
           <span class="pb-live-builder-langswitch__label">{{ option.label }}</span>
           <span class="pb-live-builder-langswitch__code">{{ option.locale }}</span>
           <span v-if="option.is_source" class="pb-live-builder-langswitch__tag">source</span>
+          <span v-else-if="!option.has_translation" class="pb-live-builder-langswitch__tag is-new">
+            {{ option.can_create ? 'create' : 'not translated' }}
+          </span>
           <span
             class="pb-live-builder-langswitch__dot"
             :class="option.has_layout ? 'is-ready' : 'is-empty'"
-            :title="option.has_layout ? 'Has a layout' : 'No layout yet'"
             aria-hidden="true"
           ></span>
         </button>
@@ -161,6 +268,17 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick, tru
       @stay="onStay"
       @discard="onDiscard"
       @save="onSave"
+    />
+
+    <BuilderBlankTranslationDialog
+      v-if="blankDecision"
+      :can-return="Boolean(blankDecision.returnUrl)"
+      :busy="blankBusy"
+      :error="blankError"
+      :t="t"
+      @create="onBlankCreate"
+      @return="onBlankReturn"
+      @cancel="onBlankCancel"
     />
   </div>
 </template>
@@ -250,6 +368,29 @@ onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick, tru
   font-size: 0.65rem;
   text-transform: uppercase;
   color: #2563eb;
+}
+
+.pb-live-builder-langswitch__tag.is-new {
+  color: #b45309;
+}
+
+.pb-live-builder-langswitch__option:disabled:not(.is-current) {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.pb-live-builder-langswitch__status,
+.pb-live-builder-langswitch__error {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+}
+
+.pb-live-builder-langswitch__status {
+  color: #64748b;
+}
+
+.pb-live-builder-langswitch__error {
+  color: #b91c1c;
 }
 
 .pb-live-builder-langswitch__dot {

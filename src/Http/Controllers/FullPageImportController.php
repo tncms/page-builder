@@ -6,6 +6,7 @@ namespace Plugins\PageBuilder\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Plugins\PageBuilder\Authority\AuthorityResponse;
 use Plugins\PageBuilder\Import\FullPageImportRequest;
 use Plugins\PageBuilder\Import\FullPageImportService;
 use Plugins\PageBuilder\Library\Availability\ResourceAvailabilityResolver;
@@ -25,6 +26,7 @@ final class FullPageImportController
     public function plan(Request $request, FullPageImportService $service): JsonResponse
     {
         abort_unless($this->authorized(), 403);
+        $this->ensureOwnerEditable($request);
         $this->ensureImportable($request);
 
         $plan = $service->plan(FullPageImportRequest::fromArray($request->all(), $this->actorId($request)));
@@ -35,6 +37,7 @@ final class FullPageImportController
     public function commit(Request $request, FullPageImportService $service): JsonResponse
     {
         abort_unless($this->authorized(), 403);
+        $this->ensureOwnerEditable($request);
         $this->ensureImportable($request);
 
         $result = $service->import(FullPageImportRequest::fromArray($request->all(), $this->actorId($request)));
@@ -43,6 +46,16 @@ final class FullPageImportController
             ['success' => $result->ok, 'data' => $result->toArray()],
             $result->ok ? 200 : 422,
         );
+    }
+
+    /**
+     * PB-CORE37-R1 — the destination's Core content must be editable by the actor
+     * (Core edit, edit-others unless own) and not extension-managed.
+     */
+    private function ensureOwnerEditable(Request $request): void
+    {
+        $input = FullPageImportRequest::fromArray($request->all(), null);
+        AuthorityResponse::abortUnlessCanEditOwner($input->ownerType, $input->ownerId);
     }
 
     private function authorized(): bool

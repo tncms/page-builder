@@ -81,6 +81,21 @@ describe('PB-TEMPLATE-REGISTRY-2-H1 — every involved layer owns a semantic tok
   })
 })
 
+// PB-ALPHA7-THENGUYEN-LIVE-UPGRADE-R1 — the Live Builder "Unsaved changes" locale-switch dialog is a modal.
+// With a raw z-index (1000) the in-canvas component toolbar (live-toolbar layer) painted over its
+// "Switch without saving" / "Save and switch" buttons whenever the selected component sat behind the dialog.
+describe('PB-ALPHA7-THENGUYEN-LIVE-UPGRADE-R1 — the locale-switch dialog owns the modal layer', () => {
+  const localeDialog = read('../../../frontend-editor/shell/components/BuilderLocaleSwitchDialog.vue')
+
+  it('the backdrop uses the modal token, above the in-canvas toolbar', () => {
+    expect(zIndexExpr(localeDialog, '.pb-locale-dialog__backdrop')).toBe('var(--pb-ui-z-modal)')
+  })
+
+  it('never hardcodes a raw z-index integer', () => {
+    expect(localeDialog).not.toMatch(/\.pb-locale-dialog__backdrop\s*\{[^{}]*?z-index:\s*\d/)
+  })
+})
+
 describe('PB-TEMPLATE-REGISTRY-2-H1 — the modal outranks editor chrome', () => {
   it('the modal layer sits strictly above the in-canvas toolbar', () => {
     expect(tokenValue(tokens, 'pb-ui-z-modal')).toBeGreaterThan(tokenValue(tokens, 'pb-ui-z-live-toolbar'))

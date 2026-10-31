@@ -10,6 +10,8 @@ use Plugins\PageBuilder\Components\Contracts\InternalComponentProvider;
 use Plugins\PageBuilder\Contracts\BlockDefinition;
 use Plugins\PageBuilder\Contracts\ComponentDefinition;
 use Plugins\PageBuilder\Contracts\SectionDefinition;
+use Plugins\PageBuilder\Interactive\Contracts\InteractiveComponentDefinition;
+use Plugins\PageBuilder\Interactive\InteractiveBehaviorValidator;
 use Throwable;
 
 /**
@@ -45,6 +47,7 @@ final class ComponentProviderComplianceValidator
             $this->checkRenderer($provider, $internal),
             $this->checkDeterminism($provider),
             $this->checkMetadata($provider),
+            $this->checkInteractive($provider, $internal),
             $this->checkIsolation($provider),
         ]);
     }
@@ -256,6 +259,49 @@ final class ComponentProviderComplianceValidator
         }
 
         return ComponentComplianceCheck::pass('metadata');
+    }
+
+    /**
+     * PB-XREG-3 — an {@see InteractiveComponentDefinition} must declare a compliant behavior in the provider's own
+     * namespace (grammar, bounds, contained relative asset paths, acyclic dependencies). Non-interactive components
+     * pass trivially, so PB-XREG-1 providers are unaffected. Built-ins cannot be interactive.
+     */
+    private function checkInteractive(ComponentProvider $provider, bool $internal): ComponentComplianceCheck
+    {
+        $validator = new InteractiveBehaviorValidator;
+        $ns = $this->safeNamespace($provider);
+        $signatures = []; // behavior id => structural signature, across the whole batch
+
+        foreach ($this->definitions($provider) as $definition) {
+            if (! $definition instanceof InteractiveComponentDefinition) {
+                continue;
+            }
+
+            if ($internal) {
+                return ComponentComplianceCheck::fail('interactive', 'Built-in components cannot declare interactive behaviors.');
+            }
+
+            $errors = $validator->errorsFor($definition, $ns);
+            if ($errors !== []) {
+                return ComponentComplianceCheck::fail(
+                    'interactive',
+                    'Component "'.$this->safeType($definition).'": '.implode(' ', $errors)
+                );
+            }
+
+            // Several components may share one behavior id only when they declare it identically.
+            $behavior = $definition->behavior();
+            $signature = $behavior->signature();
+            if (isset($signatures[$behavior->id()]) && $signatures[$behavior->id()] !== $signature) {
+                return ComponentComplianceCheck::fail(
+                    'interactive',
+                    'Component "'.$this->safeType($definition).'": behavior id is declared with conflicting values in this provider.'
+                );
+            }
+            $signatures[$behavior->id()] = $signature;
+        }
+
+        return ComponentComplianceCheck::pass('interactive');
     }
 
     private function checkIsolation(ComponentProvider $provider): ComponentComplianceCheck

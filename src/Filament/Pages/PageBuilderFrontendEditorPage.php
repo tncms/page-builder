@@ -9,9 +9,12 @@ use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Panel;
+use Livewire\Attributes\Locked;
 use Plugins\PageBuilder\Editor\Translation\EditorOwnerResolutionException;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\FirstOpenLayoutProvisioner;
+use Plugins\PageBuilder\Filament\Concerns\AuthorizesLayoutOwner;
+use Plugins\PageBuilder\Filament\Concerns\PresentsBlankLayoutDecision;
 use Plugins\PageBuilder\Models\PageBuilderLayout;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\LayoutStore;
@@ -34,6 +37,9 @@ use Plugins\PageBuilder\Support\LayoutStore;
  */
 class PageBuilderFrontendEditorPage extends Page
 {
+    use AuthorizesLayoutOwner;
+    use PresentsBlankLayoutDecision;
+
     protected string $view = 'page-builder::filament.pages.frontend-editor';
 
     protected static ?string $slug = 'page-builder-frontend-editor';
@@ -43,8 +49,10 @@ class PageBuilderFrontendEditorPage extends Page
     // Deep-link only: never shown in the sidebar (it needs owner route params).
     protected static bool $shouldRegisterNavigation = false;
 
+    #[Locked]
     public string $ownerType = '';
 
+    #[Locked]
     public string $ownerId = '';
 
     public string $ownerLabel = '';
@@ -56,15 +64,19 @@ class PageBuilderFrontendEditorPage extends Page
     public ?string $structureEditUrl = null;
 
     /** The requested editor locale (from `?locale=`), or null for the source locale. */
+    #[Locked]
     public ?string $requestedLocale = null;
 
     /** The server-resolved locale actually opened (source locale for the default). */
+    #[Locked]
     public string $resolvedLocale = '';
 
     /** The effective (locale-specific) layout owner type — `page`/`post` or `content_translation`. */
+    #[Locked]
     public string $layoutOwnerType = '';
 
     /** The effective (locale-specific) layout owner id. */
+    #[Locked]
     public string $layoutOwnerId = '';
 
     /**
@@ -99,6 +111,8 @@ class PageBuilderFrontendEditorPage extends Page
         $owner = EditableOwners::resolve($ownerType, $ownerId);
         abort_if($owner === null, 404);
 
+        $this->authorizeEditorAccess($owner);
+
         $this->ownerType = $ownerType;
         $this->ownerId = (string) $owner->getKey();
         $this->ownerLabel = EditableOwners::label($ownerType);
@@ -112,6 +126,10 @@ class PageBuilderFrontendEditorPage extends Page
         // never silently opens the source layout.
         $this->requestedLocale = $this->localeFromRequest();
         $this->guardAndProvisionLocale($ownerType);
+        if ($this->blankDecision !== null) {
+            return;
+        }
+        $this->capturePublicationToken();
 
         $layout = app(LayoutStore::class)->find($this->layoutOwnerType, $this->layoutOwnerId);
         $this->editorMode = $layout?->isPageBuilderMode()
@@ -161,12 +179,18 @@ class PageBuilderFrontendEditorPage extends Page
             $effective = app(EffectiveEditorOwnerResolver::class)
                 ->resolve($ownerType, $this->ownerId, $this->requestedLocale);
 
-            app(FirstOpenLayoutProvisioner::class)->ensure($effective, $this->actorId());
-
             $this->resolvedLocale = $effective->locale;
             $this->layoutOwnerType = $effective->ownerType;
             $this->layoutOwnerId = (string) $effective->ownerId;
+
+            app(FirstOpenLayoutProvisioner::class)->ensure($effective, $this->actorId());
         } catch (EditorOwnerResolutionException $e) {
+            // PB-CORE-AUTHORITY-REMEDIATION-R1 — no source content to copy: present
+            // the explicit blank-layout decision (nothing written) instead of an error.
+            if ($this->presentBlankDecision($e)) {
+                return;
+            }
+
             abort($e->statusCode, $e->getMessage());
         }
     }
@@ -183,6 +207,10 @@ class PageBuilderFrontendEditorPage extends Page
      */
     protected function getHeaderActions(): array
     {
+        if ($this->blankDecision !== null) {
+            return [];
+        }
+
         return [
             Action::make('structureEditor')
                 ->label(__('Structure editor'))
@@ -210,7 +238,12 @@ class PageBuilderFrontendEditorPage extends Page
 
         // Target the effective (locale-specific) owner so switching a translation to
         // classic mode never mutates the source locale's editor mode.
-        app(LayoutStore::class)->setEditorMode($this->layoutOwnerType, $this->layoutOwnerId, $mode);
+        // A public Livewire method: authority, Core revision and layout state are
+        // all re-checked server-side (AuthorizesLayoutOwner::switchEditorMode()).
+        if (! $this->switchEditorMode($mode)) {
+            return;
+        }
+
         $this->editorMode = $mode;
 
         Notification::make()

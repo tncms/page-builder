@@ -9,6 +9,10 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Locked;
+use Plugins\PageBuilder\Authority\AuthorityResponse;
+use Plugins\PageBuilder\Authority\ContentAuthority;
+use Plugins\PageBuilder\Authority\PageBuilderAuthorityException;
 use Plugins\PageBuilder\LayoutTranslation\Identity\PageTranslationKey;
 use Plugins\PageBuilder\LayoutTranslation\Identity\TranslationGroupKey;
 use Plugins\PageBuilder\LayoutTranslation\Plan\SynchronizationDecision;
@@ -45,12 +49,16 @@ class LayoutTranslationReviewPage extends Page
 
     // -- Ephemeral visual state (INV-LT-8-PRES-01: nothing here is domain truth) ------------------------
 
+    #[Locked]
     public string $ownerType = '';
 
+    #[Locked]
     public string $ownerId = '';
 
+    #[Locked]
     public string $locale = '';
 
+    #[Locked]
     public string $sessionId = '';
 
     public ?string $selectedOrigin = null;
@@ -93,6 +101,7 @@ class LayoutTranslationReviewPage extends Page
     public function mount(string $ownerType, string $ownerId, string $locale): void
     {
         abort_unless(static::canAccess(), 403);
+        $this->authorizeOwner($ownerType, $ownerId);
 
         $this->ownerType = $ownerType;
         $this->ownerId = $ownerId;
@@ -139,6 +148,10 @@ class LayoutTranslationReviewPage extends Page
 
     public function submitReview(): void
     {
+        // PB-CORE37-R1 — submitting writes the translation's layout draft: re-check
+        // draft authority on the (locked) owner at the moment of the write.
+        $this->authorizeOwner($this->ownerType, $this->ownerId);
+
         try {
             $result = $this->interactor()->submit($this->sid(), $this->target(), $this->actor());
         } catch (StaleReviewSessionException) {
@@ -159,6 +172,22 @@ class LayoutTranslationReviewPage extends Page
     }
 
     // -- Ephemeral visual actions (no runtime call) ----------------------------------------------------
+
+    /**
+     * Draft authority on the canonical Core content (PB-CORE37-R1): Core edit,
+     * strict edit-others unless own, and never extension-managed content.
+     */
+    private function authorizeOwner(string $ownerType, string $ownerId): void
+    {
+        $content = ContentAuthority::canonicalFor($ownerType, $ownerId);
+        abort_if($content === null, 404);
+
+        try {
+            app(ContentAuthority::class)->assertCanEdit($content, auth()->user());
+        } catch (PageBuilderAuthorityException $e) {
+            abort($e->statusCode, AuthorityResponse::message($e));
+        }
+    }
 
     public function toggleGroup(string $classification): void
     {

@@ -5,7 +5,10 @@ import BuilderLanguageSwitcher from '../BuilderLanguageSwitcher.vue'
 import { useEditorStore } from '../../../../editor/stores/editor'
 
 const EN = { locale: 'en', label: 'English', is_source: true, is_current: true, has_translation: true, has_layout: true, editor_url: '/pb/page/1/frontend?locale=en' }
-const VI = { locale: 'vi', label: 'Tiếng Việt', is_source: false, is_current: false, has_translation: true, has_layout: true, editor_url: '/pb/page/1/frontend?locale=vi' }
+const VI = { locale: 'vi', label: 'Tiếng Việt', is_source: false, is_current: false, has_translation: true, has_layout: true, editor_url: '/pb/page/1/frontend?locale=vi', can_create: false, create_url: null }
+const CREATE_URL = '/api/page-builder/editor/context/page/1/translations'
+const VI_NEW = { ...VI, has_translation: false, has_layout: false, editor_url: null, can_create: true, create_url: CREATE_URL }
+const VI_LOCKED = { ...VI_NEW, can_create: false, create_url: null }
 
 function scene(opts: { dirty?: boolean; locales?: unknown[]; locale?: string } = {}) {
   const pinia = createPinia()
@@ -120,6 +123,84 @@ describe('BuilderLanguageSwitcher', () => {
     await flushPromises()
     expect(saveSpy).toHaveBeenCalledOnce()
     expect(assignSpy).toHaveBeenCalledWith(VI.editor_url)
+  })
+
+  it('creates a missing translation through the server, then opens the returned editor URL', async () => {
+    const { pinia, editor } = scene({ locales: [EN, VI_NEW] })
+    const createTranslation = vi.fn(async () => ({
+      locale: 'vi',
+      created: true,
+      content_translation_id: 7,
+      editor_url: '/pb/page/1/frontend?locale=vi',
+    }))
+    editor.client = { createTranslation } as never
+    const wrapper = mount(BuilderLanguageSwitcher, { global: { plugins: [pinia] } })
+
+    await wrapper.get('[aria-label="Editing language"]').trigger('click')
+    const option = wrapper.findAll('[role="option"]').find((b) => b.text().includes('Tiếng Việt'))!
+    expect(option.text()).toContain('create')
+    await option.trigger('click')
+    await flushPromises()
+
+    expect(createTranslation).toHaveBeenCalledWith(CREATE_URL, 'vi')
+    expect(assignSpy).toHaveBeenCalledWith('/pb/page/1/frontend?locale=vi')
+  })
+
+  it('shows the error and stays when creating the translation fails', async () => {
+    const { pinia, editor } = scene({ locales: [EN, VI_NEW] })
+    editor.client = {
+      createTranslation: vi.fn(async () => {
+        throw new Error('Could not provision the translated layout (clone outcome: source_not_found).')
+      }),
+    } as never
+    const wrapper = mount(BuilderLanguageSwitcher, { global: { plugins: [pinia] } })
+
+    await openMenuAndPickVi(wrapper)
+    await flushPromises()
+
+    expect(assignSpy).not.toHaveBeenCalled()
+    expect(wrapper.get('[role="alert"]').text()).toContain('Could not provision')
+  })
+
+  it('disables a missing translation the user cannot create and never posts', async () => {
+    const { pinia, editor } = scene({ locales: [EN, VI_LOCKED] })
+    const createTranslation = vi.fn()
+    editor.client = { createTranslation } as never
+    const wrapper = mount(BuilderLanguageSwitcher, { global: { plugins: [pinia] } })
+
+    await wrapper.get('[aria-label="Editing language"]').trigger('click')
+    const option = wrapper.findAll('[role="option"]').find((b) => b.text().includes('Tiếng Việt'))!
+    expect(option.attributes('disabled')).toBeDefined()
+    expect(option.text()).toContain('not translated')
+    await option.trigger('click')
+    await flushPromises()
+
+    expect(createTranslation).not.toHaveBeenCalled()
+    expect(assignSpy).not.toHaveBeenCalled()
+  })
+
+  it('Save and switch to a missing translation saves first, then creates and opens it', async () => {
+    const { pinia, editor } = scene({ dirty: true, locales: [EN, VI_NEW] })
+    const order: string[] = []
+    vi.spyOn(editor, 'saveDraft').mockImplementation(async () => {
+      order.push('save')
+      editor.dirty = false
+      return true
+    })
+    editor.client = {
+      createTranslation: vi.fn(async () => {
+        order.push('create')
+        return { locale: 'vi', created: true, content_translation_id: 7, editor_url: '/pb/page/1/frontend?locale=vi' }
+      }),
+    } as never
+    const wrapper = mount(BuilderLanguageSwitcher, { global: { plugins: [pinia] } })
+
+    await openMenuAndPickVi(wrapper)
+    await dialogButton(wrapper, 'Save and switch')!.trigger('click')
+    await flushPromises()
+
+    expect(order).toEqual(['save', 'create'])
+    expect(assignSpy).toHaveBeenCalledWith('/pb/page/1/frontend?locale=vi')
   })
 
   it('Save and switch does NOT navigate when the save fails (stays dirty)', async () => {

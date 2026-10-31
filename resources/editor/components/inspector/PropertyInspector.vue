@@ -12,7 +12,7 @@
 // revert, an editor-local field search, collapsible groups, validation gating and
 // accessibility. Nothing is hardcoded per component type — fields come from schema.
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
-import { useEditorStore } from '../../stores/editor'
+import { useEditorStore, type InspectorFlushOptions } from '../../stores/editor'
 import { clonePlain, getByPath, setByPath } from '../../utils/dataPath'
 import {
   FieldControllerKey,
@@ -53,6 +53,9 @@ let appliedTimer: number | null = null
 
 // Editor-local field search.
 const search = ref('')
+
+// PB-AUTOSAVE-FOCUS-R1 — an IME composition is open in one of our fields (see flushHook).
+let composing = false
 
 // Validation: which required fields are empty, and whether to surface the error.
 const validationVisible = ref(false)
@@ -240,9 +243,16 @@ async function applyDraft(id: string | null = activeId.value): Promise<boolean> 
   }
   applyState.value = 'applying'
   const ok = await store.updateComponentDataById(id, data)
+  // PB-AUTOSAVE-FOCUS-R1 — the author may have moved to another component while the
+  // command was in flight; its reseeded draft is not ours to touch.
+  if (activeId.value !== id) return ok
   if (ok) {
     appliedData.value = clonePlain(data)
-    dirtyFields.value = new Set()
+    // Keystrokes typed while the command was in flight are newer than `data`: keep those
+    // fields staged (dirty) instead of dropping them, so Apply/autosave commits them next.
+    dirtyFields.value = new Set(
+      [...dirtyFields.value].filter((name) => JSON.stringify(getByPath(draftData.value, name)) !== JSON.stringify(getByPath(data, name))),
+    )
     applyState.value = 'idle'
   } else {
     applyState.value = 'error'
@@ -320,6 +330,7 @@ function reseed(id: string | null): void {
   applyState.value = 'idle'
   validationVisible.value = false
   search.value = ''
+  composing = false
 }
 
 watch(
@@ -384,7 +395,24 @@ async function resolveSwitch(choice: 'apply' | 'discard' | 'stay'): Promise<void
 }
 
 // ---- Save Draft / Publish auto-apply (abort on failure) ----------------
-const flushHook = (): Promise<boolean> => applyDraft()
+// PB-AUTOSAVE-FOCUS-R1 — while an IME composition is open in a field (Vietnamese
+// Telex, CJK …) its text is provisional. The debounced AUTOSAVE leaves the draft staged
+// rather than committing half-composed characters; the next Apply or save picks up the
+// final text. An explicit Save Draft / Publish always applies, so nothing the author
+// asked to save is skipped. Leaving the inspector ends the composition for our purposes,
+// so a lost `compositionend` can never keep the flag set.
+function onCompositionStart(): void {
+  composing = true
+}
+function onCompositionEnd(): void {
+  composing = false
+}
+function onFocusOut(event: FocusEvent): void {
+  const next = event.relatedTarget as Node | null
+  if (!next || !rootEl.value?.contains(next)) composing = false
+}
+const flushHook = (options: InspectorFlushOptions = {}): Promise<boolean> =>
+  composing && options.autosave ? Promise.resolve(true) : applyDraft()
 
 // ---- Structural command dirty-guard (Increment 4.2) --------------------
 // Clean draft → proceed silently. Staged draft → open the switch dialog and
@@ -413,6 +441,7 @@ onBeforeUnmount(() => {
   if (appliedTimer !== null) window.clearTimeout(appliedTimer)
   if (isDirty.value) for (const name of dirtyFields.value) emitFieldPatch(name, appliedData.value)
   store.setInspectorDirty(false)
+  composing = false
 })
 watch(isDirty, (v) => store.setInspectorDirty(v))
 
@@ -536,7 +565,13 @@ function action(fn: (id: string) => void) {
 </script>
 
 <template>
-  <div ref="rootEl" class="pb-inspector">
+  <div
+    ref="rootEl"
+    class="pb-inspector"
+    @compositionstart="onCompositionStart"
+    @compositionend="onCompositionEnd"
+    @focusout="onFocusOut"
+  >
     <div v-if="!selected" class="pb-inspector__empty">
       <p>Select a component to edit its properties.</p>
     </div>

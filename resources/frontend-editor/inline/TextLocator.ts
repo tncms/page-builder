@@ -31,7 +31,9 @@ const MAP: Record<string, InlineField[]> = {
   ],
   // ---- Blocks ----
   heading: [{ field: 'text', selector: '.pb-block--heading', multiline: false, translatable: true }],
-  text: [{ field: 'text', selector: '.pb-block--text', multiline: true, translatable: true }],
+  // PB-TEXT-AUTHORING-R1 — a Text block that renders rich `content` is edited in the
+  // visual editor only; inline plain-text editing applies to legacy plain text.
+  text: [{ field: 'text', selector: '.pb-block--text:not(.pb-text--rich)', multiline: true, translatable: true }],
   button: [{ field: 'label', selector: '.pb-button', multiline: false, translatable: true }],
   quote: [
     { field: 'text', selector: '.pb-quote__text', multiline: true, translatable: true },

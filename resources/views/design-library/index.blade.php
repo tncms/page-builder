@@ -60,7 +60,7 @@
         .dl-filters label { display: flex; flex-direction: column; font-size: .72rem; color: var(--dl-muted); gap: .25rem; text-transform: uppercase; letter-spacing: .04em; }
         .dl-filters input, .dl-filters select {
             background: var(--dl-surface); color: var(--dl-text); border: 1px solid var(--dl-line);
-            border-radius: 8px; padding: .55rem .6rem; font: inherit;
+            border-radius: 8px; padding: .55rem .6rem; font: inherit; min-width: 0;
         }
         .dl-filters .dl-actions { align-self: end; display: flex; gap: .5rem; }
         .dl-btn { border: 1px solid var(--dl-line); background: var(--dl-surface); color: var(--dl-text); border-radius: 8px; padding: .55rem .9rem; font: inherit; cursor: pointer; }
@@ -104,7 +104,20 @@
         .dl-devices [aria-pressed="true"] { background: var(--dl-accent); color: #0b1220; border-color: transparent; }
         .dl-modal__frame { flex: 1; min-height: 60vh; background: #fff; }
         .dl-modal__frame iframe { width: 100%; height: 100%; min-height: 60vh; border: 0; }
+        /* PB-PREVIEW-PARITY-R1: the 7-track row overflowed between ~721px and ~880px (fr tracks cannot shrink
+           below their content), pushing Apply off-screen. Collapse to shrinkable columns before that band. */
+        @media (max-width: 900px) { .dl-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         @media (max-width: 720px) { .dl-filters { grid-template-columns: 1fr 1fr; } }
+        /* PB-PREVIEW-PARITY-R1: at phone widths the nowrap preview bar (title + devices + close) plus 2rem modal
+           padding pushed the Close button off-screen. Tighter padding, a wrapping bar, Close kept in the first row. */
+        @media (max-width: 600px) {
+            .dl-modal { padding: .5rem; }
+            .dl-modal__panel { min-width: 0; }
+            .dl-modal__bar { flex-wrap: wrap; gap: .5rem; padding: .6rem .75rem; }
+            .dl-modal__bar #dl-modal-title { flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
+            .dl-modal__bar [data-design-library-close] { order: 2; }
+            .dl-modal__bar .dl-devices { order: 3; flex: 1 1 100%; }
+        }
     </style>
 </head>
 <body>

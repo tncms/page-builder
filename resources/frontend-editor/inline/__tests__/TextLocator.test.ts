@@ -51,3 +51,22 @@ describe('TextLocator', () => {
     expect(locateField('cta', marker, section)).toBeNull()
   })
 })
+describe('TextLocator — Text block (PB-TEXT-AUTHORING-R1)', () => {
+  function textMarker(className: string): HTMLElement {
+    document.body.innerHTML = `
+      <div class="pb-editor-render-marker" data-pb-component-id="t1" data-pb-component-type="text">
+        <div class="${className}"><p id="para">Body</p></div>
+      </div>`
+    return document.querySelector('.pb-editor-render-marker') as HTMLElement
+  }
+
+  it('keeps inline editing for a legacy plain Text block', () => {
+    const marker = textMarker('pb-block pb-block--text')
+    expect(locateField('text', marker, marker.querySelector('#para') as HTMLElement)?.field.field).toBe('text')
+  })
+
+  it('leaves a rich Text block to the visual editor (no inline plain-text editing)', () => {
+    const marker = textMarker('pb-block pb-block--text pb-text--rich')
+    expect(locateField('text', marker, marker.querySelector('#para') as HTMLElement)).toBeNull()
+  })
+})

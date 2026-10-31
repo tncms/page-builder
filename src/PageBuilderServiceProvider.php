@@ -6,6 +6,7 @@ namespace Plugins\PageBuilder;
 
 use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Support\ServiceProvider;
+use Plugins\PageBuilder\Authority\ContentAuthority;
 use Plugins\PageBuilder\Design\TokenRegistry;
 use Plugins\PageBuilder\Design\TokenResolver;
 use Plugins\PageBuilder\Exceptions\IncompatibleCoreException;
@@ -175,6 +176,10 @@ class PageBuilderServiceProvider extends ServiceProvider
                 new \Plugins\PageBuilder\DataSources\DataSourceProviderIdentity($app->make(\TheNguyen\CMS\Services\ExtensionManager::class)),
             );
         });
+        // PB-XREG-3 — Interactive Runtime: per-render behavior collection + asset plan, resolving files only from
+        // the provider's Core-published asset namespace.
+        $this->app->singleton(\Plugins\PageBuilder\Interactive\InteractiveAssetResolver::class);
+        $this->app->singleton(\Plugins\PageBuilder\Interactive\InteractiveRuntime::class);
         $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceConfigValidator::class);
         $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceExecutor::class);
         $this->app->singleton(\Plugins\PageBuilder\DataSources\DataSourceRenderResolver::class);
@@ -1120,6 +1125,14 @@ class PageBuilderServiceProvider extends ServiceProvider
                     return $body;
                 }
 
+                // PB-CORE37-R1 — extension-managed content renders exactly the body its
+                // owner produced: a pre-existing builder layout (or the editor iframe)
+                // must never replace a structured article. Read from the stored
+                // marker, not inferred from the Core version.
+                if (ContentAuthority::managedOwner($content) !== null) {
+                    return $body;
+                }
+
                 // Frontend editor iframe: only when the request carries the
                 // pb_editor flag AND the user holds page-builder.edit. Public
                 // visitors always fall through to the published-only renderer.
@@ -1182,21 +1195,23 @@ class PageBuilderServiceProvider extends ServiceProvider
             );
         }
 
-        // PB-RS-1 (Page only) — the authoritative "Rendering" (Render Source)
-        // control. Registered ONLY for `page`; Post/CPT are out of scope for this
-        // phase (PB-RS-2 / PB-RS-3). Prepended after the launcher panel so it sits
-        // just beneath it. See ADR-PB-RENDER-SOURCE-001.
-        add_filter(
-            'cms.form.schema.page',
-            static function (mixed $components): array {
-                $components = is_array($components) ? $components : [];
-                array_unshift($components, PageRenderSourceSection::make());
+        // PB-RS-1 — the authoritative "Rendering" (Render Source) control, for every
+        // editable owner type (Post parity: PB-CORE-AUTHORITY-REMEDIATION-R1, so a
+        // published post can always return to its classic content). Prepended after
+        // the launcher panel so it sits just beneath it. See ADR-PB-RENDER-SOURCE-001.
+        foreach (EditableOwners::types() as $ownerType) {
+            add_filter(
+                "cms.form.schema.{$ownerType}",
+                static function (mixed $components) use ($ownerType): array {
+                    $components = is_array($components) ? $components : [];
+                    array_unshift($components, PageRenderSourceSection::make($ownerType));
 
-                return $components;
-            },
-            21,
-            1,
-        );
+                    return $components;
+                },
+                21,
+                1,
+            );
+        }
     }
 
     /**
@@ -1305,9 +1320,17 @@ class PageBuilderServiceProvider extends ServiceProvider
 
     /**
      * Add the plugin permissions to the in-memory registry (so they surface in
-     * the role editor) and persist them when running in the console — i.e. on
-     * `plugin:activate` / `migrate`. Fully guarded: a missing permission manager
-     * or an unready database degrades to a no-op rather than a boot crash.
+     * the role editor). Fully guarded: a missing permission manager or an unready
+     * database degrades to a no-op rather than a boot crash.
+     *
+     * Persistence (PB-CORE37-R1, PB-1): Core 1.0.0-beta.7.1.37 persists a plugin's
+     * OWN registered slugs on the boot after a web activation or re-install, and the
+     * Roles screen persists a selected registered-but-missing slug. On any console
+     * boot (`migrate`, an upgrade, any artisan command) this plugin additionally
+     * persists its own slugs through `persist()` — the recovery path for an install
+     * that was already active before the rows existed. Definitions only: never a
+     * grant, revoke or delete, and never another plugin's slugs (the former
+     * `syncDefaults()` persisted every registered slug).
      */
     private function registerPermissions(): void
     {
@@ -1322,10 +1345,10 @@ class PageBuilderServiceProvider extends ServiceProvider
                 $manager->register($slug, $name, 'Page Builder');
             }
 
-            // Persist only in console (activation/migration), never per web
-            // request, to avoid repeated writes on the hot path.
+            // Persist only in console, never per web request, to avoid repeated
+            // writes on the hot path (web activation is Core's lifecycle sync).
             if ($this->app->runningInConsole()) {
-                $manager->syncDefaults();
+                $manager->persist(array_keys(self::PERMISSIONS));
             }
         } catch (\Throwable) {
             // Best-effort: the plugin still boots via the permission fail-open guard.

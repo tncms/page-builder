@@ -7,6 +7,7 @@ namespace Plugins\PageBuilder\Support;
 use Illuminate\Http\Request;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Http\Middleware\InjectPageBuilderAssets;
+use Plugins\PageBuilder\Interactive\InteractiveRuntime;
 use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleRegistry;
 use TheNguyen\CMS\Localization\Contracts\PublicLocaleContextContract;
 use Throwable;
@@ -70,6 +71,9 @@ final class FrontendRenderer
         // `.pb-cw-*` / `.pb-ds-*` head rules reflect only this page's content.
         $this->columnWidths->reset();
         $this->dynamicStyles->reset();
+        // PB-XREG-3 — likewise a fresh interactive scope: only behaviors rendered on THIS page emit assets.
+        $interactive = app(InteractiveRuntime::class);
+        $interactive->reset();
 
         // Heading-context (PB-FREE-LIBRARY-DESIGN-1-E-H1): tell the runtime whether
         // the host theme already renders the page title <h1> above this layout, so
@@ -100,6 +104,11 @@ final class FrontendRenderer
         if ($request instanceof Request) {
             $request->attributes->set(InjectPageBuilderAssets::REQUEST_KEY, true);
         }
+
+        // PB-XREG-3 — emit the assets of interactive components actually rendered on this page through Core's
+        // AssetRegistry (this body filter runs before the theme prints <head>/footer). No interactive component
+        // ⇒ nothing is registered. Fail-soft: the static markup is complete without it.
+        $interactive->enqueuePublic();
 
         return $html;
     }

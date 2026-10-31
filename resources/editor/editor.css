@@ -933,6 +933,48 @@
 .pb-inspector-hint { margin: 0.2rem 0 0; font-size: 0.68rem; color: var(--pb-muted); }
 .pb-inspector-warn { margin: 0.2rem 0 0; font-size: 0.68rem; color: #b45309; }
 
+/* PB-TEXT-AUTHORING-R1 — visual Text editor + Custom HTML source editor */
+.pb-richtext { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.pb-richtext__toolbar { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+.pb-richtext__tool {
+  min-width: 1.9rem;
+  min-height: 1.9rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--pb-border);
+  border-radius: 0.35rem;
+  background: var(--pb-surface);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.pb-richtext__tool:hover { border-color: var(--pb-accent); }
+.pb-richtext__tool:focus-visible { outline: 2px solid var(--pb-accent); outline-offset: 1px; }
+.pb-richtext__tool.is-active { background: rgba(37, 99, 235, 0.12); border-color: var(--pb-accent); }
+.pb-richtext__surface {
+  min-height: 6rem;
+  max-height: 24rem;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+.pb-richtext__surface:focus-visible { outline: 2px solid var(--pb-accent); outline-offset: 1px; }
+.pb-richtext__surface p, .pb-richtext__surface ul, .pb-richtext__surface ol,
+.pb-richtext__surface blockquote, .pb-richtext__surface pre { margin: 0 0 0.45rem; }
+.pb-richtext__surface ul, .pb-richtext__surface ol { padding-left: 1.2rem; }
+.pb-richtext__surface blockquote { padding-left: 0.6rem; border-left: 3px solid var(--pb-border); }
+.pb-richtext__surface pre, .pb-richtext__surface code, .pb-htmlsource__input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.pb-richtext__surface pre { white-space: pre-wrap; padding: 0.35rem; background: rgba(0, 0, 0, 0.04); border-radius: 0.3rem; }
+.pb-richtext__link { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.4rem; border: 1px solid var(--pb-border); border-radius: 0.4rem; }
+.pb-richtext__link-field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.72rem; }
+.pb-richtext__link-tab { display: flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; }
+.pb-richtext__link-actions { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+.pb-richtext__error { margin: 0; font-size: 0.7rem; color: #b91c1c; }
+.pb-htmlsource { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.pb-htmlsource__input { font-size: 0.75rem; white-space: pre; overflow: auto; }
+.pb-htmlsource__help { margin: 0; font-size: 0.68rem; color: var(--pb-muted); }
+
 /* Component presets (Phase 23) */
 .pb-inspector-presets { margin: 0.5rem 0 0.75rem; }
 .pb-inspector-presets__label {

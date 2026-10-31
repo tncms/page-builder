@@ -109,6 +109,18 @@ class PageBuilderLayout extends Model
     }
 
     /**
+     * The token of the PUBLIC-facing state only: render mode + published payload,
+     * never the draft (PB-CORE37-R1). A render-mode switch compares against this, so
+     * draft saves in the same editor session do not make a switch falsely stale,
+     * while any change to what renders publicly does. Equals {@see emptyToken()} for
+     * an owner with no row.
+     */
+    public function publicationToken(): string
+    {
+        return self::tokenFor(null, $this->published_payload, $this->editor_mode);
+    }
+
+    /**
      * The token for an owner that has no stored layout row yet (first open) — the
      * baseline both the client and the server start from before the first write.
      */

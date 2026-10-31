@@ -65,7 +65,7 @@ describe('Navigator inline rename — UI (Increment 5)', () => {
     await renameInput(wrapper).setValue('New Name')
     await renameInput(wrapper).trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    expect(spy).toHaveBeenCalledWith('update-component-data', { component_id: 'b1', data: { _label: 'New Name' } })
+    expect(spy).toHaveBeenCalledWith('update-component-data', { component_id: 'b1', data: { _label: 'New Name' } }, { keepSelection: true })
     expect(renameInput(wrapper).exists()).toBe(false) // editing ended
   })
 
@@ -152,7 +152,7 @@ describe('Navigator inline rename — F2 + focus (Increment 5)', () => {
     await input.setValue('Renamed via F2')
     await input.trigger('keydown', { key: 'Enter' })
     await flushPromises()
-    expect(spy).toHaveBeenCalledWith('update-component-data', { component_id: 'b1', data: { _label: 'Renamed via F2' } })
+    expect(spy).toHaveBeenCalledWith('update-component-data', { component_id: 'b1', data: { _label: 'Renamed via F2' } }, { keepSelection: true })
     expect(wrapper!.find('.pb-editor-navigator-rename').exists()).toBe(false)
     expect(document.activeElement).toBe(tree.element)
   })

@@ -27,7 +27,7 @@ use Plugins\PageBuilder\State\LayoutMutator;
  */
 class PageBuilderManager
 {
-    public const VERSION = '0.1.0-alpha.6';
+    public const VERSION = '0.1.0-alpha.8';
 
     /** Lazily-created Phase 8 state helpers (stateless singletons). */
     private ?CommandBus $commandBus = null;
@@ -281,8 +281,8 @@ class PageBuilderManager
     {
         return [
             'version' => self::VERSION,
-            'sections' => $this->withDataSourceCatalog($this->sectionDefinitions()),
-            'blocks' => $this->withDataSourceCatalog($this->blockDefinitions()),
+            'sections' => AuthoringFieldStrings::enrich($this->withDataSourceCatalog($this->sectionDefinitions())),
+            'blocks' => AuthoringFieldStrings::enrich($this->withDataSourceCatalog($this->blockDefinitions())),
             'tokens' => $this->tokens(),
             'breakpoints' => $this->tokens->breakpoints(),
             // Phase 25.3 — layout presets (Section → Container → Column trees) the

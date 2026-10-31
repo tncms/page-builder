@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [vue()],
   test: {
     environment: 'happy-dom',
-    include: ['resources/editor/**/*.test.ts', 'resources/frontend-editor/**/*.test.ts', 'resources/shared-ui/**/*.test.ts'],
+    include: ['resources/editor/**/*.test.ts', 'resources/frontend-editor/**/*.test.ts', 'resources/shared-ui/**/*.test.ts', 'resources/frontend/**/*.test.ts'],
     globals: true,
   },
 })

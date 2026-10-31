@@ -17,6 +17,7 @@ import { installCanvasNavigationGuard } from './canvasGuard'
 import { IframeDragController } from './drag/IframeDragController'
 import { ColumnResizeController } from './resize/ColumnResizeController'
 import { replaceComponent } from './componentRuntime'
+import { hydrateInteractive, teardownInteractive } from './interactiveCanvas'
 import { Overlay } from './overlay'
 import { DomPatcher } from './patcher'
 import { resolveInlineTarget, readRect } from '../inline/SelectionManager'
@@ -274,8 +275,11 @@ function boot(): void {
           // Preserve scroll across the full re-render (e.g. after a drag reorder).
           const scrollX = window.scrollX
           const scrollY = window.scrollY
+          // PB-XREG-3 — tear interactive roots down BEFORE their DOM is replaced, then hydrate the new canvas.
+          teardownInteractive(canvas)
           canvas!.innerHTML = html
           window.scrollTo(scrollX, scrollY)
+          void hydrateInteractive(canvas, (payload as { interactive?: unknown }).interactive)
           // The authoritative HTML replaced every element: drop stale live-patch
           // tracking and any dangling inline-edit reference (elements are gone).
           patcher.reset()
@@ -363,7 +367,12 @@ function boot(): void {
           break
         }
 
+        // PB-XREG-3 — teardown the old component's interactive roots before it is replaced.
+        teardownInteractive(findMarker(canvas!, p.componentId))
         const ok = replaceComponent(canvas!, p.componentId, p.html)
+        if (ok) {
+          void hydrateInteractive(findMarker(canvas!, p.componentId), (payload as { interactive?: unknown }).interactive)
+        }
         if (ok) {
           // The old element is gone: drop its live-patch tracking and any inline
           // reference that pointed into it.

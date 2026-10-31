@@ -26,12 +26,17 @@ final class CoreCompatibility
     /**
      * Minimum TN CMS Core this Page Builder release supports.
      *
-     * The RC-B heading contract depends on the Core page-title visibility seam
-     * (`show_page_title`) introduced in 1.0.0-beta.7.1.23; on older Core the
-     * contract cannot be honoured, so the plugin refuses to boot. Mirrors the
+     * PB-CORE39-SYNC: every Page Builder draft, publication and translation decision
+     * is Core's content action decision (`cms.content.actions` with
+     * `ContentActionContext::privateDraft()` for private drafts), first released in
+     * 1.0.0-beta.7.1.39. It builds on the 1.0.0-beta.7.1.37 content-authority
+     * contracts (write context, content write unit, revision conflicts, the
+     * `managed_by` marker, owner-scoped permission persistence) and the RC-B heading
+     * seam (`show_page_title`, beta.7.1.23). On older Core the plugin refuses to boot
+     * rather than run with a partial / unsafe compatibility mode. Mirrors the
      * plugin.json `requires.tncms` constraint ({@see requirement()}).
      */
-    public const MINIMUM_CORE = '1.0.0-beta.7.1.23';
+    public const MINIMUM_CORE = '1.0.0-beta.7.1.39';
 
     /**
      * Test-only override of the detected Core version. `null` (default) means

@@ -7,7 +7,9 @@ use Plugins\PageBuilder\Facades\PageBuilder;
 use Plugins\PageBuilder\Http\Controllers\ComponentPreviewController;
 use Plugins\PageBuilder\Http\Controllers\EditorContextController;
 use Plugins\PageBuilder\Http\Controllers\EditorMetadataController;
+use Plugins\PageBuilder\Http\Controllers\EditorModeController;
 use Plugins\PageBuilder\Http\Controllers\EditorPreviewController;
+use Plugins\PageBuilder\Http\Controllers\EditorTranslationController;
 use Plugins\PageBuilder\Http\Controllers\PatternController;
 use Plugins\PageBuilder\Http\Controllers\ResourceCatalogController;
 use Plugins\PageBuilder\Http\Controllers\StateCommandController;
@@ -52,6 +54,15 @@ Route::post('editor/context/{ownerType}/{ownerId}/insert-registered-resource', [
     ->name('editor.context.insert-registered-resource');
 Route::post('editor/context/{ownerType}/{ownerId}/publish', [EditorContextController::class, 'publish'])
     ->name('editor.context.publish');
+// Select which source renders publicly (Classic content / layout). Authorized,
+// Core-revision checked and publication-token CAS; never touches either source.
+Route::post('editor/context/{ownerType}/{ownerId}/mode', [EditorModeController::class, 'update'])
+    ->name('editor.context.mode');
+// Language selector: create a missing locale's Core content translation (through
+// Core's content lifecycle) and provision its layout in one transaction, then return
+// the editor URL to open. Requires page-builder.edit AND the Core content edit permission.
+Route::post('editor/context/{ownerType}/{ownerId}/translations', [EditorTranslationController::class, 'store'])
+    ->name('editor.translations.store');
 
 // Phase 12 — visual canvas: render the current payload to HTML with editor markers.
 Route::post('editor/preview', EditorPreviewController::class)->name('editor.preview');

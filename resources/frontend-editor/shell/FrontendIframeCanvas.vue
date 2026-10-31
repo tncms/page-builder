@@ -32,6 +32,7 @@ import type { LiveDropResolution } from '../drag/types'
 import type { BridgeMessage } from '../bridge/messages'
 import { PB_BRIDGE_PROTOCOL_VERSION } from '../bridge/messages'
 import type { LivePatch } from '../../editor/types'
+import { plainInteractiveManifest } from './interactiveManifest'
 
 const store = useEditorStore()
 const shell = useShellStore()
@@ -147,6 +148,8 @@ async function pushRender(): Promise<void> {
   bridge?.send('pb:update-payload', {
     html: store.previewHtml,
     selectedId: store.selectedComponentId,
+    // PB-XREG-3 — server-derived interactive manifest (inert data; the iframe validates every URL).
+    interactive: plainInteractiveManifest(store.previewInteractive),
   })
 }
 
@@ -165,6 +168,7 @@ async function reconcileComponent(componentId: string): Promise<void> {
     componentId: reconcile.componentId,
     html: reconcile.html,
     selectedId: store.selectedComponentId,
+    interactive: plainInteractiveManifest(reconcile.interactive),
   })
 }
 

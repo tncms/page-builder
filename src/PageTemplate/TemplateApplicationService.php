@@ -12,6 +12,7 @@ use Plugins\PageBuilder\PageTemplate\Exceptions\TemplateApplicationFailed;
 use Plugins\PageBuilder\Repository\Contracts\DesignResourceRepositoryInterface;
 use Plugins\PageBuilder\Support\EditableOwners;
 use Plugins\PageBuilder\Support\EditorUrls;
+use TheNguyen\CMS\ContentAuthority\ContentWriteContext;
 use TheNguyen\CMS\Services\ContentManager;
 
 /**
@@ -65,7 +66,9 @@ final class TemplateApplicationService
                     $data['locale'] = $locale;
                 }
 
-                $content = $this->content->create($data);
+                // PB-CORE37-R1 — an explicit, server-derived extension context: Core's
+                // gate applies the actor's create RBAC and the actor becomes the author.
+                $content = $this->content->create($data, ContentWriteContext::extension(auth()->user()));
 
                 $result = $this->import->import(new FullPageImportRequest(
                     rid: $rid,

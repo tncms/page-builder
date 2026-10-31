@@ -21,7 +21,9 @@
     // resolves the effective owner and (on first open) provisions the translated
     // layout. `$requestedLocale` / `$resolvedLocale` are supplied by the page mount,
     // which has already failed closed on a bad locale.
-    $context = $owner ? app(EditorContext::class)->forCanonicalLocale($ownerType, $owner, $requestedLocale) : null;
+    // PB-CORE-AUTHORITY-REMEDIATION-R1 — while the blank-layout decision is shown the
+    // context is never built (building it would provision the translated layout).
+    $context = $owner && ! $blankDecision ? app(EditorContext::class)->forCanonicalLocale($ownerType, $owner, $requestedLocale) : null;
 
     // Phase 22.2 — cross-mode navigation links + an optional selection to restore.
     // The resolved locale is carried across so cross-mode navigation stays in-locale.
@@ -86,6 +88,11 @@
     ];
 @endphp
 
+@if ($blankDecision)
+<x-filament-panels::page>
+    @include('page-builder::filament.partials.blank-layout-decision', ['decision' => $blankDecision])
+</x-filament-panels::page>
+@else
 <x-filament-panels::page>
     <link rel="stylesheet" href="{{ $editorCss }}">
 
@@ -119,3 +126,4 @@
          in Picker mode; the Builder owns every resulting operation. --}}
     @include('page-builder::builder.resource-picker.toolbar', ['ownerType' => $ownerType, 'ownerId' => $ownerId])
 </x-filament-panels::page>
+@endif

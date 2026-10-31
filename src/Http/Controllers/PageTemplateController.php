@@ -7,10 +7,12 @@ namespace Plugins\PageBuilder\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Plugins\PageBuilder\Authority\AuthorityResponse;
 use Plugins\PageBuilder\Library\Availability\ResourceAvailabilityResolver;
 use Plugins\PageBuilder\PageTemplate\TemplateApplicationService;
 use Plugins\PageBuilder\Repository\Contracts\DesignResourceRepositoryInterface;
 use Plugins\PageBuilder\Support\EditableOwners;
+use TheNguyen\CMS\ContentAuthority\ContentWriteException;
 use TheNguyen\CMS\Models\Content;
 
 /**
@@ -35,13 +37,20 @@ final class PageTemplateController
         abort_unless($this->canContent($ownerType, 'create'), 403);
         $this->ensureImportable($request);
 
-        $outcome = $service->createAndApply(
-            rid: (string) $request->input('rid', ''),
-            ownerType: $ownerType,
-            title: (string) $request->input('title', ''),
-            locale: $this->stringOrNull($request->input('locale')),
-            actorId: $this->actorId($request),
-        );
+        try {
+            $outcome = $service->createAndApply(
+                rid: (string) $request->input('rid', ''),
+                ownerType: $ownerType,
+                title: (string) $request->input('title', ''),
+                locale: $this->stringOrNull($request->input('locale')),
+                actorId: $this->actorId($request),
+            );
+        } catch (ContentWriteException $e) {
+            // PB-CORE37-R1 — Core refused the create (RBAC / attribution): a handled
+            // 4xx, and the transaction already rolled back the half-created draft.
+            /** @var JsonResponse */
+            return AuthorityResponse::from($e);
+        }
 
         return response()->json(
             ['success' => $outcome->ok, 'data' => $outcome->toArray()],
@@ -54,6 +63,8 @@ final class PageTemplateController
     {
         $ownerType = (string) $request->input('ownerType', '');
         abort_unless($this->canContent($ownerType, 'edit'), 403);
+        // PB-CORE37-R1 — per-record authority (edit-others, managed marker).
+        AuthorityResponse::abortUnlessCanEditOwner($ownerType, (string) $request->input('ownerId', ''));
         $this->ensureImportable($request);
 
         $outcome = $service->applyToExisting(

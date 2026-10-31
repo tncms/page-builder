@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\PageBuilder\Support;
 
 use Illuminate\Http\Request;
+use Plugins\PageBuilder\Authority\ContentAuthority;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Http\Middleware\InjectPageBuilderAssets;
 use Plugins\PageBuilder\Support\DynamicStyle\DynamicStyleRegistry;
@@ -90,7 +91,10 @@ final class FrontendEditorRenderer
             return false;
         }
 
-        return function_exists('cms_can') && cms_can('page-builder.edit');
+        // PB-CORE37-R1 — the canvas renders the private DRAFT, so it needs draft
+        // authority on THIS content (edit-others unless own; never managed content).
+        return function_exists('cms_can') && cms_can('page-builder.edit')
+            && app(ContentAuthority::class)->canEdit($content, auth()->user());
     }
 
     /**

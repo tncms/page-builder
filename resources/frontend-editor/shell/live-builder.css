@@ -75,6 +75,27 @@
   justify-content: flex-end;
 }
 
+/* Narrow viewports: the single 52px row is wider than the screen, which pushed
+   View page / Public / Save / Publish / Exit off-canvas. Wrap into rows instead. */
+@media (max-width: 640px) {
+  .pb-live-builder-topbar {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+  }
+
+  .pb-live-builder-topbar__brand {
+    flex: 1 1 100%;
+  }
+
+  .pb-live-builder-topbar__actions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
 /* LEGACY_COMPATIBILITY_THEME — token-only skin layered on .pb-ui-btn for the
    pre-existing Live chrome. The box (layout, focus ring, disabled, transitions)
    comes from .pb-ui-btn; this holds NO structural behavior and only re-tints the

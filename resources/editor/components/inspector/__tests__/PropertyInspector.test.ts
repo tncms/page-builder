@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { mount, flushPromises } from '@vue/test-utils'
+import { mount, flushPromises, enableAutoUnmount } from '@vue/test-utils'
 import PropertyInspector from '../PropertyInspector.vue'
 import { useEditorStore } from '../../../stores/editor'
 import { clonePlain } from '../../../utils/dataPath'
@@ -83,9 +83,22 @@ function findById(node: any, id: string): any {
   return null
 }
 
+// Test isolation: stores created by setup(). The inspector flush hook is module-level
+// (one editor per page in production), so an autosave left armed by an earlier test's
+// store would flush a LATER test's inspector when a slow run lets its 1500 ms elapse.
+const createdStores: Array<ReturnType<typeof useEditorStore>> = []
+
+function endTest(): void {
+  for (const store of createdStores.splice(0)) store.cancelAutosave()
+}
+
+afterEach(endTest)
+enableAutoUnmount(afterEach)
+
 function setup(selectId: string | null) {
   setActivePinia(createPinia())
   const store = useEditorStore()
+  createdStores.push(store)
   store.currentPayload = payload()
   store.metadata = metadata
   store.boot = { locale: 'vi' } as never
@@ -641,5 +654,32 @@ describe('PropertyInspector — switch dialog wording (§15)', () => {
     await flushPromises()
     expect(store.selectedComponentId).toBe('btn1') // stayed
     expect(wrapper.find('.pb-inspector-dialog').exists()).toBe(true)
+  })
+})
+
+describe('PropertyInspector — test isolation', () => {
+  it('an autosave armed in one test never applies the next test’s staged edit', async () => {
+    vi.useFakeTimers()
+    try {
+      // "Earlier test": Apply marks its store dirty and arms that store's autosave.
+      setup('btn1')
+      const earlier = mount(PropertyInspector)
+      await type(earlier, 'url', 'https://earlier.dev')
+      await earlier.find('.pb-inspector__apply-btn--primary').trigger('click')
+      await flushPromises()
+      earlier.unmount()
+      endTest()
+
+      // "Next test": a fresh store whose inspector has a staged (not applied) edit.
+      setup('btn1')
+      const next = mount(PropertyInspector)
+      await type(next, 'url', 'https://next.dev')
+      vi.advanceTimersByTime(5000)
+      await flushPromises()
+
+      expect(next.find('.pb-inspector__status').text()).toContain('Unsaved Changes · 1')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

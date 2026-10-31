@@ -122,7 +122,8 @@ onBeforeUnmount(() => {
 .pb-locale-dialog__backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  /* A modal: it must outrank the in-canvas component toolbar (live-toolbar layer). */
+  z-index: var(--pb-ui-z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

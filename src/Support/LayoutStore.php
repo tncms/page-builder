@@ -201,19 +201,54 @@ class LayoutStore
     /**
      * Set the editor mode ("classic" or "builder") for an owner. Creates the row
      * on first write. Stamps the actor as the last draft editor when provided.
+     *
+     * With $expectedPublicationToken (PB-CORE37-R1) the switch is a row-locked
+     * compare-and-swap on {@see PageBuilderLayout::publicationToken()} (mode +
+     * published payload; draft edits do not count): a stale token throws
+     * {@see LayoutVersionConflictException} with zero mutation. A null token keeps
+     * the legacy unchecked write for server-internal callers.
+     *
+     * @throws LayoutVersionConflictException on a stale publication token.
      */
     public function setEditorMode(
         string $ownerType,
         int|string $ownerId,
         string $mode,
         ?string $userId = null,
+        ?string $expectedPublicationToken = null,
     ): PageBuilderLayout {
         if (! in_array($mode, [PageBuilderLayout::MODE_CLASSIC, PageBuilderLayout::MODE_BUILDER], true)) {
             throw new InvalidArgumentException("Invalid editor mode [{$mode}].");
         }
 
-        $layout = $this->resolve($ownerType, $ownerId);
+        if ($expectedPublicationToken === null) {
+            return $this->writeMode($this->resolve($ownerType, $ownerId), $mode, $userId);
+        }
 
+        return DB::transaction(function () use ($ownerType, $ownerId, $mode, $userId, $expectedPublicationToken): PageBuilderLayout {
+            $layout = $this->lockedResolve($ownerType, $ownerId);
+            $current = $layout->publicationToken();
+
+            if (! hash_equals($current, $expectedPublicationToken)) {
+                throw new LayoutVersionConflictException($current, [
+                    'publication_token' => $current,
+                    'editor_mode' => $layout->editor_mode ?? PageBuilderLayout::MODE_CLASSIC,
+                    'has_published' => $layout->published_payload !== null,
+                ]);
+            }
+
+            return $this->writeMode($layout, $mode, $userId);
+        });
+    }
+
+    /** The current public-state token for an owner (see {@see PageBuilderLayout::publicationToken()}). */
+    public function currentPublicationToken(string $ownerType, int|string $ownerId): string
+    {
+        return $this->find($ownerType, $ownerId)?->publicationToken() ?? PageBuilderLayout::emptyToken();
+    }
+
+    private function writeMode(PageBuilderLayout $layout, string $mode, ?string $userId): PageBuilderLayout
+    {
         $layout->editor_mode = $mode;
 
         if ($userId !== null) {

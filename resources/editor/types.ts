@@ -7,6 +7,9 @@ export interface OwnerContext {
   label: string
   title: string
   edit_url: string | null
+  // PB-CORE37-R1 — the Core content revision this editor session is based on. Echoed on
+  // publish / translation creation; a stale value is a 409 (never a silent overwrite).
+  content_revision?: number | null
 }
 
 export interface BlockNode {
@@ -41,6 +44,9 @@ export interface LayoutContext {
   // Optional so pre-token response fixtures/factories stay valid; the store treats an
   // absent token as "not adopted" and never advances it optimistically.
   version_token?: string | null
+  // PB-CORE-AUTHORITY-REMEDIATION-R1 — the public-state token (mode + published payload)
+  // echoed on a render-source switch; a stale value is a 409 with zero writes.
+  publication_token?: string | null
   last_saved_at: string | null
   published_at: string | null
 }
@@ -169,6 +175,17 @@ export interface EditorMetadata {
 export interface Permissions {
   can_edit: boolean
   can_publish: boolean
+  // Advisory (the mode endpoint re-checks): publish rights when the layout is
+  // published, edit rights otherwise.
+  can_switch_mode?: boolean
+}
+
+/** The server result of a render-source switch (`POST …/mode`). */
+export interface ModeSwitchResult {
+  editor_mode: string
+  publication_token: string
+  content_revision?: number | null
+  has_published: boolean
 }
 
 export type ComponentKind = 'section' | 'block'
@@ -197,6 +214,9 @@ export interface ComponentMeta {
 // LT-M1B Increment 2 — one enabled locale in the translation group, as prepared
 // SERVER-SIDE by LocaleSwitchProjector. The client never derives owner/layout/
 // translation identity: `editor_url` is the server-generated, locale-aware target.
+// A locale with no Core content translation has no `editor_url`; when the user may
+// create it, `create_url` is the server endpoint that creates the translation (and
+// its layout) and answers with the editor URL to open.
 export interface TranslationLocaleOption {
   locale: string
   label: string
@@ -205,6 +225,24 @@ export interface TranslationLocaleOption {
   has_translation: boolean
   has_layout: boolean
   editor_url: string | null
+  can_create: boolean
+  create_url: string | null
+  // PB-CORE-AUTHORITY-REMEDIATION-R1 — what a new translated layout would be created
+  // from (null when none is needed) and whether the explicit blank decision applies.
+  source_layout?: 'absent' | 'empty' | 'cloneable' | null
+  requires_blank_decision?: boolean
+}
+
+// Response of the translation-create endpoint.
+export interface CreatedTranslation {
+  locale: string
+  created: boolean
+  content_translation_id: number | null
+  editor_url: string | null
+  // PB-CORE37-R1 — the committed Core revision after the request.
+  content_revision?: number | null
+  // PB-CORE-AUTHORITY-REMEDIATION-R1 — how the translated layout was provisioned.
+  layout?: 'clone' | 'blank'
 }
 
 // LT-M1B Increment 2 — the read-only translation context for the current editor
@@ -280,6 +318,8 @@ export interface BootData {
     insertRegisteredResource?: string
     attestationRenew?: string
     attestationRebind?: string
+    // PB-CORE-AUTHORITY-REMEDIATION-R1 — render-source switch for the effective owner.
+    mode?: string
   }
 }
 
@@ -335,12 +375,20 @@ export interface LivePatch {
 
 // Raw result of the Phase 21 single-component preview endpoint (server render of
 // ONE component, with editor markers, from the current unsaved payload).
+// PB-XREG-3 — inert manifest of interactive behaviors in a render and the server-derived assets the canvas
+// loads before mounting them. Never derived from (or written to) the layout payload.
+export interface InteractiveManifest {
+  behaviors: string[]
+  assets: Array<{ handle: string; kind: 'css' | 'module'; url: string }>
+}
+
 export interface ComponentPreviewResult {
   component_id: string
   html: string
   kind: string
   type: string
   warnings: string[]
+  interactive?: InteractiveManifest
 }
 
 // A committed single-component reconcile the frontend Live Builder consumes: the
@@ -353,5 +401,6 @@ export interface ComponentReconcile {
   kind: string
   type: string
   warnings: string[]
+  interactive: InteractiveManifest | null
   version: number
 }

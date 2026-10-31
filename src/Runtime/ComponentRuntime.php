@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\View;
 use Plugins\PageBuilder\Contracts\ComponentInstance;
 use Plugins\PageBuilder\DataSources\DataSourceFields;
 use Plugins\PageBuilder\DataSources\DataSourceRenderResolver;
+use Plugins\PageBuilder\Interactive\InteractiveBehavior;
+use Plugins\PageBuilder\Interactive\InteractiveRuntime;
 use Plugins\PageBuilder\Support\ColumnWidth;
 use Plugins\PageBuilder\Support\ColumnWidthRegistry;
 use Plugins\PageBuilder\Support\ResponsiveSpacingStyle;
@@ -108,6 +110,12 @@ class ComponentRuntime
         $instance->afterRender();
         $this->hooks->dispatch('afterRender', $instance);
 
+        // PB-XREG-3 — an interactive component's trusted root gets sanitizer-proof hydration classes, and its
+        // behavior is collected for this render so only its assets are emitted. Registry-derived only.
+        if ($html !== '') {
+            $html = $this->markInteractive($instance, $html);
+        }
+
         // Phase 19 / PB-PROD-1 — apply box-model spacing (data.spacing) to the
         // component root. Purely additive: components without spacing data are
         // unchanged. Runs in both public and editor mode, before editor wrapping,
@@ -148,6 +156,24 @@ class ComponentRuntime
         }
 
         return $html;
+    }
+
+    private function markInteractive(ComponentInstance $instance, string $html): string
+    {
+        if (! app()->bound(InteractiveRuntime::class)) {
+            return $html;
+        }
+
+        $interactive = app(InteractiveRuntime::class);
+        $context = $this->editor ? InteractiveBehavior::CONTEXT_EDITOR : InteractiveBehavior::CONTEXT_PUBLIC;
+        $behavior = $interactive->behaviorForRender($instance->type(), $context);
+        if ($behavior === null) {
+            return $html;
+        }
+
+        $interactive->collect($instance->type(), $behavior);
+
+        return ResponsiveSpacingStyle::applyClasses($html, InteractiveRuntime::rootClasses($behavior));
     }
 
     /**

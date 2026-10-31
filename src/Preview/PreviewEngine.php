@@ -62,6 +62,8 @@ final class PreviewEngine
         $this->dynamicStyles->reset();
         $this->manager->runtime()->setEditorMode(false);
 
+        $inlineBefore = $this->inlineStyleKeys();
+
         try {
             $body = $this->manager->render($payload);
         } catch (Throwable $e) {
@@ -69,7 +71,7 @@ final class PreviewEngine
             $body = '';
         }
 
-        $head = $this->assets->headHtml();
+        $head = $this->assets->headHtml().$this->componentStyles($inlineBefore);
 
         return new PreviewResponse(
             kind: $context->kind,
@@ -80,5 +82,75 @@ final class PreviewEngine
             body: $body,
             hash: $context->cacheKey(),
         );
+    }
+
+    /**
+     * Identity of every inline style currently held by Core's asset registry, so the styles a component
+     * registers WHILE this preview renders can be told apart from anything registered earlier.
+     *
+     * @return array<string, true>
+     */
+    private function inlineStyleKeys(): array
+    {
+        $keys = [];
+        foreach ($this->inlineStyles() as $asset) {
+            $keys[$asset->handle."\0".md5((string) $asset->code)] = true;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * PB-PREVIEW-PARITY-R1 — provider components style themselves through Core's `inline_style()` during render
+     * (the public sanitizer strips `<style>`); the public page prints those through the theme head, but the
+     * preview document only carried Page Builder's own asset head, so provider components previewed unstyled.
+     *
+     * Emits ONLY inline frontend head STYLES registered during this render. Never scripts, modules or
+     * stylesheet links, and any style containing `<` (which could close the element) is dropped — the
+     * preview stays inert under its unchanged `default-src 'none'` CSP.
+     *
+     * @param  array<string, true>  $before
+     */
+    private function componentStyles(array $before): string
+    {
+        $css = [];
+        foreach ($this->inlineStyles() as $asset) {
+            $code = (string) $asset->code;
+            if (isset($before[$asset->handle."\0".md5($code)]) || str_contains($code, '<')) {
+                continue;
+            }
+            $css[$asset->handle] = $code;
+        }
+
+        if ($css === []) {
+            return '';
+        }
+
+        ksort($css, SORT_STRING);
+
+        return "\n<style data-pb-preview-component-css>".implode("\n", $css).'</style>';
+    }
+
+    /** @return list<object> Core inline-style assets in frontend scope, head position (fail-soft: none) */
+    private function inlineStyles(): array
+    {
+        if (! app()->bound('cms.assets')) {
+            return [];
+        }
+
+        try {
+            $out = [];
+            foreach (app('cms.assets')->inlines() as $asset) {
+                if (($asset->type ?? null) === 'inline_style'
+                    && in_array($asset->scope ?? null, ['frontend', 'both'], true)
+                    && ($asset->position ?? null) === 'head') {
+                    $out[] = $asset;
+                }
+            }
+
+            return $out;
+        } catch (Throwable) {
+            return [];
+        }
     }
 }

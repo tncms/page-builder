@@ -13,6 +13,8 @@ use Plugins\PageBuilder\Components\Exceptions\DuplicateComponentIdentifierExcept
 use Plugins\PageBuilder\Components\Exceptions\NonCompliantComponentProviderException;
 use Plugins\PageBuilder\Contracts\ComponentDefinition;
 use Plugins\PageBuilder\Contracts\SectionDefinition;
+use Plugins\PageBuilder\Interactive\Contracts\InteractiveComponentDefinition;
+use Plugins\PageBuilder\Interactive\InteractiveBehavior;
 use Plugins\PageBuilder\Registries\BlockRegistry;
 use Plugins\PageBuilder\Registries\SectionRegistry;
 
@@ -48,6 +50,9 @@ class ComponentProviderRegistry
 
     /** namespace => provider contract version. @var array<string, string> */
     private array $versions = [];
+
+    /** id => interactive behavior (PB-XREG-3), kept OUT of the stored definition array so editor metadata never carries asset paths. @var array<string, InteractiveBehavior> */
+    private array $behaviors = [];
 
     public function __construct(
         private readonly SectionRegistry $sections,
@@ -93,15 +98,17 @@ class ComponentProviderRegistry
             $id = trim($definition->type());
             $kind = $definition instanceof SectionDefinition ? 'section' : 'block';
             $array = $this->resolveArray($definition, $internal);
+            $behavior = $definition instanceof InteractiveComponentDefinition ? $this->safeBehavior($definition) : null;
 
             if (isset($batchSeen[$id])) {
                 throw DuplicateComponentIdentifierException::forIdentifier($id, $namespace);
             }
             $batchSeen[$id] = true;
 
-            $this->assertNoConflict($id, $namespace, $array);
+            $this->assertNoConflict($id, $namespace, $array, $behavior);
+            $this->assertBehaviorConsistent($id, $namespace, $behavior);
 
-            $pending[] = ['id' => $id, 'kind' => $kind, 'array' => $array];
+            $pending[] = ['id' => $id, 'kind' => $kind, 'array' => $array, 'behavior' => $behavior];
         }
 
         // All clear — commit the batch.
@@ -111,6 +118,9 @@ class ComponentProviderRegistry
 
             $this->owners[$entry['id']] = $namespace;
             $this->definitions[$entry['id']] = $entry['array'];
+            if ($entry['behavior'] instanceof InteractiveBehavior) {
+                $this->behaviors[$entry['id']] = $entry['behavior'];
+            }
         }
 
         $this->versions[$namespace] = $this->versionOf($provider);
@@ -152,6 +162,15 @@ class ComponentProviderRegistry
             : ComponentAvailability::UNKNOWN;
     }
 
+    /**
+     * The validated interactive behavior of a registered component (PB-XREG-3), or null when the id is unknown,
+     * unavailable, or not interactive. Server-side only — never derived from layout data.
+     */
+    public function behaviorFor(string $id): ?InteractiveBehavior
+    {
+        return $this->behaviors[trim($id)] ?? null;
+    }
+
     /** The owning provider namespace for a registered id, or null. */
     public function ownerOf(string $id): ?string
     {
@@ -180,6 +199,12 @@ class ComponentProviderRegistry
                     ? $array['render']['view']
                     : null,
             ];
+
+            // PB-XREG-3 — a bounded, path-free fingerprint, added ONLY for interactive components so the
+            // snapshot (and hash) of every PB-XREG-1 provider is unchanged.
+            if (isset($this->behaviors[$id])) {
+                $snapshot[$id]['interactive'] = $this->behaviors[$id]->fingerprint();
+            }
         }
 
         ksort($snapshot);
@@ -243,7 +268,7 @@ class ComponentProviderRegistry
     /**
      * @param  array<string, mixed>  $array
      */
-    private function assertNoConflict(string $id, string $namespace, array $array): void
+    private function assertNoConflict(string $id, string $namespace, array $array, ?InteractiveBehavior $behavior = null): void
     {
         $existingOwner = $this->owners[$id] ?? null;
 
@@ -254,11 +279,45 @@ class ComponentProviderRegistry
         }
 
         // Idempotent: same owner re-registering the identical definition is a no-op.
-        if ($existingOwner === $namespace && ($this->definitions[$id] ?? null) === $array) {
+        if ($existingOwner === $namespace && ($this->definitions[$id] ?? null) === $array
+            && $this->behaviorSignature($this->behaviors[$id] ?? null) === $this->behaviorSignature($behavior)) {
             return;
         }
 
         throw DuplicateComponentIdentifierException::forIdentifier($id, $existingOwner);
+    }
+
+    /** The validator already proved behavior() does not throw; re-read it once for commit. */
+    private function safeBehavior(InteractiveComponentDefinition $definition): ?InteractiveBehavior
+    {
+        try {
+            return $definition->behavior();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /** Full structural identity of a behavior for idempotency (assets included), never exposed. */
+    private function behaviorSignature(?InteractiveBehavior $behavior): ?string
+    {
+        return $behavior?->signature();
+    }
+
+    /**
+     * A behavior id already registered by another component must carry the identical declaration — a later
+     * registration can never redefine the assets an earlier component hydrates with.
+     */
+    private function assertBehaviorConsistent(string $id, string $namespace, ?InteractiveBehavior $behavior): void
+    {
+        if ($behavior === null) {
+            return;
+        }
+
+        foreach ($this->behaviors as $existingId => $existing) {
+            if ($existingId !== $id && $existing->id() === $behavior->id() && $existing->signature() !== $behavior->signature()) {
+                throw DuplicateComponentIdentifierException::forIdentifier($behavior->id(), $this->owners[$existingId] ?? $namespace);
+            }
+        }
     }
 
     private function namespaceOf(ComponentProvider $provider): string

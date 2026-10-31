@@ -21,7 +21,9 @@
     // page in the requested locale; the server resolves the effective owner and (on
     // first open) provisions the translated layout. `$requestedLocale` / `$resolvedLocale`
     // are supplied by the page mount, which has already failed closed on a bad locale.
-    $context = $owner ? app(EditorContext::class)->forCanonicalLocale($ownerType, $owner, $requestedLocale) : null;
+    // PB-CORE-AUTHORITY-REMEDIATION-R1 — while the blank-layout decision is shown the
+    // context is never built (building it would provision the translated layout).
+    $context = $owner && ! $blankDecision ? app(EditorContext::class)->forCanonicalLocale($ownerType, $owner, $requestedLocale) : null;
 
     // Per-file, filemtime-based cache busting (see EditorAssets) so a rebuilt
     // shell bundle is always re-fetched instead of served stale from cache.
@@ -111,6 +113,8 @@
             'context' => url($ownerPath.$localeQuery),
             'draft' => url($ownerPath.'/draft'.$localeQuery),
             'publish' => url($ownerPath.'/publish'.$localeQuery),
+            // PB-CORE-AUTHORITY-REMEDIATION-R1 — confirmed render-source switch.
+            'mode' => url($ownerPath.'/mode'.$localeQuery),
             'command' => url($apiPrefix.'/state/command'),
             'preview' => url($apiPrefix.'/editor/preview'),
             // PB-TEMPLATE-REGISTRY-2-C — the shared Resource Browser previews/materializes
@@ -128,6 +132,11 @@
     ];
 @endphp
 
+@if ($blankDecision)
+<x-filament-panels::page>
+    @include('page-builder::filament.partials.blank-layout-decision', ['decision' => $blankDecision])
+</x-filament-panels::page>
+@else
 <x-filament-panels::page>
     <link rel="stylesheet" href="{{ $shellCss }}">
 
@@ -174,3 +183,4 @@
     {{-- Vite IIFE bundle: loaded as a CLASSIC script (not type="module"). --}}
     <script src="{{ $shellJs }}"></script>
 </x-filament-panels::page>
+@endif

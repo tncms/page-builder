@@ -6,6 +6,7 @@ namespace Plugins\PageBuilder\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Plugins\PageBuilder\Authority\AuthorityResponse;
 use Plugins\PageBuilder\Editor\Translation\EditorOwnerResolutionException;
 use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\EffectiveLayoutOwner;
@@ -77,6 +78,8 @@ final class MaterializationController
         abort_unless(EditableOwners::isSupported($ownerType), 404);
         $owner = EditableOwners::resolve($ownerType, $ownerId);
         abort_if($owner === null, 404);
+        // PB-CORE37-R1 — provenance for a draft needs draft authority on the content.
+        AuthorityResponse::abortUnlessCanEditOwner($ownerType, $owner->getKey());
 
         try {
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));

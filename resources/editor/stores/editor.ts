@@ -40,6 +40,7 @@ import {
   type ClipboardEntry,
   type ComponentKind,
   type ComponentReconcile,
+  type InteractiveManifest,
   type ComponentMeta,
   type ComponentNode,
   type DefinitionMeta,
@@ -50,6 +51,7 @@ import {
   type LayoutPreset,
   type LayoutPayload,
   type LivePatch,
+  type ModeSwitchResult,
   type OwnerContext,
   type Permissions,
   type TranslationLocaleOption,
@@ -135,6 +137,8 @@ interface State {
   autosaveTimer: number | null
   canvasMode: CanvasMode
   previewHtml: string
+  // PB-XREG-3 — interactive manifest of the last full preview (null when none).
+  previewInteractive: InteractiveManifest | null
   previewLoading: boolean
   previewError: string | null
   previewTimer: number | null
@@ -183,7 +187,7 @@ function setBodyDragging(active: boolean): void {
 // than reactive state — it is a single imperative callback, not view data.
 // Phase 24.2 — the inspector's flush Applies the staged draft and reports success
 // so Save Draft / Publish can abort on a failed Apply (never save a stale payload).
-let inspectorFlush: (() => Promise<boolean>) | null = null
+let inspectorFlush: ((options?: InspectorFlushOptions) => Promise<boolean>) | null = null
 
 // Phase 26.3, Increment 4.2 — the inspector's command dirty-guard. A structural
 // command (move/delete/duplicate/cut/paste) awaits this before mutating so any
@@ -214,6 +218,20 @@ let savePromise: Promise<boolean> | null = null
 // PB-PROD-2 — the single `beforeunload` handler (module-level so install is
 // idempotent and teardown removes exactly the listener that was added).
 let unloadHandler: ((e: BeforeUnloadEvent) => void) | null = null
+
+// PB-AUTOSAVE-FOCUS-R1 — commands run one at a time, each against the payload left by
+// the previous one. Two overlapping commands (an Apply and an autosave flush, say) used
+// to compute from the same stale `before`, and whichever answered LAST won — so an older
+// response could overwrite a newer edit. Module-level, like savePromise: imperative
+// plumbing, not view data.
+let commandChain: Promise<unknown> = Promise.resolve()
+let commandsInFlight = 0
+
+/** Why the inspector is asked to flush (PB-AUTOSAVE-FOCUS-R1). */
+export interface InspectorFlushOptions {
+  /** The debounced autosave, not an explicit Save Draft / Publish by the author. */
+  autosave?: boolean
+}
 
 export const useEditorStore = defineStore('pbEditor', {
   state: (): State => ({
@@ -253,6 +271,7 @@ export const useEditorStore = defineStore('pbEditor', {
     autosaveTimer: null,
     canvasMode: 'tree',
     previewHtml: '',
+    previewInteractive: null,
     previewLoading: false,
     previewError: null,
     previewTimer: null,
@@ -489,6 +508,20 @@ export const useEditorStore = defineStore('pbEditor', {
       this.conflict = false
     },
 
+    /**
+     * Adopt a successful render-source switch: only the mode and the public-state
+     * token change — the draft/published payloads and the edit token are untouched.
+     */
+    applyModeSwitch(result: ModeSwitchResult) {
+      if (!this.layout) return
+      this.layout = {
+        ...this.layout,
+        editor_mode: result.editor_mode,
+        publication_token: result.publication_token,
+        has_published: result.has_published,
+      }
+    },
+
     async loadContext() {
       if (!this.client) return
       this.loading = true
@@ -538,16 +571,16 @@ export const useEditorStore = defineStore('pbEditor', {
     // The PropertyInspector registers a flush hook on mount; Save Draft /
     // Publish await it so unblurred field edits are committed into the payload
     // before it is sent.
-    registerInspectorFlush(fn: () => Promise<boolean>) {
+    registerInspectorFlush(fn: (options?: InspectorFlushOptions) => Promise<boolean>) {
       inspectorFlush = fn
     },
-    unregisterInspectorFlush(fn: () => Promise<boolean>) {
+    unregisterInspectorFlush(fn: (options?: InspectorFlushOptions) => Promise<boolean>) {
       if (inspectorFlush === fn) inspectorFlush = null
     },
     // Returns whether the staged inspector draft Applied cleanly (true when there
     // is nothing to apply). Save Draft / Publish abort when this is false.
-    async flushInspector(): Promise<boolean> {
-      return inspectorFlush ? await inspectorFlush() : true
+    async flushInspector(options: InspectorFlushOptions = {}): Promise<boolean> {
+      return inspectorFlush ? await inspectorFlush(options) : true
     },
     // Phase 24.1 — the inspector reports whether it holds staged (un-Applied) edits.
     setInspectorDirty(value: boolean) {
@@ -639,10 +672,10 @@ export const useEditorStore = defineStore('pbEditor', {
      * (Increment 7). Joins an in-flight save so a rapid Ctrl+S / Publish never races
      * or drops the latest payload. Returns whether the draft was persisted.
      */
-    async saveDraft(): Promise<boolean> {
+    async saveDraft(options: InspectorFlushOptions = {}): Promise<boolean> {
       if (!this.client) return false
       await this.flushInline()
-      if (!(await this.flushInspector())) return false
+      if (!(await this.flushInspector(options))) return false
       const issues = this.layoutIssues()
       if (issues.length > 0) {
         this.error = `Cannot save — invalid layout: ${issues[0].message}`
@@ -849,10 +882,33 @@ export const useEditorStore = defineStore('pbEditor', {
      * Run a backend command against the current payload. Records history and
      * marks dirty only when the payload actually changed. Returns whether it did.
      */
-    async executeCommand(command: string, params: Record<string, unknown> = {}): Promise<boolean> {
+    async executeCommand(
+      command: string,
+      params: Record<string, unknown> = {},
+      options: { keepSelection?: boolean } = {},
+    ): Promise<boolean> {
+      if (!this.client) return false
+      // PB-AUTOSAVE-FOCUS-R1 — queue behind any in-flight command, so `before` is read
+      // only once the previous result has landed and responses apply in issue order.
+      commandsInFlight++
+      this.commandLoading = true
+      const run = commandChain.then(() => this.runQueuedCommand(command, params, options))
+      commandChain = run.catch(() => undefined)
+      try {
+        return await run
+      } finally {
+        // Stays "Applying…" until the whole queue has drained, without flicker between commands.
+        this.commandLoading = --commandsInFlight > 0
+      }
+    },
+
+    async runQueuedCommand(
+      command: string,
+      params: Record<string, unknown>,
+      options: { keepSelection?: boolean },
+    ): Promise<boolean> {
       if (!this.client) return false
       const before = this.currentPayload
-      this.commandLoading = true
       this.commandError = null
       try {
         const result = await this.client.runCommand(before, command, params)
@@ -860,7 +916,10 @@ export const useEditorStore = defineStore('pbEditor', {
         if (changed) {
           this.pushHistory(before)
           this.currentPayload = result.payload
-          this.selectedComponentId = result.selection?.selected ?? null
+          // A data-only command never selects (the server answers `selected: null`).
+          // Adopting that null would momentarily deselect the component being edited,
+          // unmounting the inspector field the author is typing in (PB-AUTOSAVE-FOCUS-R1).
+          if (!options.keepSelection) this.selectedComponentId = result.selection?.selected ?? null
           this.markDirty()
           this.maybeSchedulePreview()
         }
@@ -868,26 +927,24 @@ export const useEditorStore = defineStore('pbEditor', {
       } catch (e) {
         this.commandError = (e as Error).message
         return false
-      } finally {
-        this.commandLoading = false
       }
     },
 
     // ---- Property editing (Phase 15) ----------------------------------
     /**
      * Commit a component's full data map through the update-component-data
-     * command. That command doesn't re-select, so we restore whatever was
-     * selected (usually the same component; on a selection switch, the new one).
+     * command. That command doesn't select anything, so the current selection is kept.
      */
     async updateComponentDataById(id: string, data: Record<string, unknown>): Promise<boolean> {
-      const keepSelection = this.selectedComponentId
       // Phase 21 — mark this single-component commit for component-level
       // reconciliation (the frontend Live Builder consumes the directive; the
       // structure editor ignores it, so its full-preview path is unchanged).
       this.reconcileComponentId = id
-      const changed = await this.executeCommand('update-component-data', { component_id: id, data })
+      // The selection is left exactly as it is — never cleared and re-set around the
+      // round-trip, and never dragged back if the author picked another component
+      // meanwhile (PB-AUTOSAVE-FOCUS-R1).
+      const changed = await this.executeCommand('update-component-data', { component_id: id, data }, { keepSelection: true })
       if (!changed) this.reconcileComponentId = null
-      this.selectComponent(keepSelection)
       return changed
     },
 
@@ -1133,7 +1190,7 @@ export const useEditorStore = defineStore('pbEditor', {
     // draft-only contract — so autosave can never publish or race a manual save.
     async runAutosave(): Promise<void> {
       if (!this.autosaveEnabled || !this.dirty || this.saving) return
-      await this.saveDraft()
+      await this.saveDraft({ autosave: true })
     },
 
     // ---- Unsaved-change (beforeunload) guard (PB-PROD-2) --------------
@@ -1162,11 +1219,13 @@ export const useEditorStore = defineStore('pbEditor', {
       this.previewLoading = true
       this.previewError = null
       try {
-        this.previewHtml = await this.client.renderPreview(
+        const result = await this.client.renderPreviewResult(
           this.currentPayload,
           this.owner.type,
           this.owner.id,
         )
+        this.previewHtml = result.html
+        this.previewInteractive = result.interactive
       } catch (e) {
         this.previewError = (e as Error).message
       } finally {
@@ -1208,6 +1267,7 @@ export const useEditorStore = defineStore('pbEditor', {
           kind: res.kind,
           type: res.type,
           warnings: res.warnings ?? [],
+          interactive: res.interactive ?? null,
           version: this.componentReconcileSeq,
         }
         return true

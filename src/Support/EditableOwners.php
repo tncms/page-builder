@@ -54,6 +54,35 @@ final class EditableOwners
     }
 
     /**
+     * The Core permission that governs editing an owner type's content records
+     * (the same slug the Core Pages/Posts admin resources check), or null when
+     * the type is unsupported.
+     */
+    public static function coreEditPermission(string $type): ?string
+    {
+        return match ($type) {
+            'page' => 'pages.edit',
+            'post' => 'posts.edit',
+            default => null,
+        };
+    }
+
+    /**
+     * Whether the current user may create a content translation for an owner type
+     * from the editor: a Core content write, so it needs BOTH `page-builder.edit`
+     * and the type's Core edit permission.
+     */
+    public static function canCreateTranslation(string $type): bool
+    {
+        $core = self::coreEditPermission($type);
+
+        return $core !== null
+            && function_exists('cms_can')
+            && cms_can('page-builder.edit')
+            && cms_can($core);
+    }
+
+    /**
      * Resolve the owning Content record for a type + id, or null when the type
      * is unsupported or no matching record exists. Never throws.
      */
