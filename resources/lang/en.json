@@ -165,5 +165,10 @@
     "Custom HTML is cleaned before it is shown: scripts, styles, forms, embeds, event attributes, unsafe links and images from other sites are removed. The canvas shows the cleaned result.": "Custom HTML is cleaned before it is shown: scripts, styles, forms, embeds, event attributes, unsafe links and images from other sites are removed. The canvas shows the cleaned result.",
     "No HTML yet. Type or paste HTML source here.": "No HTML yet. Type or paste HTML source here.",
     "This HTML is too large or too deeply nested to save. Please shorten it.": "This HTML is too large or too deeply nested to save. Please shorten it.",
-    "Custom HTML — add HTML source in the Inspector.": "Custom HTML — add HTML source in the Inspector."
+    "Custom HTML — add HTML source in the Inspector.": "Custom HTML — add HTML source in the Inspector.",
+    "This draft uses components or data sources that are currently unavailable. It can be saved, but not published until they are available again.": "This draft uses components or data sources that are currently unavailable. It can be saved, but not published until they are available again.",
+    "This change would alter a component that is currently unavailable. Unavailable components are kept exactly as saved; undo that change and save again.": "This change would alter a component that is currently unavailable. Unavailable components are kept exactly as saved; undo that change and save again.",
+    "Publishing is paused: this page uses a component that is currently unavailable. You can keep editing and saving.": "Publishing is paused: this page uses a component that is currently unavailable. You can keep editing and saving.",
+    "This copy contains a component that is currently unavailable, so it cannot be pasted.": "This copy contains a component that is currently unavailable, so it cannot be pasted.",
+    "This component is inside a component that is currently unavailable. It is kept exactly as saved and cannot be edited until that component is available again.": "This component is inside a component that is currently unavailable. It is kept exactly as saved and cannot be edited until that component is available again."
 }

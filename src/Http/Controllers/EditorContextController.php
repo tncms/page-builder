@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Plugins\PageBuilder\Authority\AuthorityResponse;
 use Plugins\PageBuilder\Authority\ContentAuthority;
 use Plugins\PageBuilder\Authority\PageBuilderAuthorityException;
+use Plugins\PageBuilder\Availability\UnavailableSubtreeGuard;
+use Plugins\PageBuilder\Availability\UnavailableSubtreeViolation;
 use Plugins\PageBuilder\DataSources\DataSourceLayoutValidator;
 use Plugins\PageBuilder\DataSources\Exceptions\InvalidDataSourceConfigException;
 use Plugins\PageBuilder\Editor\Translation\EditorOwnerResolutionException;
@@ -16,6 +18,7 @@ use Plugins\PageBuilder\Editor\Translation\EffectiveEditorOwnerResolver;
 use Plugins\PageBuilder\Editor\Translation\EffectiveLayoutOwner;
 use Plugins\PageBuilder\Editor\Translation\FirstOpenLayoutProvisioner;
 use Plugins\PageBuilder\Exceptions\AuthoredHtmlRejectedException;
+use Plugins\PageBuilder\Models\PageBuilderLayout;
 use Plugins\PageBuilder\Provenance\AttestationContext;
 use Plugins\PageBuilder\Provenance\ProvenanceReconciler;
 use Plugins\PageBuilder\Provenance\ProvenanceReconciliationException;
@@ -96,13 +99,17 @@ final class EditorContextController
             // so a stale request 409s without reconciling/verifying/stamping anything. The
             // authoritative in-transaction CAS in LayoutStore::saveDraft is the final guard.
             $expectedToken = $this->requireToken($request, $effective);
-            $currentToken = $this->layouts->currentToken($effective->ownerType, $effective->ownerId);
+            // PB-XREG-4-R1 — the frozen-subtree baseline is the persisted draft of the SAME row
+            // whose token the request matched; the in-transaction CAS keeps it authoritative.
+            $persisted = $this->layouts->find($effective->ownerType, $effective->ownerId);
+            $currentToken = $persisted?->versionToken() ?? PageBuilderLayout::emptyToken();
             if (! hash_equals($currentToken, $expectedToken)) {
                 throw new LayoutVersionConflictException($currentToken, [
                     'token' => $currentToken,
                     'reason' => 'stale_token',
                 ]);
             }
+            $baseline = $persisted?->draft_payload;
 
             // Normalize strips ALL raw browser metadata; the reconciler is the sole
             // authority that re-attaches trusted provenance (preserve by server identity /
@@ -116,17 +123,21 @@ final class EditorContextController
             // PB-TEXT-AUTHORING-R1 — author HTML over the size / nesting bounds fails the
             // whole save (bounded 422) before any write; the source is never rewritten.
             app(AuthoredHtmlLayoutValidator::class)->assertValid($normalized);
+            // PB-XREG-4-R1 — unknown types fail closed; unavailable subtrees must come back
+            // exactly as persisted (same id, parent, order, content) or the save is refused.
+            $guard = app(UnavailableSubtreeGuard::class);
+            $guard->assertPreserved($baseline, $normalized);
             $context = new AttestationContext(
                 (string) ($this->userId() ?? ''),
                 AttestationContext::owner($effective->ownerType, $effective->ownerId),
                 $expectedToken,
             );
-            $reconciled = $this->reconciler->reconcileDraft(
-                $this->layouts->getDraftPayload($effective->ownerType, $effective->ownerId),
+            $reconciled = $guard->restore($this->reconciler->reconcileDraft(
+                $baseline,
                 $normalized,
                 $this->attestationsFrom($request),
                 $context,
-            );
+            ), $baseline);
 
             $layout = $this->layouts->saveDraft(
                 $effective->ownerType,
@@ -206,6 +217,18 @@ final class EditorContextController
             $effective = $this->owners->resolve($ownerType, $owner->getKey(), $this->localeFrom($request));
             $this->provisioner->ensure($effective, $this->userId());
             $token = $this->requireToken($request, $effective);
+            // PB-XREG-4-R1 — never publish a draft that depends on an unavailable component or
+            // data source (or holds an unknown node). Checked on the row the token names; a
+            // stale token is left to the authoritative in-transaction CAS (409).
+            $persisted = $this->layouts->find($effective->ownerType, $effective->ownerId);
+            if ($persisted !== null && hash_equals($persisted->versionToken(), $token)
+                && UnavailableSubtreeGuard::blocksPublication(app(UnavailableSubtreeGuard::class)->dependencies($persisted->draft_payload))) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'pb_publish_unavailable_dependencies',
+                    'message' => __('This draft uses components or data sources that are currently unavailable. It can be saved, but not published until they are available again.'),
+                ], 422)->header('Cache-Control', 'no-store, private');
+            }
 
             // Publishing from the editor makes the owner render with the builder on the
             // public frontend (Phase 14.3). LayoutStore::publish sets builder mode and
@@ -294,6 +317,14 @@ final class EditorContextController
                 'error' => 'pb_html_'.$e->reason,
                 'message' => __('This HTML is too large or too deeply nested to save. Please shorten it.'),
                 'data' => ['component_id' => $e->nodeId, 'field' => $e->field],
+            ], 422)->header('Cache-Control', 'no-store, private');
+        } catch (UnavailableSubtreeViolation $e) {
+            // PB-XREG-4-R1 — bounded reason + stable node id only; nothing was written.
+            return response()->json([
+                'success' => false,
+                'error' => 'pb_unavailable_'.$e->reason,
+                'message' => __('This change would alter a component that is currently unavailable. Unavailable components are kept exactly as saved; undo that change and save again.'),
+                'data' => ['component_id' => $e->nodeId],
             ], 422)->header('Cache-Control', 'no-store, private');
         } catch (RegisteredResourceInsertionException $e) {
             // A registered-resource insertion failed (unknown/unavailable resource,

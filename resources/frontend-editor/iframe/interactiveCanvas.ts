@@ -6,7 +6,8 @@
 // any missing asset (once per document) and mounts the new roots in the `editor` context.
 //
 // Defence in depth — the manifest never comes from the layout, but it is still validated here: only same-origin
-// `/vendor/…` stylesheet/module URLs with a well-formed handle are ever inserted; anything else is dropped. A failed
+// `/vendor/…` (plugin) or `/themes/…` (PB-XREG-4 active-theme, Core-published) stylesheet/module URLs with a
+// well-formed handle are ever inserted; anything else is dropped. A failed
 // or slow asset degrades to the static markup and never breaks the canvas.
 
 export interface InteractiveAssetEntry {
@@ -34,7 +35,7 @@ const LOAD_TIMEOUT_MS = 8000
 
 const pending = new Map<string, Promise<boolean>>()
 
-/** Keep only entries that are same-origin `/vendor/` stylesheets/modules with a valid handle. */
+/** Keep only entries that are same-origin `/vendor/` or `/themes/` stylesheets/modules with a valid handle. */
 export function sanitizeManifest(raw: unknown, origin: string): InteractiveManifest | null {
   if (!raw || typeof raw !== 'object') return null
   const input = raw as { behaviors?: unknown; assets?: unknown }
@@ -50,7 +51,7 @@ export function sanitizeManifest(raw: unknown, origin: string): InteractiveManif
     } catch {
       continue
     }
-    if (url.origin !== origin || url.username || url.password || !url.pathname.includes('/vendor/')) continue
+    if (url.origin !== origin || url.username || url.password || !/\/(vendor|themes)\//.test(url.pathname)) continue
     if (!/\.(css|m?js)$/.test(url.pathname)) continue
     assets.push({ handle: a.handle, kind: a.kind, url: url.href })
   }

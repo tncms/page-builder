@@ -9,7 +9,10 @@ use Illuminate\Console\Command;
 use Plugins\PageBuilder\Authority\AuthorityResponse;
 use Plugins\PageBuilder\Authority\ContentAuthority;
 use Plugins\PageBuilder\Authority\PageBuilderAuthorityException;
+use Plugins\PageBuilder\Availability\UnavailableSubtreeGuard;
+use Plugins\PageBuilder\Availability\UnavailableSubtreeViolation;
 use Plugins\PageBuilder\Support\LayoutCompositionMigrator;
+use Plugins\PageBuilder\Support\LayoutNormalizer;
 use Plugins\PageBuilder\Support\LayoutStore;
 use TheNguyen\CMS\ContentAuthority\ContentWriteException;
 
@@ -83,7 +86,17 @@ class MigrateLayoutCompositionCommand extends Command
             return self::SUCCESS;
         }
 
-        $store->saveDraft($ownerType, $ownerId, $migrated);
+        // PB-XREG-4-R1 — never rewrite content whose provider is unavailable right now.
+        $guard = app(UnavailableSubtreeGuard::class);
+        try {
+            $guard->assertPreserved($draft, app(LayoutNormalizer::class)->normalize($migrated), freezeUnknown: true);
+        } catch (UnavailableSubtreeViolation $e) {
+            $this->error("Not repaired: the draft for {$ownerType}#{$ownerId} contains components that are currently unavailable ({$e->reason}). Activate their provider and run again.");
+
+            return self::FAILURE;
+        }
+
+        $store->saveDraft($ownerType, $ownerId, $guard->restore($migrated, $draft, freezeUnknown: true));
         $this->info("Repaired the draft for {$ownerType}#{$ownerId} into the composition tree.");
 
         if ($actor !== null) {

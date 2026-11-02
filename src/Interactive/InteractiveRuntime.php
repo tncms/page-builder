@@ -6,6 +6,7 @@ namespace Plugins\PageBuilder\Interactive;
 
 use Plugins\PageBuilder\Components\ComponentAvailability;
 use Plugins\PageBuilder\Components\ComponentProviderRegistry;
+use Plugins\PageBuilder\Origins\ProviderOrigin;
 use Throwable;
 
 /**
@@ -34,6 +35,9 @@ class InteractiveRuntime
     /** @var array<int, array{code: string, behavior: string}> */
     private array $diagnostics = [];
 
+    /** PB-XREG-4 — behavior id => origin kind of the planned behavior (asset source type only). @var array<string, string> */
+    private array $behaviorOrigins = [];
+
     public function __construct(
         private readonly ComponentProviderRegistry $components,
         private readonly InteractiveAssetResolver $resolver,
@@ -44,6 +48,7 @@ class InteractiveRuntime
     {
         $this->collected = [];
         $this->diagnostics = [];
+        $this->behaviorOrigins = [];
     }
 
     /**
@@ -102,7 +107,7 @@ class InteractiveRuntime
         foreach ($types as $type) {
             $behavior = $this->behaviorForRender($type, $context);
             if ($behavior !== null) {
-                $behaviors[$behavior->id()] = [$behavior, (string) $this->components->ownerOf($type)];
+                $behaviors[$behavior->id()] = [$behavior, (string) $this->components->ownerOf($type), $this->components->originOf($type)?->kind ?? ProviderOrigin::PLUGIN];
             }
         }
         ksort($behaviors, SORT_STRING);
@@ -120,10 +125,10 @@ class InteractiveRuntime
 
         $plan = [['handle' => self::RUNTIME_HANDLE, 'kind' => InteractiveAsset::KIND_MODULE, 'url' => $runtimeUrl, 'deps' => [], 'behavior' => null]];
 
-        foreach ($behaviors as $id => [$behavior, $owner]) {
+        foreach ($behaviors as $id => [$behavior, $owner, $origin]) {
             $entries = [];
             foreach ($behavior->orderedAssets() as $asset) {
-                $url = $owner === '' ? null : $this->resolver->url($owner, $asset->path());
+                $url = $owner === '' ? null : $this->resolver->url($owner, $asset->path(), $origin);
                 if ($url === null) {
                     $this->diagnose('interactive.asset_unavailable', $id);
                     $entries = null;
@@ -136,6 +141,7 @@ class InteractiveRuntime
                 }
 
                 $entries[] = ['handle' => self::handleFor($id, $asset->handle()), 'kind' => $asset->kind(), 'url' => $url, 'deps' => $deps, 'behavior' => $id];
+                $this->behaviorOrigins[$id] = $origin;
             }
 
             if ($entries !== null) {
@@ -171,7 +177,7 @@ class InteractiveRuntime
                 // pull the stylesheet into the footer a second time. Same-kind deps only — the plan already
                 // guarantees cross-kind order (styles in <head> precede every footer module).
                 $entry['deps'] = array_values(array_filter($entry['deps'], fn (string $d): bool => ($kinds[$d] ?? null) === $entry['kind']));
-                $source = ['source_type' => 'plugin', 'source_name' => $entry['behavior'] === null ? self::OWNER : strtok($entry['behavior'], ':')];
+                $source = ['source_type' => ($this->behaviorOrigins[(string) $entry['behavior']] ?? null) === ProviderOrigin::THEME ? 'theme' : 'plugin', 'source_name' => $entry['behavior'] === null ? self::OWNER : strtok($entry['behavior'], ':')];
                 if ($entry['kind'] === InteractiveAsset::KIND_CSS) {
                     $assets->registerStyle($entry['handle'], $entry['url'], $entry['deps'], null, 'frontend', 'head', [], null, $source);
                     $assets->enqueueStyle($entry['handle']);

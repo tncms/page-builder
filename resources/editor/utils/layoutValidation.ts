@@ -1,5 +1,6 @@
 import type { BlockNode, EditorMetadata, LayoutPayload, SectionNode } from '../types'
 import { canContain } from './nestingPolicy'
+import { isExternalComponentType } from './unavailableNodes'
 
 /**
  * Layout integrity validation (Phase 26.3, Increment 7).
@@ -63,7 +64,9 @@ export function validateLayout(
       issues.push({ code: 'missing-type', id, message: `Component ${id ?? '(no id)'} is missing a type.` })
       return null
     }
-    if (registry && registry.size > 0 && !registry.has(rawType)) {
+    // PB-XREG-4-R1 — a namespaced type with no definition is UNAVAILABLE (its provider is off),
+    // not corrupt: it is kept exactly as saved and the server guards it. Bare unknown types still block.
+    if (registry && registry.size > 0 && !registry.has(rawType) && !isExternalComponentType(rawType)) {
       issues.push({ code: 'unknown-type', id, message: `Component ${id ?? rawType} has an unknown type "${rawType}".` })
     }
     return rawType

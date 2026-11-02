@@ -35,6 +35,10 @@ final class EditorChromeStrings
             'unknownInspectorNote' => $t('Editing controls will return when this component is available again.'),
             'unknownBadge' => $t('Unavailable'),
             'unknownNodeLabel' => $t('Unavailable component'),
+            // PB-XREG-4-R1 — editing continuity while a provider is unavailable.
+            'publish_blocked_unavailable' => $t('Publishing is paused: this page uses a component that is currently unavailable. You can keep editing and saving.'),
+            'paste_unavailable' => $t('This copy contains a component that is currently unavailable, so it cannot be pasted.'),
+            'frozenDescendantNote' => $t('This component is inside a component that is currently unavailable. It is kept exactly as saved and cannot be edited until that component is available again.'),
             // PB-TREG-2 — provenance recovery messages, keyed by the server machine code so
             // the Vue editor (no client i18n) can surface an actionable, localized message
             // without decoding tokens. Never expose signatures/keys/paths.

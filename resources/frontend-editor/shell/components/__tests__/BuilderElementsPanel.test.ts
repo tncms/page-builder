@@ -71,4 +71,23 @@ describe('BuilderElementsPanel (Phase 23)', () => {
     expect(sectionKinds[0].text()).toBe('Section')
     expect(elementKinds[0].text()).toBe('Element')
   })
+
+  // PB-XREG-4 — theme-origin definitions carry a server-derived origin; built-ins/plugins stay unbadged.
+  it('marks only theme-origin cards with a Theme origin chip in the visible and accessible name', () => {
+    seedMetadata()
+    const store = useEditorStore()
+    store.metadata!.sections.push({
+      type: 'aurora:hero', label: 'Aurora hero', category: 'theme', origin: { kind: 'theme', slug: 'aurora' },
+    } as never)
+    const wrapper = mountComponents()
+
+    const chips = wrapper.findAll('.pb-live-builder-element__origin')
+    expect(chips).toHaveLength(1)
+    expect(chips[0].text()).toBe('Theme')
+    const card = wrapper.findAll('.pb-live-builder-element').find((b) => b.text().includes('Aurora hero'))!
+    expect(card.attributes('aria-label')).toContain('Provided by the active theme')
+    const hero = wrapper.findAll('.pb-live-builder-element').find((b) => b.text().startsWith('Hero'))!
+    expect(hero.attributes('aria-label')).not.toContain('theme')
+    expect(wrapper.html()).not.toContain('aurora::')
+  })
 })

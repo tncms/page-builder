@@ -182,7 +182,9 @@ function goStructure(): void {
         v-if="store.canPublish"
         type="button"
         class="pb-ui-btn pb-live-builder-btn pb-live-builder-btn--primary"
-        :disabled="store.publishing"
+        :disabled="store.publishing || !!store.publishBlockedReason"
+        :title="store.publishBlockedReason ?? undefined"
+        data-pb-publish
         @click="store.publish()"
       >
         {{ store.publishing ? 'Publishing…' : 'Publish' }}

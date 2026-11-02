@@ -15,8 +15,11 @@ use Plugins\PageBuilder\Contracts\ComponentDefinition;
 use Plugins\PageBuilder\Contracts\SectionDefinition;
 use Plugins\PageBuilder\Interactive\Contracts\InteractiveComponentDefinition;
 use Plugins\PageBuilder\Interactive\InteractiveBehavior;
+use Plugins\PageBuilder\Origins\ProviderOrigin;
 use Plugins\PageBuilder\Registries\BlockRegistry;
 use Plugins\PageBuilder\Registries\SectionRegistry;
+use Plugins\PageBuilder\Themes\ThemeComponentProvider;
+use Plugins\PageBuilder\Themes\ThemeOriginIdentity;
 
 /**
  * The single authority through which Section and Block component definitions enter
@@ -54,11 +57,19 @@ class ComponentProviderRegistry
     /** id => interactive behavior (PB-XREG-3), kept OUT of the stored definition array so editor metadata never carries asset paths. @var array<string, InteractiveBehavior> */
     private array $behaviors = [];
 
+    /** namespace => server-derived origin (PB-XREG-4). @var array<string, ProviderOrigin> */
+    private array $origins = [];
+
+    /**
+     * @param  ThemeOriginIdentity|null  $themes  PB-XREG-4 — the Core-derived theme identity. Null (the PB-XREG-1
+     *                                            default) refuses every theme provider.
+     */
     public function __construct(
         private readonly SectionRegistry $sections,
         private readonly BlockRegistry $blocks,
         private readonly ComponentProviderComplianceValidator $validator,
         private readonly ComponentProviderIdentity $identity,
+        private readonly ?ThemeOriginIdentity $themes = null,
     ) {}
 
     /**
@@ -77,6 +88,12 @@ class ComponentProviderRegistry
             throw ComponentRegistryFrozenException::forProvider($this->namespaceOf($provider));
         }
 
+        // PB-XREG-4 — a theme provider proves its Core-derived identity BEFORE compliance, so an inactive or forged
+        // theme is reported as such (its views are not even resolvable outside the active chain).
+        if ($provider instanceof ThemeComponentProvider) {
+            $this->enforceThemeIdentity($this->namespaceOf($provider));
+        }
+
         $report = $this->validator->validate($provider);
 
         if (! $report->passed()) {
@@ -85,6 +102,7 @@ class ComponentProviderRegistry
 
         $internal = $provider instanceof InternalComponentProvider;
         $namespace = $this->enforceIdentity($provider, $internal);
+        $origin = $this->originFor($provider, $internal, $namespace);
 
         // Resolve the whole batch and check collisions BEFORE writing anything.
         $pending = [];           // id => ['kind' => 'section'|'block', 'array' => ...]
@@ -124,6 +142,7 @@ class ComponentProviderRegistry
         }
 
         $this->versions[$namespace] = $this->versionOf($provider);
+        $this->origins[$namespace] = $origin;
 
         return $report;
     }
@@ -171,6 +190,17 @@ class ComponentProviderRegistry
         return $this->behaviors[trim($id)] ?? null;
     }
 
+    /**
+     * PB-XREG-4 — the server-derived origin of a registered id (built-in, plugin, or theme), or null when the id
+     * is not registered. Registry metadata only; stored layouts never carry it.
+     */
+    public function originOf(string $id): ?ProviderOrigin
+    {
+        $namespace = $this->owners[trim($id)] ?? null;
+
+        return $namespace === null ? null : ($this->origins[$namespace] ?? null);
+    }
+
     /** The owning provider namespace for a registered id, or null. */
     public function ownerOf(string $id): ?string
     {
@@ -205,6 +235,11 @@ class ComponentProviderRegistry
             if (isset($this->behaviors[$id])) {
                 $snapshot[$id]['interactive'] = $this->behaviors[$id]->fingerprint();
             }
+
+            // PB-XREG-4 — added ONLY for theme components, so plugin/built-in snapshots (and hashes) are unchanged.
+            if (($this->origins[$namespace] ?? null)?->kind === ProviderOrigin::THEME) {
+                $snapshot[$id]['origin'] = ProviderOrigin::THEME;
+            }
         }
 
         ksort($snapshot);
@@ -229,6 +264,10 @@ class ComponentProviderRegistry
             return $declared;
         }
 
+        if ($provider instanceof ThemeComponentProvider) {
+            return $this->enforceThemeIdentity($declared);
+        }
+
         $canonical = $this->identity->resolve($provider);
 
         if ($canonical === null) {
@@ -244,6 +283,43 @@ class ComponentProviderRegistry
         }
 
         return $canonical;
+    }
+
+    /**
+     * PB-XREG-4 — a theme provider's namespace is accepted only when Core reports that slug in the ACTIVE theme
+     * chain and it collides with no plugin slug. Inactive, forged, reserved or plugin-shadowing slugs fail closed.
+     */
+    private function enforceThemeIdentity(string $declared): string
+    {
+        $code = $this->themes === null ? 'theme.unsupported' : $this->themes->ineligibility($declared);
+
+        if ($code !== null) {
+            throw ComponentNamespaceViolationException::forReason(
+                'theme namespace "'.$declared.'" is not an eligible active theme ('.$code.').'
+            );
+        }
+
+        return $declared;
+    }
+
+    private function originFor(ComponentProvider $provider, bool $internal, string $namespace): ProviderOrigin
+    {
+        if ($internal) {
+            return ProviderOrigin::builtin();
+        }
+
+        $origin = $provider instanceof ThemeComponentProvider
+            ? ProviderOrigin::theme($namespace)
+            : ProviderOrigin::plugin($namespace);
+
+        $existing = $this->origins[$namespace] ?? null;
+        if ($existing !== null && $existing->kind !== $origin->kind) {
+            throw ComponentNamespaceViolationException::forReason(
+                'namespace "'.$namespace.'" is already owned by a '.$existing->kind.' provider.'
+            );
+        }
+
+        return $origin;
     }
 
     /**

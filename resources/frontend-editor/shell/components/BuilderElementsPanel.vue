@@ -36,7 +36,13 @@ function labelOf(def: DefinitionMeta): string {
 // so screen-reader users get the same intent hint sighted users see on hover/focus
 // (no hover-only information).
 function ariaFor(def: DefinitionMeta, kind: 'section' | 'block'): string {
-  return `${labelOf(def)}. ${tooltipFor(def, kind)}`
+  const origin = isThemeOrigin(def) ? ' Provided by the active theme.' : ''
+  return `${labelOf(def)}. ${tooltipFor(def, kind)}${origin}`
+}
+
+// PB-XREG-4 — only theme-origin definitions carry a server-derived `origin`; built-ins and plugins stay unbadged.
+function isThemeOrigin(def: DefinitionMeta): boolean {
+  return (def.origin as { kind?: string } | undefined)?.kind === 'theme'
 }
 
 function badgeFor(def: DefinitionMeta, kind: 'section' | 'block'): Capability {
@@ -227,6 +233,7 @@ onBeforeUnmount(disarm)
         <span class="pb-live-builder-element__meta">
           <span class="pb-live-builder-element__kind pb-live-builder-element__kind--section">Section</span>
           <span class="pb-live-builder-element__badge">{{ badgeFor(def, 'section') }}</span>
+          <span v-if="isThemeOrigin(def)" class="pb-live-builder-element__origin">Theme</span>
           <span class="pb-live-builder-element__category">{{ categoryLabel(def) }}</span>
         </span>
       </button>
@@ -280,6 +287,7 @@ onBeforeUnmount(disarm)
           <span class="pb-live-builder-element__meta">
             <span class="pb-live-builder-element__kind pb-live-builder-element__kind--element">Element</span>
             <span class="pb-live-builder-element__badge">{{ badgeFor(def, 'block') }}</span>
+            <span v-if="isThemeOrigin(def)" class="pb-live-builder-element__origin">Theme</span>
             <span class="pb-live-builder-element__category">{{ categoryLabel(def) }}</span>
           </span>
         </button>

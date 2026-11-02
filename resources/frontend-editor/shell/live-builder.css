@@ -356,6 +356,19 @@
   border: 1px solid #e2e8f0;
 }
 
+/* PB-XREG-4 — origin chip, shown only for components contributed by the active theme. */
+.pb-live-builder-element__origin {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  padding: 1px 5px;
+  border-radius: 999px;
+  color: #047857;
+  background: #d1fae5;
+}
+
 /* Panel description under each heading (Sections / Elements / Patterns guidance). */
 .pb-live-builder-panel__desc {
   margin: 0 0 0.6rem;

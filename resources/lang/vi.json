@@ -165,5 +165,10 @@
     "Custom HTML is cleaned before it is shown: scripts, styles, forms, embeds, event attributes, unsafe links and images from other sites are removed. The canvas shows the cleaned result.": "HTML tùy chỉnh được làm sạch trước khi hiển thị: script, style, biểu mẫu, nội dung nhúng, thuộc tính sự kiện, liên kết không an toàn và hình ảnh từ trang khác đều bị loại bỏ. Khung xem hiển thị kết quả đã làm sạch.",
     "No HTML yet. Type or paste HTML source here.": "Chưa có HTML. Hãy nhập hoặc dán mã nguồn HTML vào đây.",
     "This HTML is too large or too deeply nested to save. Please shorten it.": "HTML này quá lớn hoặc lồng nhau quá sâu nên không thể lưu. Vui lòng rút gọn.",
-    "Custom HTML — add HTML source in the Inspector.": "HTML tùy chỉnh — hãy thêm mã nguồn HTML trong bảng thuộc tính."
+    "Custom HTML — add HTML source in the Inspector.": "HTML tùy chỉnh — hãy thêm mã nguồn HTML trong bảng thuộc tính.",
+    "This draft uses components or data sources that are currently unavailable. It can be saved, but not published until they are available again.": "Bản nháp này dùng thành phần hoặc nguồn dữ liệu hiện không khả dụng. Bạn vẫn có thể lưu, nhưng chưa thể xuất bản cho đến khi chúng khả dụng trở lại.",
+    "This change would alter a component that is currently unavailable. Unavailable components are kept exactly as saved; undo that change and save again.": "Thay đổi này sẽ sửa một thành phần hiện không khả dụng. Thành phần không khả dụng được giữ nguyên như đã lưu; hãy hoàn tác thay đổi đó rồi lưu lại.",
+    "Publishing is paused: this page uses a component that is currently unavailable. You can keep editing and saving.": "Tạm dừng xuất bản: trang này dùng một thành phần hiện không khả dụng. Bạn vẫn có thể tiếp tục chỉnh sửa và lưu.",
+    "This copy contains a component that is currently unavailable, so it cannot be pasted.": "Bản sao này chứa một thành phần hiện không khả dụng nên không thể dán.",
+    "This component is inside a component that is currently unavailable. It is kept exactly as saved and cannot be edited until that component is available again.": "Thành phần này nằm trong một thành phần hiện không khả dụng. Nó được giữ nguyên như đã lưu và chưa thể chỉnh sửa cho đến khi thành phần đó khả dụng trở lại."
 }

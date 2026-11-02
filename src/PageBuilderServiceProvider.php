@@ -164,8 +164,20 @@ class PageBuilderServiceProvider extends ServiceProvider
                 $app->make(BlockRegistry::class),
                 new \Plugins\PageBuilder\Components\ComponentProviderComplianceValidator,
                 new \Plugins\PageBuilder\Components\ComponentProviderIdentity($app->make(\TheNguyen\CMS\Services\ExtensionManager::class)),
+                $app->make(\Plugins\PageBuilder\Themes\ThemeOriginIdentity::class),
             );
         });
+
+        // PB-XREG-4 — theme-origin components: identity derived only from Core's theme authority, files read only
+        // from the Core theme root, registered once per request just before the freeze.
+        $this->app->singleton(\Plugins\PageBuilder\Themes\ThemeOriginIdentity::class, static fn ($app): \Plugins\PageBuilder\Themes\ThemeOriginIdentity => new \Plugins\PageBuilder\Themes\ThemeOriginIdentity(
+            $app->bound('cms.theme') ? $app->make('cms.theme') : null,
+            $app->make(\TheNguyen\CMS\Services\ExtensionManager::class),
+        ));
+        $this->app->singleton(\Plugins\PageBuilder\Themes\ThemeComponentManifestReader::class);
+        $this->app->singleton(\Plugins\PageBuilder\Themes\ThemeComponentFactory::class);
+        $this->app->singleton(\Plugins\PageBuilder\Themes\ThemeComponentRegistration::class);
+        $this->app->singleton(\Plugins\PageBuilder\Catalog\UnifiedCatalog::class);
 
         // PB-XREG-2 — the public Data Source authority: a sibling of (never merged
         // with) the component registry above. Singleton so its owner map + freeze
@@ -738,7 +750,11 @@ class PageBuilderServiceProvider extends ServiceProvider
         $this->app->bind(
             \Plugins\PageBuilder\LayoutTranslation\Execution\Contracts\TargetDraftWriterInterface::class,
             static function ($app) {
-                return new \Plugins\PageBuilder\LayoutTranslation\Execution\Adapters\LayoutStoreTargetDraftWriter($app->make(LayoutStore::class));
+                return new \Plugins\PageBuilder\LayoutTranslation\Execution\Adapters\LayoutStoreTargetDraftWriter(
+                    $app->make(LayoutStore::class),
+                    $app->make(\Plugins\PageBuilder\Availability\UnavailableSubtreeGuard::class),
+                    $app->make(\Plugins\PageBuilder\Support\LayoutNormalizer::class),
+                );
             },
         );
         $this->app->bind(
@@ -1234,6 +1250,17 @@ class PageBuilderServiceProvider extends ServiceProvider
         // booted (each had its window to register), the registry locks and any
         // further provider registration fails closed. `booted` callbacks run after
         // the whole application boots, independent of plugin boot order.
+        // PB-XREG-4 — the active theme chain registers in `booted`, i.e. after every plugin boot() and right
+        // before the freeze below (same callback order on every request). Never throws out of boot.
+        $app = $this->app;
+        $this->app->booted(static function () use ($app): void {
+            try {
+                $app->make(\Plugins\PageBuilder\Themes\ThemeComponentRegistration::class)->registerActiveThemes();
+            } catch (\Throwable) {
+                // Theme components are optional; built-ins and plugins are already registered.
+            }
+        });
+
         $this->app->booted(static function () use ($registry): void {
             $registry->freeze();
         });

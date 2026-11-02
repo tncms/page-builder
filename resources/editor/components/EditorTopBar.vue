@@ -121,7 +121,9 @@ const statusTone = computed<'ok' | 'warn' | 'muted'>(() => {
       <PbButton
         v-if="store.canPublish"
         tone="primary"
-        :disabled="store.publishing"
+        :disabled="store.publishing || !!store.publishBlockedReason"
+        :title="store.publishBlockedReason ?? undefined"
+        data-pb-publish
         @click="store.publish()"
       >
         {{ store.publishing ? 'Publishing…' : 'Publish' }}

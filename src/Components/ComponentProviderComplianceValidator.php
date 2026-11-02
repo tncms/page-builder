@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\PageBuilder\Components;
 
+use Illuminate\Support\Facades\View;
 use Plugins\PageBuilder\Components\Contracts\ComponentProvider;
 use Plugins\PageBuilder\Components\Contracts\ExternalComponentDefinition;
 use Plugins\PageBuilder\Components\Contracts\InternalComponentProvider;
@@ -12,6 +13,8 @@ use Plugins\PageBuilder\Contracts\ComponentDefinition;
 use Plugins\PageBuilder\Contracts\SectionDefinition;
 use Plugins\PageBuilder\Interactive\Contracts\InteractiveComponentDefinition;
 use Plugins\PageBuilder\Interactive\InteractiveBehaviorValidator;
+use Plugins\PageBuilder\Themes\ThemeComponentDefinition;
+use Plugins\PageBuilder\Themes\ThemeComponentProvider;
 use Throwable;
 
 /**
@@ -205,7 +208,10 @@ final class ComponentProviderComplianceValidator
             }
 
             $view = $this->safeView($definition);
-            $prefix = $ns.'::';
+            // PB-XREG-4 — a theme component renders through Core's `theme::` namespace (active chain only), at
+            // the fixed convention path for its own slug, and the view must exist when it registers.
+            $theme = $provider instanceof ThemeComponentProvider;
+            $prefix = $theme ? ThemeComponentDefinition::VIEW_PREFIX.$ns.'.' : $ns.'::';
 
             if (! str_starts_with($view, $prefix)) {
                 return ComponentComplianceCheck::fail(
@@ -221,6 +227,10 @@ final class ComponentProviderComplianceValidator
                     'renderer',
                     'view() "'.$view.'" is not a safe dot-notated view name.'
                 );
+            }
+
+            if ($theme && ! $this->viewExists($view)) {
+                return ComponentComplianceCheck::fail('renderer', 'Theme component "'.$this->safeType($definition).'" has no view in the active theme.');
             }
         }
 
@@ -314,6 +324,15 @@ final class ComponentProviderComplianceValidator
     }
 
     // ---- helpers --------------------------------------------------------
+
+    private function viewExists(string $view): bool
+    {
+        try {
+            return View::exists($view);
+        } catch (Throwable) {
+            return false;
+        }
+    }
 
     /**
      * @return array<int, ComponentDefinition>

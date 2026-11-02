@@ -31,8 +31,12 @@ import { buildDefaultData, diffFieldPaths, editableFields, hasMeaningfulValues }
 import InspectorTabs from './InspectorTabs.vue'
 import InspectorSearch from './InspectorSearch.vue'
 import UnknownNodePlaceholder from '../UnknownNodePlaceholder.vue'
+import { createApplyCoordinator } from './applyCoordinator'
 
 const store = useEditorStore()
+// PB-XREG-4-R1 — inside an unavailable component everything is kept exactly as saved.
+const frozen = computed(() => store.isNodeFrozen(store.selectedComponentId))
+const frozenHolder = computed(() => frozen.value || store.holdsFrozen(store.selectedComponentId))
 const rootEl = ref<HTMLElement | null>(null)
 // Live token registry (Phase 26.7) — used to resolve token references for live preview
 // and provided to adopted editors via the style context (Phase 26.9).
@@ -50,6 +54,17 @@ const activePreset = ref<string | null>(null)
 type ApplyState = 'idle' | 'applying' | 'applied' | 'error'
 const applyState = ref<ApplyState>('idle')
 let appliedTimer: number | null = null
+
+// The ONE serialized write authority for this Inspector: explicit Apply / Ctrl+Enter, the
+// autosave/Save/Publish flush and the switch dialog all request through it, so an Apply asked for
+// while another is in flight coalesces into one trailing Apply of the newest state (never dropped,
+// never a second concurrent write). Each run is bound to the component + locale it was asked for.
+const applies = createApplyCoordinator()
+let disposed = false
+interface ApplyTarget {
+  id: string
+  locale: string
+}
 
 // Editor-local field search.
 const search = ref('')
@@ -234,22 +249,38 @@ function countDirty(entries: SchemaEntry[]): number {
 }
 
 // ---- L3: Apply ---------------------------------------------------------
-async function applyDraft(id: string | null = activeId.value): Promise<boolean> {
-  if (!id || !isDirty.value) return true
+function currentTarget(): ApplyTarget | null {
+  return activeId.value ? { id: activeId.value, locale: locale.value } : null
+}
+
+function isCurrent(target: ApplyTarget): boolean {
+  return !disposed && activeId.value === target.id && locale.value === target.locale
+}
+
+/** Request an Apply of the newest staged draft through the single coordinator. */
+function requestApply(target: ApplyTarget | null = currentTarget()): Promise<boolean> {
+  if (!target) return Promise.resolve(true)
+  return applies.request(() => applyOnce(target))
+}
+
+// One serialized run: commits the draft as it is NOW (the newest complete state), only for the
+// component + locale it was requested for — never into a different selection or locale.
+async function applyOnce(target: ApplyTarget): Promise<boolean> {
+  if (!isCurrent(target) || !isDirty.value) return true
   const data = clonePlain(draftData.value)
   if (JSON.stringify(data) === JSON.stringify(appliedData.value)) {
     dirtyFields.value = new Set()
     return true
   }
   applyState.value = 'applying'
-  const ok = await store.updateComponentDataById(id, data)
-  // PB-AUTOSAVE-FOCUS-R1 — the author may have moved to another component while the
-  // command was in flight; its reseeded draft is not ours to touch.
-  if (activeId.value !== id) return ok
+  const ok = await store.updateComponentDataById(target.id, data)
+  // PB-AUTOSAVE-FOCUS-R1 — the author may have moved to another component (or the Inspector was
+  // torn down) while the command was in flight; that state is not ours to touch.
+  if (!isCurrent(target)) return ok
   if (ok) {
     appliedData.value = clonePlain(data)
     // Keystrokes typed while the command was in flight are newer than `data`: keep those
-    // fields staged (dirty) instead of dropping them, so Apply/autosave commits them next.
+    // fields staged (dirty) instead of dropping them, so a trailing Apply/autosave commits them.
     dirtyFields.value = new Set(
       [...dirtyFields.value].filter((name) => JSON.stringify(getByPath(draftData.value, name)) !== JSON.stringify(getByPath(data, name))),
     )
@@ -260,16 +291,19 @@ async function applyDraft(id: string | null = activeId.value): Promise<boolean> 
   return ok
 }
 
-// User-driven Apply: validate first, prevent duplicate submits, show ✓ Applied.
+// User-driven Apply: validate first, then request through the coordinator. A request while an
+// Apply is in flight is coalesced (not refused); ✓ Applied shows only once the newest requested
+// state is committed and nothing newer is staged.
 async function attemptApply(): Promise<boolean> {
-  if (applyState.value === 'applying' || !isDirty.value) return false
+  if (!isDirty.value && !applies.busy) return false
   if (invalidFields.value.length) {
     validationVisible.value = true
     focusField.value = invalidFields.value[0]
     return false
   }
-  const ok = await applyDraft()
-  if (ok) {
+  const target = currentTarget()
+  const ok = await requestApply(target)
+  if (ok && target && isCurrent(target) && !isDirty.value) {
     applyState.value = 'applied'
     if (appliedTimer !== null) window.clearTimeout(appliedTimer)
     appliedTimer = window.setTimeout(() => {
@@ -412,7 +446,7 @@ function onFocusOut(event: FocusEvent): void {
   if (!next || !rootEl.value?.contains(next)) composing = false
 }
 const flushHook = (options: InspectorFlushOptions = {}): Promise<boolean> =>
-  composing && options.autosave ? Promise.resolve(true) : applyDraft()
+  composing && options.autosave ? Promise.resolve(true) : requestApply()
 
 // ---- Structural command dirty-guard (Increment 4.2) --------------------
 // Clean draft → proceed silently. Staged draft → open the switch dialog and
@@ -430,6 +464,9 @@ onMounted(() => {
   window.addEventListener('keydown', onKeydown)
 })
 onBeforeUnmount(() => {
+  // No queued Apply may write (or mutate this Inspector) after teardown.
+  disposed = true
+  applies.dispose()
   store.unregisterInspectorFlush(flushHook)
   store.unregisterInspectorGuard(commandGuard)
   // A command parked on us while we tear down must not hang: abort it.
@@ -602,9 +639,13 @@ function action(fn: (id: string) => void) {
 
         <p v-if="store.commandError" class="pb-inspector-warn">{{ store.commandError }}</p>
 
-        <InspectorSearch v-if="hasFields" v-model="search" />
+        <p v-if="frozen && !store.selectedIsUnknown" class="pb-inspector-warn" role="status" data-pb-frozen-note>
+          {{ store.uiString('frozenDescendantNote', 'This component is inside a component that is currently unavailable. It is kept exactly as saved and cannot be edited until that component is available again.') }}
+        </p>
 
-        <div v-if="presets.length" class="pb-inspector-presets">
+        <InspectorSearch v-if="hasFields && !frozen" v-model="search" />
+
+        <div v-if="presets.length && !frozen" class="pb-inspector-presets">
           <span class="pb-inspector-presets__label">Presets</span>
           <div class="pb-inspector-presets__row">
             <button
@@ -620,7 +661,7 @@ function action(fn: (id: string) => void) {
           </div>
         </div>
 
-        <InspectorTabs v-if="hasFields" :key="selected.id" :tabs="tabs" :focus-field="focusField" />
+        <InspectorTabs v-if="hasFields && !frozen" :key="selected.id" :tabs="tabs" :focus-field="focusField" />
         <!-- PB-TEMPLATE-REGISTRY-2-D — an unknown (unregistered-type) node gets a read-only
              safety panel instead of a generic empty state: no schema form, no raw JSON, no
              data dump. The node itself is never mutated; editing returns when it is available. -->
@@ -630,13 +671,13 @@ function action(fn: (id: string) => void) {
           :type="selected.type"
           :kind="selected.kind"
         />
-        <p v-else class="pb-inspector__empty">This component has no editable properties.</p>
+        <p v-else-if="!frozen" class="pb-inspector__empty">This component has no editable properties.</p>
 
         <footer class="pb-inspector__foot">
-          <button class="pb-ui-btn pb-editor-btn" type="button" @click="action((id) => store.duplicateComponent(id))">
+          <button class="pb-ui-btn pb-editor-btn" type="button" :disabled="frozenHolder" @click="action((id) => store.duplicateComponent(id))">
             Duplicate
           </button>
-          <button class="pb-ui-btn pb-editor-btn pb-editor-btn--danger" type="button" @click="action((id) => store.deleteComponent(id))">
+          <button class="pb-ui-btn pb-editor-btn pb-editor-btn--danger" type="button" :disabled="frozenHolder" @click="action((id) => store.deleteComponent(id))">
             Delete
           </button>
         </footer>

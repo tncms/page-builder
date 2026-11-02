@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\PageBuilder\Import;
 
 use Illuminate\Support\Facades\DB;
+use Plugins\PageBuilder\Availability\UnavailableSubtreeGuard;
 use Plugins\PageBuilder\Import\Exceptions\ImportControlException;
 use Plugins\PageBuilder\Registries\BlockRegistry;
 use Plugins\PageBuilder\Registries\SectionRegistry;
@@ -43,6 +44,7 @@ final class FullPageImportService
         private readonly NodeIdGenerator $ids,
         private readonly ProvenanceReconciler $reconciler,
         private readonly ActiveThemeResourceLocator $themeLocator,
+        private readonly UnavailableSubtreeGuard $unavailable,
     ) {
     }
 
@@ -62,6 +64,10 @@ final class FullPageImportService
         // Target ownership (validation #10).
         if (! EditableOwners::isSupported($request->ownerType) || EditableOwners::resolve($request->ownerType, $request->ownerId) === null) {
             $blockers[] = FullPageImportIssue::blocker('target_not_found', 'The target document was not found.');
+        }
+        // PB-XREG-4-R1 — a replace would delete content whose provider is unavailable right now.
+        if ($this->holdsUnavailableContent($this->currentDraft($request))) {
+            $blockers[] = FullPageImportIssue::blocker('unavailable_content', 'This page contains components that are currently unavailable. Importing a template would remove them.');
         }
 
         if ($resource === null) {
@@ -145,6 +151,9 @@ final class FullPageImportService
                 if ($request->expectedRevision !== null && $request->expectedRevision !== $revisionInTx) {
                     throw new ImportControlException('stale_revision', 'Draft changed during commit.');
                 }
+                if ($this->holdsUnavailableContent($currentInTx)) {
+                    throw new ImportControlException('unavailable_content', 'This page contains components that are currently unavailable. Importing a template would remove them.');
+                }
 
                 // 7. Snapshot the old draft.
                 $snapshot = new FullPageImportSnapshot($request->ownerType, $request->ownerId, $currentInTx, $revisionInTx);
@@ -205,6 +214,14 @@ final class FullPageImportService
     /**
      * @return array<string, mixed>|null
      */
+    /** @param array<string, mixed>|null $draft */
+    private function holdsUnavailableContent(?array $draft): bool
+    {
+        $found = $this->unavailable->dependencies($draft);
+
+        return $found['components'] !== [] || $found['unknown'] !== [];
+    }
+
     private function currentDraft(FullPageImportRequest $request): ?array
     {
         return $this->layouts->getDraftPayload($request->ownerType, $request->ownerId);

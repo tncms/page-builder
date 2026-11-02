@@ -30,6 +30,13 @@ import { DISCARD_MESSAGE } from '../utils/navigation'
 import { canContain } from '../utils/nestingPolicy'
 import { describeDropIntent, dropRejection, type DropIntent } from '../utils/dropIntent'
 import { validateLayout, type LayoutIssue } from '../utils/layoutValidation'
+import {
+  containsUnavailable,
+  indexMoveCrossesFrozenSibling,
+  isFrozenNode,
+  moveCrossesFrozenSibling,
+  unavailableRootIds,
+} from '../utils/unavailableNodes'
 import { fallbackNodeLabel, NAV_LABEL_MAX, NODE_LABEL_KEY } from '../utils/nodeLabel'
 import { useNavigatorLocksStore } from './navigatorLocks'
 import { useProvenanceGroupsStore } from '../browser/provenanceGroupsStore'
@@ -370,6 +377,32 @@ export const useEditorStore = defineStore('pbEditor', {
       return (kind: string, type: string): boolean => this.definitionOf(kind, type) !== null
     },
 
+    // PB-XREG-4-R1 — a node is FROZEN when it, or an ancestor, is an unavailable component
+    // (namespaced type, provider not registered now). Frozen nodes are kept exactly as saved.
+    isNodeFrozen(): (id: string | null | undefined) => boolean {
+      return (id) => isFrozenNode(this.currentPayload, id, this.isKnownType)
+    },
+
+    /** The node's subtree contains an unavailable component (delete/duplicate/cut would change it). */
+    holdsFrozen(): (id: string | null | undefined) => boolean {
+      return (id) => {
+        const hit = id ? findComponentNode(this.currentPayload, id) : null
+        return !!hit && containsUnavailable(hit.node, hit.kind, this.isKnownType)
+      }
+    },
+
+    /** Top-most unavailable components in the current layout. */
+    unavailableComponentIds(): string[] {
+      return unavailableRootIds(this.currentPayload, this.isKnownType)
+    },
+
+    /** Why Publish is unavailable right now (server-resolved copy), or null. */
+    publishBlockedReason(): string | null {
+      return this.unavailableComponentIds.length > 0
+        ? this.uiString('publish_blocked_unavailable', 'Publishing is paused: this page uses a component that is currently unavailable. You can keep editing and saving.')
+        : null
+    },
+
     // The selected node is an unknown component (exists, non-empty type, no definition).
     selectedIsUnknown(state): boolean {
       const sel = findComponentById(state.currentPayload, state.selectedComponentId)
@@ -607,7 +640,7 @@ export const useEditorStore = defineStore('pbEditor', {
     // shortcuts, drag) delegates to — is what makes the guard consistent, rather
     // than each surface re-checking independently.
     isNodeLocked(id: string | null | undefined): boolean {
-      return id != null && useNavigatorLocksStore().isLocked(this.owner, id)
+      return id != null && (useNavigatorLocksStore().isLocked(this.owner, id) || this.isNodeFrozen(id))
     },
 
     /** The component type for an id from the current payload, or null. */
@@ -627,6 +660,7 @@ export const useEditorStore = defineStore('pbEditor', {
      * draft is actually staged.
      */
     dropBlocked(intent: DropIntent): boolean {
+      if (moveCrossesFrozenSibling(this.currentPayload, intent, this.isKnownType)) return true
       return dropRejection(intent, {
         parentType: (id) => this.nodeTypeOf(id),
         isLocked: (id) => this.isNodeLocked(id),
@@ -768,6 +802,11 @@ export const useEditorStore = defineStore('pbEditor', {
       const issues = this.layoutIssues()
       if (issues.length > 0) {
         this.error = `Cannot publish — invalid layout: ${issues[0].message}`
+        return false
+      }
+      // PB-XREG-4-R1 — the server refuses too; this only avoids a pointless round trip.
+      if (this.publishBlockedReason) {
+        this.error = this.publishBlockedReason
         return false
       }
       // Serialize save → publish: never publish until the current payload IS the
@@ -936,6 +975,7 @@ export const useEditorStore = defineStore('pbEditor', {
      * command. That command doesn't select anything, so the current selection is kept.
      */
     async updateComponentDataById(id: string, data: Record<string, unknown>): Promise<boolean> {
+      if (this.isNodeFrozen(id)) return false // PB-XREG-4-R1 — frozen content is read-only
       // Phase 21 — mark this single-component commit for component-level
       // reconciliation (the frontend Live Builder consumes the directive; the
       // structure editor ignores it, so its full-preview path is unchanged).
@@ -969,7 +1009,7 @@ export const useEditorStore = defineStore('pbEditor', {
      * survives the removal.
      */
     async deleteComponent(id: string) {
-      if (this.isNodeLocked(id)) return
+      if (this.isNodeLocked(id) || this.holdsFrozen(id)) return
       if (this.inspectorDirty && !(await this.guardInspector())) return
       this.reconcileComponentId = null
       const keep = this.selectedComponentId
@@ -985,7 +1025,7 @@ export const useEditorStore = defineStore('pbEditor', {
     },
 
     async duplicateComponent(id: string) {
-      if (this.isNodeLocked(id)) return
+      if (this.isNodeLocked(id) || this.holdsFrozen(id)) return
       if (this.inspectorDirty && !(await this.guardInspector())) return
       await this.executeCommand('duplicate-component', { component_id: id })
     },
@@ -1022,6 +1062,7 @@ export const useEditorStore = defineStore('pbEditor', {
      */
     async moveComponent(id: string, targetParentId: string | null, index: number): Promise<boolean> {
       if (this.isNodeLocked(id)) return false
+      if (indexMoveCrossesFrozenSibling(this.currentPayload, id, targetParentId, index, this.isKnownType)) return false
       if (this.inspectorDirty && !(await this.guardInspector())) return false
       return this.executeCommand('move-component', {
         component_id: id,
@@ -1038,6 +1079,7 @@ export const useEditorStore = defineStore('pbEditor', {
      * exist. The container stays selected if it survives the change.
      */
     async applyColumnLayout(containerId: string, widths: string[]) {
+      if (this.isNodeFrozen(containerId)) return
       this.reconcileComponentId = null
       const changed = await this.executeCommand('apply-column-layout', {
         container_id: containerId,
@@ -1050,6 +1092,7 @@ export const useEditorStore = defineStore('pbEditor', {
 
     /** Reverse a container's column order (structural → full preview refresh). */
     async reverseColumns(containerId: string) {
+      if (this.isNodeFrozen(containerId)) return
       this.reconcileComponentId = null
       const changed = await this.executeCommand('reverse-columns', {
         container_id: containerId,
@@ -1061,12 +1104,13 @@ export const useEditorStore = defineStore('pbEditor', {
 
     // Copy/cut keep the node client-side (the stateless endpoint has no clipboard).
     copyComponent(id: string) {
+      if (this.isNodeFrozen(id)) return // a copy of frozen content could only be a forged duplicate
       const hit = findComponentNode(this.currentPayload, id)
       if (hit) this.clipboard = { mode: 'copy', node: hit.node, kind: hit.kind }
     },
 
     async cutComponent(id: string) {
-      if (this.isNodeLocked(id)) return
+      if (this.isNodeLocked(id) || this.holdsFrozen(id)) return
       if (this.inspectorDirty && !(await this.guardInspector())) return
       const hit = findComponentNode(this.currentPayload, id)
       if (!hit) return
@@ -1080,6 +1124,10 @@ export const useEditorStore = defineStore('pbEditor', {
       // Pasting targets the node itself (and/or its container) — a locked target
       // blocks the mutation before we ask the dirty-guard.
       if (this.isNodeLocked(targetId)) return
+      if (containsUnavailable(clip.node, clip.kind, this.isKnownType)) {
+        this.commandError = this.uiString('paste_unavailable', 'This copy contains a component that is currently unavailable, so it cannot be pasted.')
+        return
+      }
       if (this.inspectorDirty && !(await this.guardInspector())) return
 
       let parentId: string | null = null

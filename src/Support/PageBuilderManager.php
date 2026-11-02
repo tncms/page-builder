@@ -27,7 +27,7 @@ use Plugins\PageBuilder\State\LayoutMutator;
  */
 class PageBuilderManager
 {
-    public const VERSION = '0.1.0-alpha.8';
+    public const VERSION = '0.1.0-alpha.9';
 
     /** Lazily-created Phase 8 state helpers (stateless singletons). */
     private ?CommandBus $commandBus = null;
@@ -281,8 +281,8 @@ class PageBuilderManager
     {
         return [
             'version' => self::VERSION,
-            'sections' => AuthoringFieldStrings::enrich($this->withDataSourceCatalog($this->sectionDefinitions())),
-            'blocks' => AuthoringFieldStrings::enrich($this->withDataSourceCatalog($this->blockDefinitions())),
+            'sections' => $this->withOrigins(AuthoringFieldStrings::enrich($this->withDataSourceCatalog($this->sectionDefinitions()))),
+            'blocks' => $this->withOrigins(AuthoringFieldStrings::enrich($this->withDataSourceCatalog($this->blockDefinitions()))),
             'tokens' => $this->tokens(),
             'breakpoints' => $this->tokens->breakpoints(),
             // Phase 25.3 — layout presets (Section → Container → Column trees) the
@@ -305,6 +305,26 @@ class PageBuilderManager
                 \Plugins\PageBuilder\Support\CatalogLocale::fallback(),
             ) ?? ['section' => [], 'block' => []],
         ];
+    }
+
+    /**
+     * PB-XREG-4 — additive `origin` per definition and Admin-UI-locale labels for per-locale label maps.
+     *
+     * @param  array<int, array<string, mixed>>  $definitions
+     * @return array<int, array<string, mixed>>
+     */
+    private function withOrigins(array $definitions): array
+    {
+        $registry = app()->bound(\Plugins\PageBuilder\Components\ComponentProviderRegistry::class)
+            ? app(\Plugins\PageBuilder\Components\ComponentProviderRegistry::class)
+            : null;
+
+        return \Plugins\PageBuilder\Support\EditorDefinitionOrigins::enrich(
+            $definitions,
+            $registry,
+            \Plugins\PageBuilder\Support\CatalogLocale::admin(),
+            \Plugins\PageBuilder\Support\CatalogLocale::fallback(),
+        );
     }
 
     /**

@@ -72,6 +72,28 @@ describe('PB-XREG-3 canvas interactive bridge', () => {
     expect(sanitizeManifest({ assets: 'x' }, ORIGIN)).toEqual({ behaviors: [], assets: [] })
   })
 
+  it('PB-XREG-4: keeps same-origin /themes/ assets of an active-theme behavior, still drops unsafe ones', () => {
+    const m = sanitizeManifest(
+      {
+        behaviors: ['pbx4-voyage-a:hero'],
+        assets: [
+          { handle: 'pbx-runtime', kind: 'module', url: `${ORIGIN}/vendor/page-builder/interactive/runtime.js?v=aaa` },
+          { handle: 'pbx.pbx4-voyage-a.hero.style', kind: 'css', url: `${ORIGIN}/themes/pbx4-voyage-a/page-builder/hero.css?v=bbb` },
+          { handle: 'pbx.pbx4-voyage-a.hero.main', kind: 'module', url: `${ORIGIN}/themes/pbx4-voyage-a/page-builder/hero.js?v=ccc` },
+          { handle: 'pbx.evil.x.a', kind: 'module', url: 'https://cdn.evil.test/themes/x/hero.js' },
+          { handle: 'pbx.evil.x.b', kind: 'module', url: `${ORIGIN}/themes/x/hero.php` },
+        ],
+      },
+      ORIGIN,
+    )
+    expect(m?.assets.map((a) => a.handle)).toEqual([
+      'pbx-runtime',
+      'pbx.pbx4-voyage-a.hero.style',
+      'pbx.pbx4-voyage-a.hero.main',
+    ])
+    expect(m?.behaviors).toEqual(['pbx4-voyage-a:hero'])
+  })
+
   it('loads assets once, in order, runtime first, then mounts roots in the editor context', async () => {
     const order: string[] = []
     autoLoad((el) => {

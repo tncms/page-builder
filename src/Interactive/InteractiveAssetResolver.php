@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\PageBuilder\Interactive;
 
+use Plugins\PageBuilder\Origins\ProviderOrigin;
+use TheNguyen\CMS\Support\CmsPath;
 use Throwable;
 
 /**
@@ -21,14 +23,19 @@ class InteractiveAssetResolver
     /** @var array<string, ?string> memoized per process */
     private array $memo = [];
 
-    public function url(string $slug, string $relativePath): ?string
+    /**
+     * @param  string  $origin  PB-XREG-4 — {@see ProviderOrigin::THEME} resolves from the theme's Core-published
+     *                          asset root (`CmsPath::themeAssets()/{slug}`); anything else keeps the PB-XREG-3
+     *                          plugin namespace (`cms.plugin_asset_publisher`).
+     */
+    public function url(string $slug, string $relativePath, string $origin = ProviderOrigin::PLUGIN): ?string
     {
-        $key = $slug."\0".$relativePath;
+        $key = $origin."\0".$slug."\0".$relativePath;
         if (array_key_exists($key, $this->memo)) {
             return $this->memo[$key];
         }
 
-        return $this->memo[$key] = $this->resolve($slug, $relativePath);
+        return $this->memo[$key] = $this->resolve($slug, $relativePath, $origin);
     }
 
     /** Forget memoized lookups (after an install/upgrade in the same process, and in tests). */
@@ -37,7 +44,7 @@ class InteractiveAssetResolver
         $this->memo = [];
     }
 
-    private function resolve(string $slug, string $relativePath): ?string
+    private function resolve(string $slug, string $relativePath, string $origin): ?string
     {
         if (preg_match('/^[a-z0-9][a-z0-9_-]*$/', $slug) !== 1
             || preg_match(InteractiveBehaviorValidator::PATH_PATTERN, $relativePath) !== 1
@@ -46,7 +53,7 @@ class InteractiveAssetResolver
         }
 
         try {
-            $namespace = $this->namespaceDir($slug);
+            $namespace = $origin === ProviderOrigin::THEME ? $this->themeNamespaceDir($slug) : $this->namespaceDir($slug);
             if ($namespace === null) {
                 return null;
             }
@@ -77,6 +84,28 @@ class InteractiveAssetResolver
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * PB-XREG-4 — the real, existing Core-published asset directory of theme `$slug` (Core config
+     * `cms.paths.theme_assets` via {@see CmsPath::themeAssets()}), or null. Junctions/symlinks are refused.
+     */
+    protected function themeNamespaceDir(string $slug): ?string
+    {
+        if (preg_match('/^[a-z0-9]+(-[a-z0-9]+)*$/', $slug) !== 1) {
+            return null;
+        }
+
+        $dir = rtrim(CmsPath::themeAssets(), '/\\').DIRECTORY_SEPARATOR.$slug;
+        if (is_link($dir)) {
+            return null;
+        }
+
+        $real = realpath($dir);
+        $base = realpath(CmsPath::themeAssets());
+
+        return $real !== false && $base !== false && is_dir($real)
+            && strcasecmp($this->norm($real), $this->norm($base).'/'.$slug) === 0 ? $real : null;
     }
 
     /** The real, existing published namespace directory for `$slug`, or null. */

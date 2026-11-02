@@ -13,6 +13,7 @@ use Plugins\PageBuilder\Http\Controllers\EditorTranslationController;
 use Plugins\PageBuilder\Http\Controllers\PatternController;
 use Plugins\PageBuilder\Http\Controllers\ResourceCatalogController;
 use Plugins\PageBuilder\Http\Controllers\StateCommandController;
+use Plugins\PageBuilder\Http\Controllers\UnifiedCatalogController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,10 @@ Route::get('editor/metadata', EditorMetadataController::class)->name('editor.met
 // Section resources are patterns, page resources are templates; labels resolve for the
 // Admin UI locale. Requires the page-builder.edit permission (enforced in the controller).
 Route::get('editor/resource-catalog', ResourceCatalogController::class)->name('editor.resource-catalog');
+
+// PB-XREG-4 — read-only unified catalog across the component, behavior, data-source and resource registries
+// (origin + availability). Requires page-builder.edit (enforced in the controller); never a write path.
+Route::get('editor/catalog', UnifiedCatalogController::class)->name('editor.catalog');
 
 // Phase 9 — Vue editor shell: owner-scoped bootstrap context + draft / publish.
 Route::get('editor/context/{ownerType}/{ownerId}', [EditorContextController::class, 'show'])
